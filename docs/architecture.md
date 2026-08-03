@@ -16,9 +16,12 @@ O Sinalo e um aplicativo Windows para preparar e exibir, sem dependencia de inte
 ## Visao geral
 
 ```text
-Catalogo remoto versionado (JSON)
+URLs das fontes configuradas
           |
           v
+Conectores de descoberta ----> catalogo local (SQLite)
+                                     |
+                                     v
 Servico de sincronizacao ----> arquivos .part ----> validacao SHA-256
           |                                                |
           v                                                v
@@ -28,7 +31,7 @@ Servico de sincronizacao ----> arquivos .part ----> validacao SHA-256
       Interface WPF ----> mpv ----> tela principal / projetor
 ```
 
-O catalogo remoto informa quais itens existem; ele nao transmite video. O video e baixado para armazenamento local antes do uso.
+Os conectores identificam os itens publicados nas URLs configuradas e montam um catalogo local. O video e baixado para armazenamento local antes do uso.
 
 ## Componentes
 
@@ -41,11 +44,11 @@ O catalogo remoto informa quais itens existem; ele nao transmite video. O video 
 - **mpv**: processo externo para reproducao de arquivos locais, controlado por IPC.
 - **FFmpeg/ffprobe**: leitura de metadados e geracao sob demanda de miniaturas.
 
-### Catalogo remoto
+### Descoberta e catalogo local
 
-Para o MVP, sera um arquivo JSON estatico hospedado em um endereco HTTPS controlado pelo projeto. Isso evita construir uma API antes de haver necessidade.
+O MVP nao depende de um catalogo remoto ou de uma API propria. Na tela de configuracoes, o operador informa a URL de cada fonte. Conectores especificos leem essas paginas em segundo plano, identificam os itens publicados e gravam o catalogo no SQLite local.
 
-O catalogo sera atualizado por curadoria: um processo manual ou automatizado identifica os arquivos oficiais e publica uma nova versao do JSON. O app nao deve raspar paginas HTML durante a execucao do culto.
+Cada item descoberto precisa ter data de referencia e uma URL de arquivo autorizada para poder ser baixado. Se a fonte oferecer somente uma pagina ou video online, o item pode ser listado, mas permanecera `OnlineSomente`.
 
 ## Estrutura da solucao
 
@@ -111,7 +114,7 @@ O Sinalo nao aplica uma unica regra de download a todas as fontes. Cada fonte de
 
 O Informativo das Missoes e o Minuto de Saude podem usar `MonthlyFull` quando a fonte disponibilizar todo o mes; caso contrario, usam `RollingSaturday`. O operador sempre pode solicitar a sincronizacao manual de um item ou marcar um item como fixado.
 
-O catalogo informa a disponibilidade real do arquivo. Assim, o aplicativo nunca tenta baixar um video futuro que ainda nao tenha sido publicado.
+Independentemente da politica da fonte, a rotina operacional calcula tres datas: o sabado anterior, o sabado atual e o proximo sabado. Ela sincroniza nessa ordem: anterior, atual e proximo, desde que cada item ja esteja publicado e tenha arquivo baixavel autorizado. Assim, nao depende de um calendario previamente cadastrado e nunca tenta baixar um video futuro ainda indisponivel.
 
 ## Persistencia e arquivos
 
@@ -130,16 +133,17 @@ Dados de aplicacao:
 
 Videos nunca sao armazenados no SQLite. O banco guarda caminho, hash, tamanho, estado, ultima verificacao e referencia ao item do catalogo.
 
-O local de armazenamento e configuravel. O padrao seguro e `%LocalAppData%\Sinalo`, pois uma instalacao normal em `C:\Program Files\Sinalo` nao deve receber gravacoes durante a operacao: o Windows protege essa pasta e pode exigir privilegio de administrador. Se a igreja quiser uma pasta visivel ao lado do executavel, o instalador deve oferecer um modo portavel ou permitir escolher, por exemplo, `D:\Sinalo\content`; nesse caso, o app valida permissao de escrita e espaco livre antes de sincronizar.
+O aplicativo sera instalado em `C:\Program Files\Sinalo`, como o MidiaDeck. Dados gravaveis ficam por padrao em `%LocalAppData%\Sinalo`; o operador pode redirecionar somente `content` para outro disco, como `D:\ConteudosSinalo`. Antes da primeira sincronizacao, o app valida permissao de escrita e espaco livre no destino escolhido.
 
 ## Sincronizacao
 
-1. O app baixa o manifesto do catalogo em tarefa de fundo, com timeout curto.
-2. Compara a versao do catalogo e os hashes com o banco local.
-3. Enfileira somente arquivos ausentes, alterados ou corrompidos.
-4. Baixa para `.part`, com suporte a retomada HTTP Range quando a origem permitir.
-5. Valida tamanho e SHA-256; somente entao move o arquivo de modo atomico para `content`.
-6. Marca o item como `Pronto` no SQLite e gera miniatura sob demanda.
+1. O app consulta as fontes configuradas em tarefa de fundo, com timeout curto.
+2. Os conectores atualizam o catalogo local com os itens efetivamente publicados.
+3. Calcula os sabados anterior, atual e proximo; enfileira seus itens nessa prioridade.
+4. Enfileira somente arquivos ausentes, alterados ou corrompidos.
+5. Baixa para `.part`, com suporte a retomada HTTP Range quando a origem permitir.
+6. Valida tamanho e SHA-256; somente entao move o arquivo de modo atomico para `content`.
+7. Marca o item como `Pronto` no SQLite e gera miniatura sob demanda.
 
 Downloads devem ter baixa concorrencia (padrao: um por vez), limite configuravel de banda e pausa automatica enquanto houver reproducao.
 
@@ -169,6 +173,6 @@ Downloads devem ter baixa concorrencia (padrao: um por vez), limite configuravel
 - Streaming adaptativo e download de plataformas sem arquivo autorizado.
 - Estatisticas centralizadas e sincronizacao entre computadores.
 
-## Decisao pendente antes de codificar
+## Premissa para sincronizacao offline
 
-Definir a origem autorizada dos arquivos de cada fonte, especialmente Minuto de Saude. O Sinalo so implementara sincronizacao offline para arquivos com URL de download permitida e estavel.
+O Sinalo so marca um item como offline quando o conector encontrar uma URL de arquivo autorizada, estavel e baixavel. Especialmente no Minuto de Saude, se a fonte continuar oferecendo somente YouTube, o item sera exibido como online ate que exista uma origem oficial de arquivo ou autorizacao para download.
