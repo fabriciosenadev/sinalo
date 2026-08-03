@@ -1,0 +1,67 @@
+<Window x:Class="Sinalo.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Sinalo" Height="620" Width="1024" MinHeight="540" MinWidth="840"
+        Background="#F4F7FA">
+    <Grid Margin="36">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="24" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="28" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Sinalo" FontSize="34" FontWeight="SemiBold" Foreground="#16324F" />
+            <TextBlock Text="Conteúdos prontos para a programação da igreja" FontSize="16" Foreground="#506273" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="#16324F" CornerRadius="12" Padding="24">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Sábado anterior" Foreground="#C8D8E8" />
+                    <TextBlock Text="{Binding PreviousSaturday}" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,6,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Sábado atual" Foreground="#C8D8E8" />
+                    <TextBlock Text="{Binding CurrentSaturday}" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,6,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Próximo sábado" Foreground="#C8D8E8" />
+                    <TextBlock Text="{Binding NextSaturday}" FontSize="24" FontWeight="SemiBold" Foreground="White" Margin="0,6,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ItemsControl Grid.Row="4" ItemsSource="{Binding Sources}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="3" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="White" BorderBrush="#DCE4EB" BorderThickness="1" CornerRadius="10" Padding="22" Margin="0,0,16,0">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="#16324F" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding SyncPolicy}" Foreground="#506273" Margin="0,10,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="Configuração da fonte pendente" Foreground="#9A6B1B" Margin="0,24,0,0" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Grid.Row="5" Text="{Binding ContentPath, StringFormat=Conteúdo local: {0}}" Foreground="#506273" />
+    </Grid>
+</Window>

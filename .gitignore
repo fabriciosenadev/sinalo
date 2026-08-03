@@ -1,0 +1,16 @@
+# Visual Studio and local user state
+.vs/
+*.user
+*.suo
+
+# .NET build output
+**/bin/
+**/obj/
+TestResults/
+
+# Local runtime data
+data/
+content/
+cache/
+logs/
+temp/

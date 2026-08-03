@@ -29,6 +29,8 @@ Sinalo e um aplicativo desktop Windows para preparar e exibir videos de programa
 - Operacoes de rede, hashing, leitura de video e miniaturas devem ocorrer fora da thread da interface.
 - Pausar ou reduzir downloads enquanto um video estiver em reproducao.
 - Tratar rede indisponivel, disco cheio, arquivo corrompido e URL alterada como estados visiveis ao operador.
+- Manter cobertura minima de **75% de linhas e branches**, medida sobre os assemblies de producao.
+- Distribuir a cobertura entre testes unitarios, de integracao e ponta a ponta; nao usar somente testes unitarios para atingir a meta.
 - Escrever testes para regras de calendario, selecao de itens, integridade e persistencia.
 
 ## Fluxo de mudancas

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sinalo.App/Sinalo.App.csproj" />
+    <Project Path="src/Sinalo.Application/Sinalo.Application.csproj" />
+    <Project Path="src/Sinalo.Domain/Sinalo.Domain.csproj" />
+    <Project Path="src/Sinalo.Infrastructure/Sinalo.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sinalo.Tests/Sinalo.Tests.csproj" />
+  </Folder>
+</Solution>

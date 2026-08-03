@@ -60,7 +60,10 @@ src/
   Sinalo.Domain/           entidades, regras e enums
   Sinalo.Infrastructure/   SQLite, download, arquivos, mpv, FFmpeg e catalogo
 tests/
-  Sinalo.Tests/            testes de regras, sincronizacao e persistencia
+  Sinalo.Tests/
+    Unit/                   regras puras e ViewModels
+    Integration/            SQLite, armazenamento e conectores
+    EndToEnd/               fluxo completo do aplicativo em ambiente isolado
 ```
 
 As dependencias seguem somente para dentro:
@@ -69,6 +72,16 @@ As dependencias seguem somente para dentro:
 App -> Application -> Domain
 Infrastructure -> Application + Domain
 ```
+
+## Cobertura de testes
+
+O projeto exige cobertura minima de **75% de linhas e branches** nos assemblies de producao. A meta e medida no conjunto da solucao, mas deve ser composta por tres niveis:
+
+- **Unitarios**: regras de dominio, calculos de calendario, selecao e priorizacao.
+- **Integracao**: SQLite, sistema de arquivos, downloads, validacao e conectores de fontes, usando diretorios e bancos temporarios.
+- **Ponta a ponta**: inicializacao do aplicativo e fluxo operador-configura-fonte-sincroniza-reproduz, em ambiente isolado e sem depender de fontes externas reais.
+
+O script `eng/test-coverage.ps1` executa a suite com a meta de cobertura. Uma alteracao nao esta pronta enquanto esse comando nao passar.
 
 ## Modelo de dominio inicial
 
