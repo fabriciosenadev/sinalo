@@ -31,6 +31,11 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
 
             CREATE INDEX IF NOT EXISTS idx_content_items_scheduled_date
                 ON content_items(scheduled_date);
+
+            CREATE TABLE IF NOT EXISTS source_configurations (
+                source INTEGER NOT NULL PRIMARY KEY,
+                page_url TEXT NOT NULL
+            );
             """;
 
         await command.ExecuteNonQueryAsync(cancellationToken);

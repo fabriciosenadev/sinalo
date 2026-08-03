@@ -13,10 +13,13 @@ public partial class App : System.Windows.Application
         var pathService = new LocalSinaloPathService();
         var database = new SinaloDatabase(pathService);
         await database.InitializeAsync();
+        var configurationService = new SqliteConfigurationService(pathService);
+        var configurations = await configurationService.LoadSourcesAsync();
 
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService)
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations),
+            ConfigurationService = configurationService
         };
 
         mainWindow.Show();

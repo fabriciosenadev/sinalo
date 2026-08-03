@@ -1,6 +1,8 @@
 using System.IO;
 using Microsoft.Data.Sqlite;
+using Sinalo.Application.Configuration;
 using Sinalo.Application.Storage;
+using Sinalo.Domain;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.Tests.Integration;
@@ -35,6 +37,43 @@ public sealed class StorageAndDatabaseTests : IDisposable
 
         Assert.True(File.Exists(pathService.GetPaths().DatabasePath));
         Assert.True(Directory.Exists(pathService.GetPaths().ContentPath));
+    }
+
+    [Fact]
+    public async Task ConfigurationService_ShouldReturnTheThreeUnconfiguredDefaultSources()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+
+        var sources = await service.LoadSourcesAsync();
+
+        Assert.Collection(sources,
+            source => { Assert.Equal(ContentSource.Missions, source.Source); Assert.Equal(AvailabilityPolicy.MonthlyFull, source.Policy); Assert.Empty(source.PageUrl); },
+            source => { Assert.Equal(ContentSource.ProvaiEVede, source.Source); Assert.Equal(AvailabilityPolicy.QuarterlyFull, source.Policy); Assert.Empty(source.PageUrl); },
+            source => { Assert.Equal(ContentSource.Health, source.Source); Assert.Equal(AvailabilityPolicy.MonthlyFull, source.Policy); Assert.Empty(source.PageUrl); });
+    }
+
+    [Fact]
+    public async Task ConfigurationService_ShouldPersistTrimmedUrlsAndUpdateExistingSources()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+
+        await service.SaveSourcesAsync(
+        [
+            new(ContentSource.Missions, "Informativo das Missões", " https://missions.example/ ", AvailabilityPolicy.MonthlyFull),
+            new(ContentSource.ProvaiEVede, "Provai e Vede", "https://provai.example/", AvailabilityPolicy.QuarterlyFull),
+            new(ContentSource.Health, "Minuto de Saúde", "https://health.example/", AvailabilityPolicy.MonthlyFull)
+        ]);
+        await service.SaveSourcesAsync([new(ContentSource.Health, "Minuto de Saúde", "https://novo-health.example/", AvailabilityPolicy.MonthlyFull)]);
+
+        var sources = await new SqliteConfigurationService(pathService).LoadSourcesAsync();
+
+        Assert.Equal("https://missions.example/", sources.Single(source => source.Source == ContentSource.Missions).PageUrl);
+        Assert.Equal("https://provai.example/", sources.Single(source => source.Source == ContentSource.ProvaiEVede).PageUrl);
+        Assert.Equal("https://novo-health.example/", sources.Single(source => source.Source == ContentSource.Health).PageUrl);
     }
 
     public void Dispose()
