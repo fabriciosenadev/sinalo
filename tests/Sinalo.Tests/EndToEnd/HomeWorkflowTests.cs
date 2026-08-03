@@ -154,6 +154,39 @@ public sealed class HomeWorkflowTests
         Assert.Equal(Sinalo.Domain.ContentSource.ProvaiEVede, catalog.RequestedSources[0]);
     }
 
+    [Fact]
+    public void MainWindow_FilterAndScheduleControls_ShouldUpdateTheViewModel()
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result,
+                [CatalogItem("ready", [Asset("ready")], Sinalo.Domain.SyncState.Ready)]);
+                var window = new Sinalo.App.MainWindow { DataContext = viewModel };
+                var sourceButton = new Button { Tag = "Provai e Vede" };
+                var availabilityButton = new Button { Tag = "Pronto offline" };
+                var catalogButton = new Button { Tag = viewModel.CatalogItems[0] };
+                typeof(Sinalo.App.MainWindow).GetMethod("SourceFilter_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [sourceButton, new RoutedEventArgs()]);
+                typeof(Sinalo.App.MainWindow).GetMethod("AvailabilityFilter_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [availabilityButton, new RoutedEventArgs()]);
+                typeof(Sinalo.App.MainWindow).GetMethod("CatalogItem_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [catalogButton, new RoutedEventArgs()]);
+                typeof(Sinalo.App.MainWindow).GetMethod("AddToSchedule_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [window, new RoutedEventArgs()]);
+                typeof(Sinalo.App.MainWindow).GetMethod("MoveScheduleDown_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [new Button { Tag = viewModel.ScheduleItems[0] }, new RoutedEventArgs()]);
+                typeof(Sinalo.App.MainWindow).GetMethod("RemoveSchedule_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [new Button { Tag = viewModel.ScheduleItems[0] }, new RoutedEventArgs()]);
+                Assert.Equal("Provai e Vede", viewModel.SelectedSource);
+                Assert.Equal("Pronto offline", viewModel.SelectedAvailability);
+                Assert.Empty(viewModel.ScheduleItems);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        Assert.Null(exception);
+    }
+
 
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
