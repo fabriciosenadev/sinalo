@@ -1,8 +1,10 @@
 using System.Windows;
 using System.Net.Http;
+using System.IO;
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Synchronization;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -12,6 +14,7 @@ public partial class MainWindow : Window
     public ISinaloConfigurationService? ConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
+    public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MainWindow()
     {
         InitializeComponent();
@@ -44,4 +47,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void SynchronizeProvaiEVede_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProvaiEVedeSynchronizationService is null || ContentCatalog is null || ConfigurationService is null) return;
+        try
+        {
+            await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync();
+            DataContext = new ViewModels.HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), await ConfigurationService.LoadSourcesAsync(), await ContentCatalog.ListBySourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede));
+        }
+        catch (HttpRequestException) { MessageBox.Show(this, "Não foi possível sincronizar o Provai e Vede. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (IOException) { MessageBox.Show(this, "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
+    }
 }

@@ -16,7 +16,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="12"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Sinalo" FontSize="34" FontWeight="SemiBold" Foreground="#16324F" /><TextBlock Text="Conteúdos prontos para a programação da igreja" FontSize="16" Foreground="#506273" Margin="0,4,0,0" /></StackPanel><Button Grid.Column="1" Content="Atualizar Provai e Vede" Padding="16,8" Click="RefreshCatalog_Click" /><Button Grid.Column="3" Content="Configurar fontes" Padding="16,8" Click="ConfigureSources_Click" /></Grid>
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="12"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="12"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Sinalo" FontSize="34" FontWeight="SemiBold" Foreground="#16324F" /><TextBlock Text="Conteúdos prontos para a programação da igreja" FontSize="16" Foreground="#506273" Margin="0,4,0,0" /></StackPanel><Button Grid.Column="1" Content="Atualizar Provai e Vede" Padding="16,8" Click="RefreshCatalog_Click" /><Button Grid.Column="3" Content="Sincronizar Provai e Vede" Padding="16,8" Click="SynchronizeProvaiEVede_Click" /><Button Grid.Column="5" Content="Configurar fontes" Padding="16,8" Click="ConfigureSources_Click" /></Grid>
 
         <Border Grid.Row="2" Background="#16324F" CornerRadius="12" Padding="24">
             <Grid>

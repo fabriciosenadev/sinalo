@@ -54,10 +54,30 @@ public sealed class ProvaiEVedeDiscoveryConnectorTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => connector.DiscoverAsync(configuration));
     }
 
+    [Fact]
+    public async Task DiscoverAsync_ShouldResolveVideosFromTheIdentifiedQuarterPage()
+    {
+        const string source = "<a href='https://downloads.example/provai-e-vede-2026-3o-trimestre/'>Terceiro</a>";
+        const string quarter = "<table><tr><td>MP4 7. (08/08) Cada Centavo Conta</td><td>140MB</td><td><a href='https://files.example/08-08-26_cada-centavo.mp4'>Baixar</a></td></tr></table>";
+        var connector = new ProvaiEVedeDiscoveryConnector(new HttpClient(new PagesHandler(source, quarter)), () => new DateOnly(2026, 8, 2));
+
+        var item = Assert.Single(await connector.DiscoverAsync(Configuration()));
+
+        Assert.Equal(new DateOnly(2026, 8, 8), item.ScheduledDate);
+        Assert.Equal("Cada Centavo Conta", item.Title);
+        Assert.Equal("https://files.example/08-08-26_cada-centavo.mp4", item.Assets.Single().DownloadUri.AbsoluteUri);
+    }
+
     private static SourceConfiguration Configuration() => new(ContentSource.ProvaiEVede, "Provai e Vede", "https://www.adventistas.org/pt/mordomiacrista/projeto/provai-e-vede/", AvailabilityPolicy.QuarterlyFull);
 
     private sealed class HtmlHandler(string html) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(html) });
+    }
+
+    private sealed class PagesHandler(string source, string quarter) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(request.RequestUri!.Host == "downloads.example" ? quarter : source) });
     }
 }

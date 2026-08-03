@@ -1,0 +1,27 @@
+using System.Net;
+using System.Net.Http;
+using System.IO;
+using Sinalo.Application.Storage;
+using Sinalo.Domain;
+using Sinalo.Infrastructure;
+namespace Sinalo.Tests.Integration;
+public sealed class OfficialMediaDownloadServiceTests : IDisposable
+{
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "Sinalo.Tests", Guid.NewGuid().ToString("N"));
+    [Fact] public async Task DownloadAsync_ShouldSaveHashAndMarkItemReady()
+    {
+        var paths = new TestPaths(_root); var service = new OfficialMediaDownloadService(new HttpClient(new Bytes([1,2,3])), paths);
+        var ready = await service.DownloadAsync(Item());
+        Assert.Equal(SyncState.Ready, ready.SyncState); Assert.True(File.Exists(ready.LocalPath)); Assert.Equal(64, ready.Assets.Single().Sha256!.Length); Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.part")));
+    }
+    [Fact] public async Task DownloadAsync_ShouldRejectMissingAssetAndEmptyFile()
+    {
+        var paths = new TestPaths(_root); var empty = new OfficialMediaDownloadService(new HttpClient(new Bytes([])), paths);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => empty.DownloadAsync(Item() with { Assets = [] }));
+        await Assert.ThrowsAsync<InvalidDataException>(() => empty.DownloadAsync(Item()));
+    }
+    private static ContentItem Item() => new("item", ContentSource.ProvaiEVede, "Vídeo", new DateOnly(2026,8,8), new Uri("https://example.test/page"), [new MediaAsset("asset",new Uri("https://example.test/video.mp4"),"video.mp4",null,null)]);
+    public void Dispose(){ if(Directory.Exists(_root)) Directory.Delete(_root,true); }
+    private sealed class Bytes(byte[] data):HttpMessageHandler { protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken c)=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(data)}); }
+    private sealed class TestPaths(string root):ISinaloPathService { private readonly SinaloPaths _p=new(root,Path.Combine(root,"data"),Path.Combine(root,"content"),Path.Combine(root,"cache"),Path.Combine(root,"logs"),Path.Combine(root,"temp","downloads"),Path.Combine(root,"data","db")); public SinaloPaths GetPaths()=>_p; public void EnsureFolders(){Directory.CreateDirectory(_p.ContentPath);Directory.CreateDirectory(_p.TempDownloadsPath);} }
+}
