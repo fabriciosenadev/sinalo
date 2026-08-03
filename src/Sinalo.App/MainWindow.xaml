@@ -16,7 +16,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Sinalo" FontSize="34" FontWeight="SemiBold" Foreground="#16324F" /><TextBlock Text="Conteúdos prontos para a programação da igreja" FontSize="16" Foreground="#506273" Margin="0,4,0,0" /></StackPanel><Button Grid.Column="1" Content="Configurar fontes" Padding="16,8" Click="ConfigureSources_Click" /></Grid>
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="12"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="12"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Sinalo" FontSize="34" FontWeight="SemiBold" Foreground="#16324F" /><TextBlock Text="Conteúdos prontos para a programação da igreja" FontSize="16" Foreground="#506273" Margin="0,4,0,0" /></StackPanel><Button Grid.Column="1" Content="Atualizar Provai e Vede" Padding="16,8" Click="RefreshCatalog_Click" /><Button Grid.Column="3" Content="Sincronizar Provai e Vede" Padding="16,8" Click="SynchronizeProvaiEVede_Click" /><Button Grid.Column="5" Content="Configurar fontes" Padding="16,8" Click="ConfigureSources_Click" /></Grid>
 
         <Border Grid.Row="2" Background="#16324F" CornerRadius="12" Padding="24">
             <Grid>
@@ -40,7 +40,7 @@
             </Grid>
         </Border>
 
-        <ItemsControl Grid.Row="4" ItemsSource="{Binding Sources}">
+        <StackPanel Grid.Row="4"><ItemsControl ItemsSource="{Binding Sources}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Columns="3" />
@@ -57,7 +57,7 @@
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        </ItemsControl><TextBlock Text="Catálogo local" FontSize="18" FontWeight="SemiBold" Foreground="#16324F" Margin="0,22,0,8"/><ItemsControl ItemsSource="{Binding CatalogItems}"><ItemsControl.ItemTemplate><DataTemplate><Border Background="White" BorderBrush="#DCE4EB" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,6"><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="170"/><ColumnDefinition Width="190"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/><TextBlock Grid.Column="1" Text="{Binding Source}" Foreground="#506273"/><TextBlock Grid.Column="2" Text="{Binding Status}" Foreground="#9A6B1B"/></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel>
 
         <TextBlock Grid.Row="5" Text="{Binding ContentPath, StringFormat=Conteúdo local: {0}}" Foreground="#506273" />
     </Grid>

@@ -8,7 +8,7 @@ namespace Sinalo.App.ViewModels;
 
 public sealed partial class HomeViewModel : ObservableObject
 {
-    public HomeViewModel(ISaturdayWindowService saturdayWindowService, ISinaloPathService pathService, IReadOnlyList<SourceConfiguration> configurations)
+    public HomeViewModel(ISaturdayWindowService saturdayWindowService, ISinaloPathService pathService, IReadOnlyList<SourceConfiguration> configurations, IReadOnlyList<ContentItem>? catalogItems = null)
     {
         var window = saturdayWindowService.GetWindow(DateOnly.FromDateTime(DateTime.Today));
 
@@ -17,6 +17,7 @@ public sealed partial class HomeViewModel : ObservableObject
         NextSaturday = FormatDate(window.Next);
         ContentPath = pathService.GetPaths().ContentPath;
         Sources = configurations.Select(item => new SourceCard(item.Source, item.DisplayName, item.Policy == AvailabilityPolicy.QuarterlyFull ? "Trimestre completo" : "Janela semanal ou mês completo", string.IsNullOrWhiteSpace(item.PageUrl) ? "Configuração da fonte pendente" : "Fonte configurada")).ToArray();
+        CatalogItems = (catalogItems ?? []).OrderBy(item => item.ScheduledDate).Select(item => new CatalogCard(item.Title, item.Source.ToString(), item.SyncState == SyncState.OnlineOnly ? "Somente online" : "Disponível para sincronizar")).ToArray();
     }
 
     [ObservableProperty]
@@ -33,7 +34,10 @@ public sealed partial class HomeViewModel : ObservableObject
 
     public IReadOnlyList<SourceCard> Sources { get; }
 
+    public IReadOnlyList<CatalogCard> CatalogItems { get; }
+
     private static string FormatDate(DateOnly date) => date.ToString("dd/MM/yyyy");
 }
 
 public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);
+public sealed record CatalogCard(string Title, string Source, string Status);

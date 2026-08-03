@@ -1,6 +1,8 @@
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Catalog;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Synchronization;
 using Sinalo.Infrastructure;
 using System.Reflection;
 using System.Threading;
@@ -100,6 +102,77 @@ public sealed class HomeWorkflowTests
         Assert.Equal("https://health.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.Health).PageUrl);
     }
 
+    [Fact]
+    public void RefreshCatalogWorkflow_ShouldReplaceTheHomeViewModelWithoutUsingTheNetwork()
+    {
+        Exception? exception = null;
+        object? dataContext = null;
+        var configurations = new FakeConfigurationService();
+        var catalog = new MemoryCatalog();
+        var discovery = new ContentDiscoveryService([], catalog);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var window = new Sinalo.App.MainWindow
+                {
+                    ConfigurationService = configurations,
+                    DiscoveryService = discovery,
+                    ContentCatalog = catalog
+                };
+                typeof(Sinalo.App.MainWindow)
+                    .GetMethod("RefreshCatalog_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [window, new RoutedEventArgs()]);
+                dataContext = window.DataContext;
+                window.Close();
+            }
+            catch (Exception caught)
+            {
+                exception = caught;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+        Assert.IsType<HomeViewModel>(dataContext);
+        Assert.Single(catalog.RequestedSources);
+        Assert.Equal(Sinalo.Domain.ContentSource.ProvaiEVede, catalog.RequestedSources[0]);
+    }
+
+    [Fact]
+    public void SynchronizeProvaiEVedeWorkflow_ShouldMarkTheCatalogItemAsReady()
+    {
+        Exception? exception = null;
+        object? dataContext = null;
+        var configuration = new FakeConfigurationService();
+        var item = new Sinalo.Domain.ContentItem("provai-1", Sinalo.Domain.ContentSource.ProvaiEVede, "Provai", new DateOnly(2026, 8, 8), new Uri("https://example.test/page"), [new Sinalo.Domain.MediaAsset("asset-1", new Uri("https://example.test/video.mp4"), "video.mp4", null, null)]);
+        var catalog = new SynchronizationCatalog(item);
+        var synchronization = new ProvaiEVedeSynchronizationService(catalog, new ReadyDownloader());
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var window = new Sinalo.App.MainWindow { ConfigurationService = configuration, ContentCatalog = catalog, ProvaiEVedeSynchronizationService = synchronization };
+                typeof(Sinalo.App.MainWindow).GetMethod("SynchronizeProvaiEVede_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [window, new RoutedEventArgs()]);
+                dataContext = window.DataContext;
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+        Assert.Single(catalog.SavedItems);
+        Assert.IsType<HomeViewModel>(dataContext);
+    }
+
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
         public bool WasSaved { get; private set; }
@@ -119,5 +192,29 @@ public sealed class HomeWorkflowTests
             WasSaved = true;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class MemoryCatalog : IContentCatalog
+    {
+        public List<Sinalo.Domain.ContentSource> RequestedSources { get; } = [];
+        public Task UpsertAsync(IReadOnlyList<Sinalo.Domain.ContentItem> items, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<Sinalo.Domain.ContentItem>> ListBySourceAsync(Sinalo.Domain.ContentSource source, CancellationToken cancellationToken = default)
+        {
+            RequestedSources.Add(source);
+            return Task.FromResult<IReadOnlyList<Sinalo.Domain.ContentItem>>([]);
+        }
+    }
+
+    private sealed class SynchronizationCatalog(Sinalo.Domain.ContentItem item) : IContentCatalog
+    {
+        private Sinalo.Domain.ContentItem _item = item;
+        public List<Sinalo.Domain.ContentItem> SavedItems { get; } = [];
+        public Task<IReadOnlyList<Sinalo.Domain.ContentItem>> ListBySourceAsync(Sinalo.Domain.ContentSource source, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Sinalo.Domain.ContentItem>>([_item]);
+        public Task UpsertAsync(IReadOnlyList<Sinalo.Domain.ContentItem> items, CancellationToken cancellationToken = default) { _item = items.Single(); SavedItems.Add(_item); return Task.CompletedTask; }
+    }
+
+    private sealed class ReadyDownloader : IContentDownloadService
+    {
+        public Task<Sinalo.Domain.ContentItem> DownloadAsync(Sinalo.Domain.ContentItem item, CancellationToken cancellationToken = default) => Task.FromResult(item with { SyncState = Sinalo.Domain.SyncState.Ready, LocalPath = "C:\\Sinalo\\video.mp4" });
     }
 }
