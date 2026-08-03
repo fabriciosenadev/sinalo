@@ -2,7 +2,6 @@ using Sinalo.App.ViewModels;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Storage;
-using Sinalo.Application.Synchronization;
 using Sinalo.Infrastructure;
 using System.Reflection;
 using System.Threading;
@@ -51,17 +50,30 @@ public sealed class HomeWorkflowTests
     {
         var pathService = new LocalSinaloPathService();
         var viewModel = new HomeViewModel(new SaturdayWindowService(), pathService,
-        [new(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", "https://missions.example/", Sinalo.Domain.AvailabilityPolicy.MonthlyFull), new(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull), new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull)]);
+        [new(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", "https://missions.example/", Sinalo.Domain.AvailabilityPolicy.MonthlyFull), new(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull), new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull)],
+        [
+            CatalogItem("quarter", [], Sinalo.Domain.SyncState.Pending),
+            CatalogItem("online", [Asset("online")], Sinalo.Domain.SyncState.OnlineOnly),
+            CatalogItem("ready", [Asset("ready")], Sinalo.Domain.SyncState.Ready),
+            CatalogItem("pending", [Asset("pending")], Sinalo.Domain.SyncState.Pending)
+        ]);
 
         Assert.Equal(3, viewModel.Sources.Count);
         Assert.Contains("Informativo", viewModel.Sources[0].Name);
         Assert.Equal("Fonte configurada", viewModel.Sources[0].Status);
         Assert.Equal("Configuração da fonte pendente", viewModel.Sources[1].Status);
+        Assert.Equal("Página trimestral identificada", viewModel.CatalogItems.Single(item => item.Title == "quarter").Status);
+        Assert.Equal("Somente online", viewModel.CatalogItems.Single(item => item.Title == "online").Status);
+        Assert.Equal("Pronto offline", viewModel.CatalogItems.Single(item => item.Title == "ready").Status);
+        Assert.Equal("Disponível para sincronizar", viewModel.CatalogItems.Single(item => item.Title == "pending").Status);
         Assert.False(string.IsNullOrWhiteSpace(viewModel.PreviousSaturday));
         Assert.False(string.IsNullOrWhiteSpace(viewModel.CurrentSaturday));
         Assert.False(string.IsNullOrWhiteSpace(viewModel.NextSaturday));
         Assert.EndsWith("Sinalo\\content", viewModel.ContentPath, StringComparison.OrdinalIgnoreCase);
     }
+
+    private static Sinalo.Domain.ContentItem CatalogItem(string title, IReadOnlyList<Sinalo.Domain.MediaAsset> assets, Sinalo.Domain.SyncState syncState) => new(title, Sinalo.Domain.ContentSource.ProvaiEVede, title, new DateOnly(2026, 8, 8), new Uri("https://example.test/" + title), assets, syncState);
+    private static Sinalo.Domain.MediaAsset Asset(string id) => new(id, new Uri("https://example.test/" + id + ".mp4"), id + ".mp4", null, null);
 
     [Fact]
     public void SettingsWorkflow_ShouldLoadAndSaveTheThreeConfiguredUrls()
@@ -142,36 +154,6 @@ public sealed class HomeWorkflowTests
         Assert.Equal(Sinalo.Domain.ContentSource.ProvaiEVede, catalog.RequestedSources[0]);
     }
 
-    [Fact]
-    public void SynchronizeProvaiEVedeWorkflow_ShouldMarkTheCatalogItemAsReady()
-    {
-        Exception? exception = null;
-        object? dataContext = null;
-        var configuration = new FakeConfigurationService();
-        var item = new Sinalo.Domain.ContentItem("provai-1", Sinalo.Domain.ContentSource.ProvaiEVede, "Provai", new DateOnly(2026, 8, 8), new Uri("https://example.test/page"), [new Sinalo.Domain.MediaAsset("asset-1", new Uri("https://example.test/video.mp4"), "video.mp4", null, null)]);
-        var catalog = new SynchronizationCatalog(item);
-        var synchronization = new ProvaiEVedeSynchronizationService(catalog, new ReadyDownloader());
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                var window = new Sinalo.App.MainWindow { ConfigurationService = configuration, ContentCatalog = catalog, ProvaiEVedeSynchronizationService = synchronization };
-                typeof(Sinalo.App.MainWindow).GetMethod("SynchronizeProvaiEVede_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .Invoke(window, [window, new RoutedEventArgs()]);
-                dataContext = window.DataContext;
-                window.Close();
-            }
-            catch (Exception caught) { exception = caught; }
-        });
-
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-
-        Assert.Null(exception);
-        Assert.Single(catalog.SavedItems);
-        Assert.IsType<HomeViewModel>(dataContext);
-    }
 
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
@@ -205,16 +187,4 @@ public sealed class HomeWorkflowTests
         }
     }
 
-    private sealed class SynchronizationCatalog(Sinalo.Domain.ContentItem item) : IContentCatalog
-    {
-        private Sinalo.Domain.ContentItem _item = item;
-        public List<Sinalo.Domain.ContentItem> SavedItems { get; } = [];
-        public Task<IReadOnlyList<Sinalo.Domain.ContentItem>> ListBySourceAsync(Sinalo.Domain.ContentSource source, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Sinalo.Domain.ContentItem>>([_item]);
-        public Task UpsertAsync(IReadOnlyList<Sinalo.Domain.ContentItem> items, CancellationToken cancellationToken = default) { _item = items.Single(); SavedItems.Add(_item); return Task.CompletedTask; }
-    }
-
-    private sealed class ReadyDownloader : IContentDownloadService
-    {
-        public Task<Sinalo.Domain.ContentItem> DownloadAsync(Sinalo.Domain.ContentItem item, CancellationToken cancellationToken = default) => Task.FromResult(item with { SyncState = Sinalo.Domain.SyncState.Ready, LocalPath = "C:\\Sinalo\\video.mp4" });
-    }
 }

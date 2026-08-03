@@ -8,8 +8,7 @@ public sealed record ContentItem(
     Uri PageUri,
     IReadOnlyList<MediaAsset> Assets,
     SyncState SyncState = SyncState.Pending,
-    bool IsPinned = false,
-    string? LocalPath = null)
+    bool IsPinned = false)
 {
     public Quarter Quarter => Quarter.From(ScheduledDate);
 

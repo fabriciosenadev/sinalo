@@ -2,7 +2,6 @@ using System.Windows;
 using System.Net.Http;
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Catalog;
-using Sinalo.Application.Synchronization;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -25,15 +24,13 @@ public partial class App : System.Windows.Application
         [
             new ProvaiEVedeDiscoveryConnector(_httpClient)
         ], contentCatalog);
-        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, new OfficialMediaDownloadService(_httpClient, pathService));
 
         var mainWindow = new MainWindow
         {
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations),
             ConfigurationService = configurationService,
             DiscoveryService = discoveryService,
-            ContentCatalog = contentCatalog,
-            ProvaiEVedeSynchronizationService = synchronizationService
+            ContentCatalog = contentCatalog
         };
 
         mainWindow.Show();

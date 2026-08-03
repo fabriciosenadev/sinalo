@@ -17,7 +17,7 @@ public sealed partial class HomeViewModel : ObservableObject
         NextSaturday = FormatDate(window.Next);
         ContentPath = pathService.GetPaths().ContentPath;
         Sources = configurations.Select(item => new SourceCard(item.Source, item.DisplayName, item.Policy == AvailabilityPolicy.QuarterlyFull ? "Trimestre completo" : "Janela semanal ou mês completo", string.IsNullOrWhiteSpace(item.PageUrl) ? "Configuração da fonte pendente" : "Fonte configurada")).ToArray();
-        CatalogItems = (catalogItems ?? []).OrderBy(item => item.ScheduledDate).Select(item => new CatalogCard(item.Title, item.Source.ToString(), item.SyncState == SyncState.OnlineOnly ? "Somente online" : "Disponível para sincronizar")).ToArray();
+        CatalogItems = (catalogItems ?? []).OrderBy(item => item.ScheduledDate).Select(item => new CatalogCard(item.Title, item.Source.ToString(), GetCatalogStatus(item))).ToArray();
     }
 
     [ObservableProperty]
@@ -37,6 +37,11 @@ public sealed partial class HomeViewModel : ObservableObject
     public IReadOnlyList<CatalogCard> CatalogItems { get; }
 
     private static string FormatDate(DateOnly date) => date.ToString("dd/MM/yyyy");
+
+    private static string GetCatalogStatus(ContentItem item) =>
+        item.Assets.Count == 0 ? "Página trimestral identificada" :
+        item.SyncState == SyncState.OnlineOnly ? "Somente online" :
+        item.SyncState == SyncState.Ready ? "Pronto offline" : "Disponível para sincronizar";
 }
 
 public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);

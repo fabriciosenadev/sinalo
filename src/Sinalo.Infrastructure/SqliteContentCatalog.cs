@@ -19,15 +19,14 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
             var itemCommand = connection.CreateCommand();
             itemCommand.Transaction = transaction;
             itemCommand.CommandText = """
-                INSERT INTO content_items (id, source, title, scheduled_date, page_url, sync_state, local_path, is_pinned, updated_at_utc)
-                VALUES ($id, $source, $title, $scheduledDate, $pageUrl, $syncState, $localPath, $isPinned, $updatedAtUtc)
+                INSERT INTO content_items (id, source, title, scheduled_date, page_url, sync_state, is_pinned, updated_at_utc)
+                VALUES ($id, $source, $title, $scheduledDate, $pageUrl, $syncState, $isPinned, $updatedAtUtc)
                 ON CONFLICT(id) DO UPDATE SET
                     source = excluded.source,
                     title = excluded.title,
                     scheduled_date = excluded.scheduled_date,
                     page_url = excluded.page_url,
                     sync_state = excluded.sync_state,
-                    local_path = excluded.local_path,
                     is_pinned = excluded.is_pinned,
                     updated_at_utc = excluded.updated_at_utc;
                 """;
@@ -37,7 +36,6 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
             itemCommand.Parameters.AddWithValue("$scheduledDate", item.ScheduledDate.ToString("yyyy-MM-dd"));
             itemCommand.Parameters.AddWithValue("$pageUrl", item.PageUri.AbsoluteUri);
             itemCommand.Parameters.AddWithValue("$syncState", (int)item.SyncState);
-            itemCommand.Parameters.AddWithValue("$localPath", (object?)item.LocalPath ?? DBNull.Value);
             itemCommand.Parameters.AddWithValue("$isPinned", item.IsPinned ? 1 : 0);
             itemCommand.Parameters.AddWithValue("$updatedAtUtc", DateTimeOffset.UtcNow.ToString("O"));
             await itemCommand.ExecuteNonQueryAsync(cancellationToken);
@@ -73,7 +71,7 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
     {
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT id, title, scheduled_date, page_url, sync_state, is_pinned, local_path FROM content_items WHERE source = $source ORDER BY scheduled_date;";
+        command.CommandText = "SELECT id, title, scheduled_date, page_url, sync_state, is_pinned FROM content_items WHERE source = $source ORDER BY scheduled_date;";
         command.Parameters.AddWithValue("$source", (int)source);
         var items = new List<ContentItem>();
 
@@ -89,8 +87,7 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
                 new Uri(reader.GetString(3)),
                 await ListAssetsAsync(connection, itemId, cancellationToken),
                 (SyncState)reader.GetInt32(4),
-                reader.GetInt32(5) == 1,
-                reader.IsDBNull(6) ? null : reader.GetString(6)));
+                reader.GetInt32(5) == 1));
         }
 
         return items;
