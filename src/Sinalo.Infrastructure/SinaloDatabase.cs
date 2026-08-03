@@ -36,6 +36,19 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 source INTEGER NOT NULL PRIMARY KEY,
                 page_url TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS content_assets (
+                id TEXT NOT NULL PRIMARY KEY,
+                content_item_id TEXT NOT NULL,
+                download_url TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                expected_size_bytes INTEGER NULL,
+                sha256 TEXT NULL,
+                FOREIGN KEY(content_item_id) REFERENCES content_items(id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_content_assets_content_item_id
+                ON content_assets(content_item_id);
             """;
 
         await command.ExecuteNonQueryAsync(cancellationToken);
