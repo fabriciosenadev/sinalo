@@ -10,10 +10,13 @@ namespace Sinalo.App;
 public partial class App : System.Windows.Application
 {
     private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private SystemThemeService? _themeService;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        _themeService = new SystemThemeService(this);
+        _themeService.Start();
 
         var pathService = new LocalSinaloPathService();
         var database = new SinaloDatabase(pathService);
@@ -38,5 +41,12 @@ public partial class App : System.Windows.Application
         };
 
         mainWindow.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _themeService?.Dispose();
+        _httpClient.Dispose();
+        base.OnExit(e);
     }
 }

@@ -28,6 +28,7 @@ public sealed class HomeWorkflowTests
                 var initializeComponent = typeof(Sinalo.App.MainWindow)
                     .GetMethod("InitializeComponent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 initializeComponent!.Invoke(window, null);
+                Sinalo.App.SystemThemeService.ApplyTitleBar(window, false);
 
                 window.Close();
             }
