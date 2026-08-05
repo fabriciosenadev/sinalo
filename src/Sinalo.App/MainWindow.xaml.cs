@@ -7,15 +7,18 @@ using Sinalo.Application.Storage;
 using Sinalo.Application.Synchronization;
 using Sinalo.Infrastructure;
 using Sinalo.App.ViewModels;
+using Sinalo.Application.Playback;
 
 namespace Sinalo.App;
 
 public partial class MainWindow : Window
 {
     public ISinaloConfigurationService? ConfigurationService { get; init; }
+    public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
+    public PlaybackService? PlaybackService { get; init; }
     public MainWindow()
     {
         InitializeComponent();
@@ -27,7 +30,11 @@ public partial class MainWindow : Window
         if (ConfigurationService is null) return;
         var window = new SettingsWindow(ConfigurationService) { Owner = this };
         window.ShowDialog();
-        if (window.Saved) DataContext = new ViewModels.HomeViewModel(new Infrastructure.SaturdayWindowService(), new Infrastructure.LocalSinaloPathService(), await ConfigurationService.LoadSourcesAsync());
+        if (window.Saved)
+        {
+            var previous = DataContext as HomeViewModel;
+            DataContext = new ViewModels.HomeViewModel(new Infrastructure.SaturdayWindowService(), new Infrastructure.LocalSinaloPathService(), await ConfigurationService.LoadSourcesAsync(), playbackScreens: previous?.PlaybackScreens, selectedPlaybackScreenNumber: previous?.SelectedPlaybackScreen?.ScreenNumber);
+        }
     }
 
     private async void RefreshCatalog_Click(object sender, RoutedEventArgs e)
@@ -46,7 +53,7 @@ public partial class MainWindow : Window
         }
         catch (HttpRequestException)
         {
-            MessageBox.Show(this, "Não foi possível atualizar o catálogo. Verifique sua conexão e as URLs configuradas.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            System.Windows.MessageBox.Show(this, "Não foi possível atualizar o catálogo. Verifique sua conexão e as URLs configuradas.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { SetIdle(); }
     }
@@ -64,8 +71,8 @@ public partial class MainWindow : Window
             await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress);
             ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await ContentCatalog.ListBySourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede), "Sincronização concluída. Os vídeos prontos podem ser usados offline.");
         }
-        catch (HttpRequestException) { MessageBox.Show(this, "Não foi possível sincronizar o Provai e Vede. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
-        catch (IOException) { MessageBox.Show(this, "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (HttpRequestException) { System.Windows.MessageBox.Show(this, "Não foi possível sincronizar o Provai e Vede. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (IOException) { System.Windows.MessageBox.Show(this, "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally { SetIdle(); }
     }
 
@@ -82,6 +89,20 @@ public partial class MainWindow : Window
     private void CatalogItem_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: CatalogCard item }) viewModel.SelectedCatalogItem = item;
+    }
+
+    private async void PlaybackScreen_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (PlaybackConfigurationService is null || DataContext is not HomeViewModel viewModel || viewModel.SelectedPlaybackScreen is null) return;
+        await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber));
+    }
+
+    private async void CatalogItem_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (PlaybackService is null || DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: CatalogCard item }) return;
+        var result = await PlaybackService.PlayAsync(item.Id, new PlaybackLaunchOptions(viewModel.SelectedPlaybackScreen?.ScreenNumber));
+        viewModel.OperationMessage = result.Message;
+        if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
     }
 
     private void AddToSchedule_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.AddSelectedToSchedule();
@@ -110,7 +131,8 @@ public partial class MainWindow : Window
 
     private void ReplaceHomeViewModel(IReadOnlyList<Sinalo.Application.Configuration.SourceConfiguration> configurations, IReadOnlyList<Sinalo.Domain.ContentItem> items, string message)
     {
-        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items) { OperationMessage = message };
+        var previous = DataContext as HomeViewModel;
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items, previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber) { OperationMessage = message };
         DataContext = viewModel;
     }
 }

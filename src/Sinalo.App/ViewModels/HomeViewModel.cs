@@ -15,7 +15,7 @@ public sealed partial class HomeViewModel : ObservableObject
         ISaturdayWindowService saturdayWindowService,
         ISinaloPathService pathService,
         IReadOnlyList<SourceConfiguration> configurations,
-        IReadOnlyList<ContentItem>? catalogItems = null)
+        IReadOnlyList<ContentItem>? catalogItems = null, IReadOnlyList<PlaybackScreenOption>? playbackScreens = null, int? selectedPlaybackScreenNumber = null)
     {
         var window = saturdayWindowService.GetWindow(DateOnly.FromDateTime(DateTime.Today));
         PreviousSaturday = FormatDate(window.Previous);
@@ -32,6 +32,8 @@ public sealed partial class HomeViewModel : ObservableObject
             .OrderBy(item => item.ScheduledDate)
             .Select(MapItem)
             .ToList();
+        PlaybackScreens = playbackScreens ?? [new PlaybackScreenOption("Abrir normalmente", null)];
+        SelectedPlaybackScreen = PlaybackScreens.FirstOrDefault(screen => screen.ScreenNumber == selectedPlaybackScreenNumber) ?? PlaybackScreens.FirstOrDefault();
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
             ? "Nenhum conteúdo no catálogo local. Atualize uma fonte para começar."
@@ -50,10 +52,12 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private double syncProgressPercent;
     [ObservableProperty] private string syncProgressLabel = string.Empty;
+    [ObservableProperty] private PlaybackScreenOption? selectedPlaybackScreen;
 
     public IReadOnlyList<SourceCard> Sources { get; }
     public ObservableCollection<CatalogCard> CatalogItems { get; } = [];
     public ObservableCollection<ScheduleCard> ScheduleItems { get; } = [];
+    public IReadOnlyList<PlaybackScreenOption> PlaybackScreens { get; }
 
     public string SelectedItemTitle => SelectedCatalogItem?.Title ?? "Selecione um vídeo";
     public string SelectedItemDetails => SelectedCatalogItem is null
@@ -116,6 +120,16 @@ public sealed partial class HomeViewModel : ObservableObject
         SelectedCatalogItem = card;
     }
 
+    public void MarkItemAsPlayed(ContentItem item)
+    {
+        var index = _allCatalogItems.FindIndex(card => card.Id == item.Id);
+        var card = MapItem(item);
+        if (index >= 0) _allCatalogItems[index] = card;
+        else _allCatalogItems.Add(card);
+        ApplyFilters();
+        SelectedCatalogItem = card;
+    }
+
     private void ApplyFilters()
     {
         var filtered = _allCatalogItems.Where(item =>
@@ -135,7 +149,8 @@ public sealed partial class HomeViewModel : ObservableObject
         item.ScheduledDate.ToString("dd/MM/yyyy"),
         GetCatalogStatus(item),
         item.LocalPath,
-        item.IsReadyOffline ? "▶" : item.SyncState == SyncState.OnlineOnly ? "◌" : "↓");
+        item.IsReadyOffline ? "▶" : item.SyncState == SyncState.OnlineOnly ? "◌" : "↓",
+        item.PlayCount == 0 ? string.Empty : $"Reproduzido {item.PlayCount}×");
 
     private static string FormatDate(DateOnly date) => date.ToString("dd/MM/yyyy");
     private static string GetSourceName(ContentSource source) => source switch
@@ -153,9 +168,10 @@ public sealed partial class HomeViewModel : ObservableObject
 }
 
 public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);
-public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph)
+public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph, string PlaybackLabel = "")
 {
     // Compatibilidade com consumidores que já exibiam a coluna "Source" da lista anterior.
     public string Source => SourceName;
 }
 public sealed record ScheduleCard(string Id, string Title, string SourceName, string Status);
+public sealed record PlaybackScreenOption(string Label, int? ScreenNumber);

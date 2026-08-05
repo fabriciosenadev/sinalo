@@ -60,6 +60,25 @@ public sealed class ContentCatalogTests : IDisposable
         Assert.Equal("new", Assert.Single(saved.Assets).Id);
     }
 
+    [Fact]
+    public async Task Catalog_ShouldPersistPlaybackHistory()
+    {
+        var paths = new TestPathService(_rootPath);
+        await new SinaloDatabase(paths).InitializeAsync();
+        var catalog = new SqliteContentCatalog(paths);
+        var item = new ContentItem("played", ContentSource.ProvaiEVede, "Reproduzido", new DateOnly(2026, 8, 8), new Uri("https://example.test/played"), [], SyncState.Ready, LocalPath: "C:\\content.mp4");
+        await catalog.UpsertAsync([item]);
+
+        var first = new DateTimeOffset(2026, 8, 4, 10, 0, 0, TimeSpan.Zero);
+        await catalog.RecordPlaybackAsync(item.Id, first);
+        await catalog.RecordPlaybackAsync(item.Id, first.AddMinutes(5));
+
+        var saved = await catalog.FindByIdAsync(item.Id);
+        Assert.Equal(2, saved!.PlayCount);
+        Assert.Equal(first, saved.FirstPlayedAtUtc);
+        Assert.Equal(first.AddMinutes(5), saved.LastPlayedAtUtc);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

@@ -37,6 +37,11 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 page_url TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS playback_configuration (
+                id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+                fullscreen_screen_number INTEGER NULL
+            );
+
             CREATE TABLE IF NOT EXISTS content_assets (
                 id TEXT NOT NULL PRIMARY KEY,
                 content_item_id TEXT NOT NULL,
@@ -52,5 +57,16 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
             """;
 
         await command.ExecuteNonQueryAsync(cancellationToken);
+        await AddColumnIfMissingAsync(connection, "content_items", "play_count", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await AddColumnIfMissingAsync(connection, "content_items", "first_played_at_utc", "TEXT NULL", cancellationToken);
+        await AddColumnIfMissingAsync(connection, "content_items", "last_played_at_utc", "TEXT NULL", cancellationToken);
+    }
+
+    private static async Task AddColumnIfMissingAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+        try { await command.ExecuteNonQueryAsync(cancellationToken); }
+        catch (SqliteException exception) when (exception.SqliteErrorCode == 1 && exception.Message.Contains("duplicate column name", StringComparison.OrdinalIgnoreCase)) { }
     }
 }

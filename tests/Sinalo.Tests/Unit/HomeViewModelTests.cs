@@ -8,6 +8,15 @@ namespace Sinalo.Tests.Unit;
 public sealed class HomeViewModelTests
 {
     [Fact]
+    public void Constructor_ShouldSelectPersistedPlaybackScreen()
+    {
+        var screens = new[] { new PlaybackScreenOption("Abrir normalmente", null), new PlaybackScreenOption("Tela 2", 2) };
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), [], playbackScreens: screens, selectedPlaybackScreenNumber: 2);
+
+        Assert.Equal(2, viewModel.SelectedPlaybackScreen!.ScreenNumber);
+    }
+
+    [Fact]
     public void Filters_ShouldCombineSourceAvailabilityAndSearch()
     {
         var viewModel = CreateViewModel(

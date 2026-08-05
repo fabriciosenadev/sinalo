@@ -3,6 +3,7 @@ using System.Net.Http;
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Synchronization;
+using Sinalo.Application.Playback;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -23,6 +24,7 @@ public partial class App : System.Windows.Application
         await database.InitializeAsync();
         var configurationService = new SqliteConfigurationService(pathService);
         var configurations = await configurationService.LoadSourcesAsync();
+        var playbackConfiguration = await configurationService.LoadAsync();
         var contentCatalog = new SqliteContentCatalog(pathService);
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36");
         var discoveryService = new ContentDiscoveryService(
@@ -33,14 +35,23 @@ public partial class App : System.Windows.Application
 
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations),
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: GetPlaybackScreens(), selectedPlaybackScreenNumber: playbackConfiguration.FullscreenScreenNumber),
             ConfigurationService = configurationService,
+            PlaybackConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
-            ProvaiEVedeSynchronizationService = synchronizationService
+            ProvaiEVedeSynchronizationService = synchronizationService,
+            PlaybackService = new PlaybackService(contentCatalog, new WindowsPlaybackLauncher())
         };
 
         mainWindow.Show();
+    }
+
+    private static IReadOnlyList<PlaybackScreenOption> GetPlaybackScreens()
+    {
+        var screens = new List<PlaybackScreenOption> { new("Abrir normalmente", null) };
+        screens.AddRange(System.Windows.Forms.Screen.AllScreens.Select((screen, index) => new PlaybackScreenOption($"Tela {index + 1}{(screen.Primary ? " · Principal" : string.Empty)}", index + 1)));
+        return screens;
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -9,7 +9,10 @@ public sealed record ContentItem(
     IReadOnlyList<MediaAsset> Assets,
     SyncState SyncState = SyncState.Pending,
     bool IsPinned = false,
-    string? LocalPath = null)
+    string? LocalPath = null,
+    int PlayCount = 0,
+    DateTimeOffset? FirstPlayedAtUtc = null,
+    DateTimeOffset? LastPlayedAtUtc = null)
 {
     public Quarter Quarter => Quarter.From(ScheduledDate);
 

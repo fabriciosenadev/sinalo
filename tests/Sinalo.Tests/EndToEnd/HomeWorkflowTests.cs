@@ -7,6 +7,9 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using Sinalo.Application.Playback;
+using System.IO;
 
 namespace Sinalo.Tests.EndToEnd;
 
@@ -188,6 +191,38 @@ public sealed class HomeWorkflowTests
         Assert.Null(exception);
     }
 
+    [Fact]
+    public void CatalogDoubleClick_ShouldLaunchReadyItemAndUpdateItsVisualHistory()
+    {
+        Exception? exception = null;
+        var root = Path.Combine(Path.GetTempPath(), "Sinalo.Tests", Guid.NewGuid().ToString("N"));
+        var file = Path.Combine(root, "video.mp4");
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(file, [1]);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var item = new Sinalo.Domain.ContentItem("play", Sinalo.Domain.ContentSource.ProvaiEVede, "Vídeo", new DateOnly(2026, 8, 8), new Uri("https://example.test/play"), [], Sinalo.Domain.SyncState.Ready, LocalPath: file);
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result, [item]);
+                var catalog = new PlaybackCatalog(item);
+                var window = new Sinalo.App.MainWindow { DataContext = viewModel, PlaybackService = new PlaybackService(catalog, new SuccessfulLauncher()) };
+                var button = new Button { Tag = viewModel.CatalogItems.Single() };
+                var args = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left);
+                typeof(Sinalo.App.MainWindow).GetMethod("CatalogItem_DoubleClick", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [button, args]);
+                Assert.Equal("Reproduzido 1×", viewModel.CatalogItems.Single().PlaybackLabel);
+                Assert.Single(catalog.Played);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (Directory.Exists(root)) Directory.Delete(root, true);
+        Assert.Null(exception);
+    }
+
 
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
@@ -219,6 +254,20 @@ public sealed class HomeWorkflowTests
             RequestedSources.Add(source);
             return Task.FromResult<IReadOnlyList<Sinalo.Domain.ContentItem>>([]);
         }
+    }
+
+    private sealed class PlaybackCatalog(Sinalo.Domain.ContentItem item) : IContentCatalog
+    {
+        public List<string> Played { get; } = [];
+        public Task UpsertAsync(IReadOnlyList<Sinalo.Domain.ContentItem> items, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<Sinalo.Domain.ContentItem>> ListBySourceAsync(Sinalo.Domain.ContentSource source, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Sinalo.Domain.ContentItem>>([item]);
+        public Task<Sinalo.Domain.ContentItem?> FindByIdAsync(string id, CancellationToken cancellationToken = default) => Task.FromResult<Sinalo.Domain.ContentItem?>(id == item.Id ? item : null);
+        public Task RecordPlaybackAsync(string id, DateTimeOffset playedAtUtc, CancellationToken cancellationToken = default) { Played.Add(id); return Task.CompletedTask; }
+    }
+
+    private sealed class SuccessfulLauncher : IPlaybackLauncher
+    {
+        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
     }
 
 }

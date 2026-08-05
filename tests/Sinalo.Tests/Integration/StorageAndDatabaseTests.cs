@@ -76,6 +76,19 @@ public sealed class StorageAndDatabaseTests : IDisposable
         Assert.Equal("https://novo-health.example/", sources.Single(source => source.Source == ContentSource.Health).PageUrl);
     }
 
+    [Fact]
+    public async Task PlaybackConfiguration_ShouldPersistTheSelectedScreen()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+
+        Assert.Null((await service.LoadAsync()).FullscreenScreenNumber);
+        await service.SaveAsync(new Sinalo.Application.Playback.PlaybackConfiguration(2));
+
+        Assert.Equal(2, (await service.LoadAsync()).FullscreenScreenNumber);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

@@ -1,11 +1,12 @@
 using Microsoft.Data.Sqlite;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Playback;
 using Sinalo.Application.Storage;
 using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService
+public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService
 {
     private readonly ISinaloPathService _pathService = pathService;
 
@@ -33,6 +34,24 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<PlaybackConfiguration> LoadAsync(CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT fullscreen_screen_number FROM playback_configuration WHERE id = 1;";
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return value is null || value is DBNull ? new PlaybackConfiguration(null) : new PlaybackConfiguration(Convert.ToInt32(value));
+    }
+
+    public async Task SaveAsync(PlaybackConfiguration configuration, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO playback_configuration (id, fullscreen_screen_number) VALUES (1, $screen) ON CONFLICT(id) DO UPDATE SET fullscreen_screen_number = excluded.fullscreen_screen_number;";
+        command.Parameters.AddWithValue("$screen", configuration.FullscreenScreenNumber is int screen ? screen : DBNull.Value);
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private async Task<SqliteConnection> OpenAsync(CancellationToken cancellationToken)

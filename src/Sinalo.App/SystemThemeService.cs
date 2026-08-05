@@ -29,7 +29,7 @@ public sealed class SystemThemeService(System.Windows.Application application) :
         var palette = GetPalette(isDark);
         foreach (var (key, color) in palette)
         {
-            resources[key] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)!);
+            resources[key] = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color)!);
         }
     }
 

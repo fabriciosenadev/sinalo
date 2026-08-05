@@ -73,7 +73,7 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
     {
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT id, title, scheduled_date, page_url, sync_state, is_pinned, local_path FROM content_items WHERE source = $source ORDER BY scheduled_date;";
+        command.CommandText = "SELECT id, title, scheduled_date, page_url, sync_state, is_pinned, local_path, play_count, first_played_at_utc, last_played_at_utc FROM content_items WHERE source = $source ORDER BY scheduled_date;";
         command.Parameters.AddWithValue("$source", (int)source);
         var items = new List<ContentItem>();
 
@@ -89,10 +89,31 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
                 new Uri(reader.GetString(3)),
                 await ListAssetsAsync(connection, itemId, cancellationToken),
                 (SyncState)reader.GetInt32(4),
-                reader.GetInt32(5) == 1, reader.IsDBNull(6) ? null : reader.GetString(6)));
+                reader.GetInt32(5) == 1, reader.IsDBNull(6) ? null : reader.GetString(6), reader.GetInt32(7), reader.IsDBNull(8) ? null : DateTimeOffset.Parse(reader.GetString(8)), reader.IsDBNull(9) ? null : DateTimeOffset.Parse(reader.GetString(9))));
         }
 
         return items;
+    }
+
+    public async Task<ContentItem?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT source FROM content_items WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        var source = await command.ExecuteScalarAsync(cancellationToken);
+        if (source is null) return null;
+        return (await ListBySourceAsync((ContentSource)Convert.ToInt32(source), cancellationToken)).SingleOrDefault(item => item.Id == id);
+    }
+
+    public async Task RecordPlaybackAsync(string id, DateTimeOffset playedAtUtc, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE content_items SET play_count = play_count + 1, first_played_at_utc = COALESCE(first_played_at_utc, $playedAtUtc), last_played_at_utc = $playedAtUtc WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$playedAtUtc", playedAtUtc.ToString("O"));
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<MediaAsset>> ListAssetsAsync(SqliteConnection connection, string contentItemId, CancellationToken cancellationToken)
