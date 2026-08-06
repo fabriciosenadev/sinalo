@@ -71,6 +71,12 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
                     <TextBlock Text="Com uma tela selecionada, o VLC abre o vídeo em tela cheia nela." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
+                    <Separator Margin="0,18,0,14" />
+                    <TextBlock Text="Vídeo selecionado" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                    <TextBlock Text="{Binding SelectedItemTitle}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,0" />
+                    <TextBlock Text="{Binding SelectedItemDetails}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
+                    <Button Content="Excluir vídeo do computador" Click="DeleteSelectedVideo_Click" IsEnabled="{Binding HasSelectedItem}" Padding="8" Margin="0,10,0,0" Style="{DynamicResource Button.Busy}" />
+                    <TextBlock Text="A exclusão remove o arquivo local; ele poderá ser baixado novamente depois." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0" />
                     <ItemsControl ItemsSource="{Binding ScheduleItems}"><ItemsControl.ItemTemplate><DataTemplate><Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8"><Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding SourceName}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" /></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal"><Button Content="↑" Tag="{Binding}" Click="MoveScheduleUp_Click" Style="{DynamicResource Button.Icon}" /><Button Content="↓" Tag="{Binding}" Click="MoveScheduleDown_Click" Style="{DynamicResource Button.Icon}" /><Button Content="×" Tag="{Binding}" Click="RemoveSchedule_Click" Style="{DynamicResource Button.Icon}" /></StackPanel></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
             </StackPanel></ScrollViewer>
         </Border>

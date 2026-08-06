@@ -143,6 +143,14 @@ public sealed partial class HomeViewModel : ObservableObject
         SelectedCatalogItem = card;
     }
 
+    public void RemoveCatalogItem(string id)
+    {
+        _allCatalogItems.RemoveAll(item => item.Id == id);
+        for (var index = ScheduleItems.Count - 1; index >= 0; index--)
+            if (ScheduleItems[index].Id == id) ScheduleItems.RemoveAt(index);
+        ApplyFilters();
+    }
+
     private void ApplyFilters()
     {
         var filtered = _allCatalogItems.Where(item =>

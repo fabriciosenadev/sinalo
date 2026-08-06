@@ -79,6 +79,21 @@ public sealed class ContentCatalogTests : IDisposable
         Assert.Equal(first.AddMinutes(5), saved.LastPlayedAtUtc);
     }
 
+    [Fact]
+    public async Task Catalog_ShouldDeleteTheItemAndItsAssets()
+    {
+        var paths = new TestPathService(_rootPath);
+        await new SinaloDatabase(paths).InitializeAsync();
+        var catalog = new SqliteContentCatalog(paths);
+        var item = new ContentItem("delete", ContentSource.Missions, "Excluir", new DateOnly(2026, 8, 8), new Uri("https://example.test/delete"), [new MediaAsset("asset", new Uri("https://example.test/video.mp4"), "video.mp4", null, null)]);
+        await catalog.UpsertAsync([item]);
+
+        await catalog.DeleteAsync(item.Id);
+
+        Assert.Null(await catalog.FindByIdAsync(item.Id));
+        Assert.Empty(await catalog.ListBySourceAsync(ContentSource.Missions));
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

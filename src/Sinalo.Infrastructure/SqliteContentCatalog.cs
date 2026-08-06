@@ -116,6 +116,21 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
+        var assets = connection.CreateCommand(); assets.Transaction = transaction;
+        assets.CommandText = "DELETE FROM content_assets WHERE content_item_id = $id;";
+        assets.Parameters.AddWithValue("$id", id);
+        await assets.ExecuteNonQueryAsync(cancellationToken);
+        var item = connection.CreateCommand(); item.Transaction = transaction;
+        item.CommandText = "DELETE FROM content_items WHERE id = $id;";
+        item.Parameters.AddWithValue("$id", id);
+        await item.ExecuteNonQueryAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     private async Task<IReadOnlyList<MediaAsset>> ListAssetsAsync(SqliteConnection connection, string contentItemId, CancellationToken cancellationToken)
     {
         var command = connection.CreateCommand();

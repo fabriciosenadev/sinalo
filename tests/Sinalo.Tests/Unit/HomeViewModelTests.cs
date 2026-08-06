@@ -119,6 +119,20 @@ public sealed class HomeViewModelTests
         Assert.Equal("C:\\Sinalo\\conteudo.mp4", viewModel.SelectedItemPath);
     }
 
+    [Fact]
+    public void RemoveCatalogItem_ShouldRemoveTheVideoAndItsScheduledReference()
+    {
+        var viewModel = CreateViewModel([Item("ready", ContentSource.Missions, "Vídeo", SyncState.Ready)]);
+        viewModel.SelectedCatalogItem = viewModel.CatalogItems.Single();
+        viewModel.AddSelectedToSchedule();
+
+        viewModel.RemoveCatalogItem("ready");
+
+        Assert.Empty(viewModel.CatalogItems);
+        Assert.Empty(viewModel.ScheduleItems);
+        Assert.Null(viewModel.SelectedCatalogItem);
+    }
+
     private static HomeViewModel CreateViewModel(IReadOnlyList<ContentItem> items) => new(
         new SaturdayWindowService(),
         new LocalSinaloPathService(),

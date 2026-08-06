@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
+    public IContentDeletionService? ContentDeletionService { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
@@ -140,6 +141,32 @@ public partial class MainWindow : Window
     }
 
     private void AddToSchedule_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.AddSelectedToSchedule();
+    private async void DeleteSelectedVideo_Click(object sender, RoutedEventArgs e)
+    {
+        if (ContentDeletionService is null || DataContext is not HomeViewModel { SelectedCatalogItem: { } selected }) return;
+        var confirmation = System.Windows.MessageBox.Show(this, $"Excluir o vídeo '{selected.Title}' do computador?", "Sinalo", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirmation != MessageBoxResult.Yes) return;
+
+        SetBusy($"Excluindo {selected.Title}...");
+        try
+        {
+            await ContentDeletionService.DeleteAsync(selected.Id);
+            if (DataContext is HomeViewModel viewModel)
+            {
+                viewModel.RemoveCatalogItem(selected.Id);
+                viewModel.OperationMessage = $"{selected.Title} foi excluído do computador.";
+            }
+        }
+        catch (IOException)
+        {
+            System.Windows.MessageBox.Show(this, "Não foi possível excluir o vídeo. Feche o VLC ou outro programa que esteja usando o arquivo e tente novamente.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        catch (InvalidOperationException exception)
+        {
+            System.Windows.MessageBox.Show(this, exception.Message, "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { SetIdle(); }
+    }
     private void RemoveSchedule_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: ScheduleCard item }) viewModel.RemoveFromSchedule(item);

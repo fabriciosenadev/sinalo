@@ -11,4 +11,6 @@ public interface IContentCatalog
     Task<ContentItem?> FindByIdAsync(string id, CancellationToken cancellationToken = default) => Task.FromResult<ContentItem?>(null);
 
     Task RecordPlaybackAsync(string id, DateTimeOffset playedAtUtc, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    Task DeleteAsync(string id, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

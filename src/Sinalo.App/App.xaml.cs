@@ -43,6 +43,7 @@ public partial class App : System.Windows.Application
             PlaybackConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
+            ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
             PlaybackService = new PlaybackService(contentCatalog, new WindowsPlaybackLauncher())
