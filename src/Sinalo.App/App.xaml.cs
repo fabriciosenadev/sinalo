@@ -30,7 +30,8 @@ public partial class App : System.Windows.Application
         var discoveryService = new ContentDiscoveryService(
         [
             new ProvaiEVedeDiscoveryConnector(_httpClient),
-            new MissionsDiscoveryConnector(_httpClient)
+            new MissionsDiscoveryConnector(_httpClient),
+            new HealthDiscoveryConnector(_httpClient)
         ], contentCatalog);
         var downloader = new OfficialMediaDownloadService(_httpClient, pathService);
         var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
@@ -46,6 +47,7 @@ public partial class App : System.Windows.Application
             ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
+            HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService()),
             PlaybackService = new PlaybackService(contentCatalog, new WindowsPlaybackLauncher())
         };
 

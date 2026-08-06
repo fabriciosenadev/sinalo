@@ -19,7 +19,13 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         var saved = new Dictionary<ContentSource, (string PageUrl, AvailabilityPolicy Policy)>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken)) saved[(ContentSource)reader.GetInt32(0)] = (reader.GetString(1), (AvailabilityPolicy)reader.GetInt32(2));
-        return defaults.Select(item => saved.TryGetValue(item.Source, out var value) ? item with { PageUrl = value.PageUrl, Policy = value.Policy } : item).ToArray();
+        return defaults.Select(item =>
+        {
+            if (!saved.TryGetValue(item.Source, out var value)) return item;
+            // Migra a configuração inicial do canal do YouTube para a fonte oficial de MP4.
+            if (item.Source == ContentSource.Health && IsLegacyHealthYouTubeUrl(value.PageUrl)) return item;
+            return item with { PageUrl = value.PageUrl, Policy = value.Policy };
+        }).ToArray();
     }
 
     public async Task SaveSourcesAsync(IReadOnlyList<SourceConfiguration> sources, CancellationToken cancellationToken = default)
@@ -63,5 +69,7 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
     }
 
     private static IReadOnlyList<SourceConfiguration> DefaultSources() =>
-    [new(ContentSource.Missions, "Informativo das Missões", "", AvailabilityPolicy.MonthlyFull), new(ContentSource.ProvaiEVede, "Provai e Vede", "", AvailabilityPolicy.QuarterlyFull), new(ContentSource.Health, "Minuto de Saúde", "", AvailabilityPolicy.MonthlyFull)];
+    [new(ContentSource.Missions, "Informativo das Missões", "", AvailabilityPolicy.MonthlyFull), new(ContentSource.ProvaiEVede, "Provai e Vede", "", AvailabilityPolicy.QuarterlyFull), new(ContentSource.Health, "Minuto de Saúde", "https://downloads.adventistas.org/pt/", AvailabilityPolicy.QuarterlyFull)];
+
+    private static bool IsLegacyHealthYouTubeUrl(string pageUrl) => pageUrl.Contains("youtube.com/@VidaeSaudeUCB", StringComparison.OrdinalIgnoreCase);
 }

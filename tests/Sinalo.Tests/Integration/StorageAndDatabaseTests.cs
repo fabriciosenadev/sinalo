@@ -51,7 +51,7 @@ public sealed class StorageAndDatabaseTests : IDisposable
         Assert.Collection(sources,
             source => { Assert.Equal(ContentSource.Missions, source.Source); Assert.Equal(AvailabilityPolicy.MonthlyFull, source.Policy); Assert.Empty(source.PageUrl); },
             source => { Assert.Equal(ContentSource.ProvaiEVede, source.Source); Assert.Equal(AvailabilityPolicy.QuarterlyFull, source.Policy); Assert.Empty(source.PageUrl); },
-            source => { Assert.Equal(ContentSource.Health, source.Source); Assert.Equal(AvailabilityPolicy.MonthlyFull, source.Policy); Assert.Empty(source.PageUrl); });
+            source => { Assert.Equal(ContentSource.Health, source.Source); Assert.Equal(AvailabilityPolicy.QuarterlyFull, source.Policy); Assert.Equal("https://downloads.adventistas.org/pt/", source.PageUrl); });
     }
 
     [Fact]
@@ -75,6 +75,20 @@ public sealed class StorageAndDatabaseTests : IDisposable
         Assert.Equal("https://provai.example/", sources.Single(source => source.Source == ContentSource.ProvaiEVede).PageUrl);
         Assert.Equal(AvailabilityPolicy.RollingSaturday, sources.Single(source => source.Source == ContentSource.ProvaiEVede).Policy);
         Assert.Equal("https://novo-health.example/", sources.Single(source => source.Source == ContentSource.Health).PageUrl);
+    }
+
+    [Fact]
+    public async Task ConfigurationService_ShouldMigrateTheLegacyHealthYoutubeUrlToTheOfficialDownloadsPortal()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+        await service.SaveSourcesAsync([new(ContentSource.Health, "Minuto de Saúde", "https://www.youtube.com/@VidaeSaudeUCB", AvailabilityPolicy.MonthlyFull)]);
+
+        var health = (await service.LoadSourcesAsync()).Single(source => source.Source == ContentSource.Health);
+
+        Assert.Equal("https://downloads.adventistas.org/pt/", health.PageUrl);
+        Assert.Equal(AvailabilityPolicy.QuarterlyFull, health.Policy);
     }
 
     [Fact]

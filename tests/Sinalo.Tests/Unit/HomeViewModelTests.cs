@@ -36,7 +36,7 @@ public sealed class HomeViewModelTests
     }
 
     [Fact]
-    public void SourceActions_ShouldFollowTheSelectedSourceAndDisableHealthUntilSupported()
+    public void SourceActions_ShouldFollowTheSelectedSourceAndEnableHealth()
     {
         var viewModel = CreateViewModel([]);
 
@@ -48,7 +48,7 @@ public sealed class HomeViewModelTests
         Assert.Equal("Informativo das Missões", viewModel.SelectedSourceActionLabel);
 
         viewModel.SelectedSource = "Minuto de Saúde";
-        Assert.False(viewModel.CanOperateSelectedSource);
+        Assert.True(viewModel.CanOperateSelectedSource);
         Assert.True(viewModel.IsHealthSelected);
     }
 

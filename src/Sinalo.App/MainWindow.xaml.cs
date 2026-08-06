@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     public IContentDeletionService? ContentDeletionService { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
+    public HealthSynchronizationService? HealthSynchronizationService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public MainWindow()
     {
@@ -56,6 +57,7 @@ public partial class MainWindow : Window
         if (DataContext is not HomeViewModel viewModel) return;
         if (viewModel.SelectedSource == "Provai e Vede") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
         if (viewModel.SelectedSource == "Informativo das Missões") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.Missions);
+        if (viewModel.SelectedSource == "Minuto de Saúde") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.Health);
     }
 
     private async Task UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource source)
@@ -66,7 +68,7 @@ public partial class MainWindow : Window
     private async Task<bool> RefreshSourceAsync(Sinalo.Domain.ContentSource source)
     {
         if (ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return false;
-        var sourceName = source == Sinalo.Domain.ContentSource.Missions ? "Informativo das Missões" : "Provai e Vede";
+        var sourceName = GetSourceName(source);
         SetBusy($"Consultando a fonte oficial {sourceName}...");
         try
         {
@@ -86,7 +88,7 @@ public partial class MainWindow : Window
     private async Task SynchronizeSourceAsync(Sinalo.Domain.ContentSource source)
     {
         if (ContentCatalog is null || ConfigurationService is null) return;
-        var sourceName = source == Sinalo.Domain.ContentSource.Missions ? "Informativo das Missões" : "Provai e Vede";
+        var sourceName = GetSourceName(source);
         SetBusy($"Sincronizando {sourceName}. Os arquivos são validados antes de ficarem offline...");
         try
         {
@@ -100,6 +102,11 @@ public partial class MainWindow : Window
             {
                 var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
                 synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress, configuration.Policy);
+            }
+            if (source == Sinalo.Domain.ContentSource.Health && HealthSynchronizationService is not null)
+            {
+                var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
+                synchronized = await HealthSynchronizationService.SynchronizeAsync(configuration.Policy, progress);
             }
             var message = synchronized.Count > 0
                 ? $"Sincronização concluída. {synchronized.Count} vídeo(s) de {sourceName} estão prontos offline."
@@ -213,4 +220,12 @@ public partial class MainWindow : Window
         current.SelectedAvailability = previous.SelectedAvailability;
         current.SearchQuery = previous.SearchQuery;
     }
+
+    private static string GetSourceName(Sinalo.Domain.ContentSource source) => source switch
+    {
+        Sinalo.Domain.ContentSource.Missions => "Informativo das Missões",
+        Sinalo.Domain.ContentSource.ProvaiEVede => "Provai e Vede",
+        Sinalo.Domain.ContentSource.Health => "Minuto de Saúde",
+        _ => source.ToString()
+    };
 }

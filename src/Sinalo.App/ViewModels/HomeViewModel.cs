@@ -69,7 +69,7 @@ public sealed partial class HomeViewModel : ObservableObject
 
     public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione uma fonte" : SelectedSource;
     public string UpdateAndSynchronizeSelectedSourceLabel => $"Buscar e baixar {SelectedSourceActionLabel}";
-    public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede;
+    public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede or ContentSource.Health;
     public bool IsHealthSelected => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source == ContentSource.Health;
 
     partial void OnSelectedSourceChanged(string value)

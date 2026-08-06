@@ -59,7 +59,6 @@
                 <TextBlock Text="Ações da fonte" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="{Binding SelectedSourceActionLabel}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,12,0,6" />
                 <Button Content="{Binding UpdateAndSynchronizeSelectedSourceLabel}" Click="UpdateAndSynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Primary}" />
-                <TextBlock Text="O suporte ao Minuto de Saúde será disponibilizado em breve." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="{Binding IsHealthSelected, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 <Separator Margin="0,18,0,14" />
                 <TextBlock Text="Reprodução" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="Tela de saída do VLC" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,14,0,4" />

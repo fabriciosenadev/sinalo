@@ -260,6 +260,44 @@ public sealed class HomeWorkflowTests
         Assert.Null(exception);
     }
 
+    [Fact]
+    public void HealthSourceActionWorkflow_ShouldRefreshAndSynchronizeWithoutNetwork()
+    {
+        Exception? exception = null;
+        var catalog = new MemoryCatalog();
+        var configurations = new FakeConfigurationService();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var window = new Sinalo.App.MainWindow
+                {
+                    DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations.LoadSourcesAsync().Result),
+                    ConfigurationService = configurations,
+                    ContentCatalog = catalog,
+                    DiscoveryService = new ContentDiscoveryService([], catalog),
+                    HealthSynchronizationService = new HealthSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService(), () => new DateOnly(2026, 8, 8))
+                };
+                ((HomeViewModel)window.DataContext).SelectedSource = "Minuto de Saúde";
+
+                ((Task)typeof(Sinalo.App.MainWindow).GetMethod("RefreshSourceAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Sinalo.Domain.ContentSource.Health])!).GetAwaiter().GetResult();
+                ((Task)typeof(Sinalo.App.MainWindow).GetMethod("SynchronizeSourceAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Sinalo.Domain.ContentSource.Health])!).GetAwaiter().GetResult();
+
+                Assert.Contains(Sinalo.Domain.ContentSource.Health, catalog.RequestedSources);
+                Assert.Equal("Minuto de Saúde", ((HomeViewModel)window.DataContext).SelectedSource);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+    }
+
 
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
