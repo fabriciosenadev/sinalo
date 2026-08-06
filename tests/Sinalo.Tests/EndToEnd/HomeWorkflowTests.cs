@@ -67,10 +67,8 @@ public sealed class HomeWorkflowTests
         Assert.Contains("Informativo", viewModel.Sources[0].Name);
         Assert.Equal("Fonte configurada", viewModel.Sources[0].Status);
         Assert.Equal("Configuração da fonte pendente", viewModel.Sources[1].Status);
-        Assert.Equal("Página trimestral identificada", viewModel.CatalogItems.Single(item => item.Title == "quarter").Status);
-        Assert.Equal("Somente online", viewModel.CatalogItems.Single(item => item.Title == "online").Status);
         Assert.Equal("Pronto offline", viewModel.CatalogItems.Single(item => item.Title == "ready").Status);
-        Assert.Equal("Disponível para sincronizar", viewModel.CatalogItems.Single(item => item.Title == "pending").Status);
+        Assert.Single(viewModel.CatalogItems);
         Assert.False(string.IsNullOrWhiteSpace(viewModel.PreviousSaturday));
         Assert.False(string.IsNullOrWhiteSpace(viewModel.CurrentSaturday));
         Assert.False(string.IsNullOrWhiteSpace(viewModel.NextSaturday));

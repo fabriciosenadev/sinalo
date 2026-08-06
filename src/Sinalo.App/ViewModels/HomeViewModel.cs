@@ -29,6 +29,7 @@ public sealed partial class HomeViewModel : ObservableObject
             string.IsNullOrWhiteSpace(item.PageUrl) ? "Configuração da fonte pendente" : "Fonte configurada"))
             .ToArray();
         _allCatalogItems = (catalogItems ?? [])
+            .Where(item => item.IsReadyOffline)
             .OrderBy(item => item.ScheduledDate)
             .Select(MapItem)
             .ToList();
@@ -36,8 +37,8 @@ public sealed partial class HomeViewModel : ObservableObject
         SelectedPlaybackScreen = PlaybackScreens.FirstOrDefault(screen => screen.ScreenNumber == selectedPlaybackScreenNumber) ?? PlaybackScreens.FirstOrDefault();
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
-            ? "Nenhum conteúdo no catálogo local. Atualize uma fonte para começar."
-            : $"{_allCatalogItems.Count} conteúdo(s) no catálogo local.";
+            ? "Nenhum vídeo offline disponível. Escolha uma fonte e use Buscar e baixar."
+            : $"{_allCatalogItems.Count} vídeo(s) offline no catálogo local.";
     }
 
     [ObservableProperty] private string previousSaturday = string.Empty;
@@ -67,8 +68,7 @@ public sealed partial class HomeViewModel : ObservableObject
     public bool HasSelectedItem => SelectedCatalogItem is not null;
 
     public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione uma fonte" : SelectedSource;
-    public string RefreshSelectedSourceLabel => $"Atualizar {SelectedSourceActionLabel}";
-    public string SynchronizeSelectedSourceLabel => $"Sincronizar {SelectedSourceActionLabel}";
+    public string UpdateAndSynchronizeSelectedSourceLabel => $"Buscar e baixar {SelectedSourceActionLabel}";
     public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede;
     public bool IsHealthSelected => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source == ContentSource.Health;
 
@@ -76,8 +76,7 @@ public sealed partial class HomeViewModel : ObservableObject
     {
         ApplyFilters();
         OnPropertyChanged(nameof(SelectedSourceActionLabel));
-        OnPropertyChanged(nameof(RefreshSelectedSourceLabel));
-        OnPropertyChanged(nameof(SynchronizeSelectedSourceLabel));
+        OnPropertyChanged(nameof(UpdateAndSynchronizeSelectedSourceLabel));
         OnPropertyChanged(nameof(CanOperateSelectedSource));
         OnPropertyChanged(nameof(IsHealthSelected));
     }

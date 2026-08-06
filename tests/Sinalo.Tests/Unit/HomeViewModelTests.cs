@@ -87,9 +87,7 @@ public sealed class HomeViewModelTests
 
         Assert.Equal("Selecione um vídeo", viewModel.SelectedItemTitle);
         Assert.False(viewModel.HasSelectedItem);
-        Assert.Contains(viewModel.CatalogItems, item => item.Status == "Página trimestral identificada" && item.ThumbnailGlyph == "↓");
-        Assert.Contains(viewModel.CatalogItems, item => item.Status == "Falhou");
-        Assert.Contains(viewModel.CatalogItems, item => item.Status == "Somente online" && item.ThumbnailGlyph == "◌");
+        Assert.Single(viewModel.CatalogItems);
         Assert.Contains(viewModel.CatalogItems, item => item.Status == "Pronto offline" && item.ThumbnailGlyph == "▶");
 
         viewModel.AddSelectedToSchedule();

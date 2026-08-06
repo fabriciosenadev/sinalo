@@ -50,23 +50,21 @@ public partial class MainWindow : Window
         await SynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
     }
 
-    private async void RefreshSelectedSource_Click(object sender, RoutedEventArgs e)
+    private async void UpdateAndSynchronizeSelectedSource_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
-        if (viewModel.SelectedSource == "Provai e Vede") await RefreshSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
-        if (viewModel.SelectedSource == "Informativo das Missões") await RefreshSourceAsync(Sinalo.Domain.ContentSource.Missions);
+        if (viewModel.SelectedSource == "Provai e Vede") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
+        if (viewModel.SelectedSource == "Informativo das Missões") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.Missions);
     }
 
-    private async void SynchronizeSelectedSource_Click(object sender, RoutedEventArgs e)
+    private async Task UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource source)
     {
-        if (DataContext is not HomeViewModel viewModel) return;
-        if (viewModel.SelectedSource == "Provai e Vede") await SynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
-        if (viewModel.SelectedSource == "Informativo das Missões") await SynchronizeSourceAsync(Sinalo.Domain.ContentSource.Missions);
+        if (await RefreshSourceAsync(source)) await SynchronizeSourceAsync(source);
     }
 
-    private async Task RefreshSourceAsync(Sinalo.Domain.ContentSource source)
+    private async Task<bool> RefreshSourceAsync(Sinalo.Domain.ContentSource source)
     {
-        if (ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return;
+        if (ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return false;
         var sourceName = source == Sinalo.Domain.ContentSource.Missions ? "Informativo das Missões" : "Provai e Vede";
         SetBusy($"Consultando a fonte oficial {sourceName}...");
         try
@@ -74,10 +72,12 @@ public partial class MainWindow : Window
             var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
             await DiscoveryService.RefreshAsync(configuration);
             ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), $"Catálogo atualizado. {sourceName} foi identificado.");
+            return true;
         }
         catch (HttpRequestException)
         {
             System.Windows.MessageBox.Show(this, $"Não foi possível atualizar {sourceName}. Verifique sua conexão e a URL configurada.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
         }
         finally { SetIdle(); }
     }
@@ -93,9 +93,13 @@ public partial class MainWindow : Window
             {
                 if (DataContext is HomeViewModel viewModel) viewModel.ReportDownloadProgress(item);
             });
-            if (source == Sinalo.Domain.ContentSource.Missions && MissionsSynchronizationService is not null) await MissionsSynchronizationService.SynchronizeAsync(progress);
-            if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null) await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress);
-            ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), $"Sincronização concluída. Os vídeos de {sourceName} estão prontos offline.");
+            IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = [];
+            if (source == Sinalo.Domain.ContentSource.Missions && MissionsSynchronizationService is not null) synchronized = await MissionsSynchronizationService.SynchronizeAsync(progress);
+            if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null) synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress);
+            var message = synchronized.Count > 0
+                ? $"Sincronização concluída. {synchronized.Count} vídeo(s) de {sourceName} estão prontos offline."
+                : $"Nenhum vídeo novo de {sourceName} estava disponível para sincronizar.";
+            ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), message);
         }
         catch (HttpRequestException) { System.Windows.MessageBox.Show(this, $"Não foi possível sincronizar {sourceName}. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
         catch (IOException) { System.Windows.MessageBox.Show(this, "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }

@@ -58,8 +58,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
                 <TextBlock Text="Ações da fonte" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="{Binding SelectedSourceActionLabel}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,12,0,6" />
-                <Button Content="{Binding RefreshSelectedSourceLabel}" Click="RefreshSelectedSource_Click" Padding="8" Margin="0,0,0,6" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Busy}" />
-                <Button Content="{Binding SynchronizeSelectedSourceLabel}" Click="SynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Primary}" />
+                <Button Content="{Binding UpdateAndSynchronizeSelectedSourceLabel}" Click="UpdateAndSynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Primary}" />
                 <TextBlock Text="O suporte ao Minuto de Saúde será disponibilizado em breve." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="{Binding IsHealthSelected, Converter={StaticResource BooleanToVisibilityConverter}}" />
                 <Separator Margin="0,18,0,14" />
                 <TextBlock Text="Reprodução" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
