@@ -9,7 +9,7 @@ Sinalo e um aplicativo desktop Windows para preparar e exibir videos de programa
 - C# e .NET 10.
 - WPF/XAML e MVVM com CommunityToolkit.Mvvm.
 - SQLite para dados locais.
-- mpv para reproducao e FFmpeg/ffprobe para metadados e miniaturas.
+- VLC para reproducao local e FFmpeg/ffprobe para metadados e miniaturas futuras.
 - Instalacao em `C:\Program Files\Sinalo`; dados gravaveis em `%LocalAppData%\Sinalo`, com `content` redirecionavel para outro disco.
 
 ## Regras de produto que nao devem ser quebradas

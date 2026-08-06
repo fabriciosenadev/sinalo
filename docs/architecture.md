@@ -28,7 +28,7 @@ Servico de sincronizacao ----> arquivos .part ----> validacao SHA-256
       SQLite local <-------------------------- biblioteca local por trimestre
           |
           v
-      Interface WPF ----> mpv ----> tela principal / projetor
+      Interface WPF ----> VLC ----> tela principal / projetor
 ```
 
 Os conectores identificam os itens publicados nas URLs configuradas e montam um catalogo local. O video e baixado para armazenamento local antes do uso.
@@ -41,7 +41,7 @@ Os conectores identificam os itens publicados nas URLs configuradas e montam um 
 - **WPF / XAML**: interface nativa Windows, adequada a computadores modestos e multiplos monitores.
 - **MVVM com CommunityToolkit.Mvvm**: separa interface, estado e comandos.
 - **SQLite**: banco local de catalogo, estado de sincronizacao, configuracoes e historico basico.
-- **mpv**: processo externo para reproducao de arquivos locais, controlado por IPC.
+- **VLC**: processo externo priorizado para reproducao de arquivos locais; quando indisponivel, o Windows abre o player padrao.
 - **FFmpeg/ffprobe**: leitura de metadados e geracao sob demanda de miniaturas.
 
 ### Descoberta e catalogo local
@@ -173,9 +173,9 @@ Downloads devem ter baixa concorrencia (padrao: um por vez), limite configuravel
 ## Reproducao e telas
 
 - A tela principal e uma biblioteca de uso rapido: `Hoje`, `Proximo Sabado`, fontes e busca.
-- Um item `Pronto` abre seu arquivo local no mpv, sem requisicao de rede.
-- mpv opera em janela colocada no monitor selecionado, com tela cheia e atalhos de teclado.
-- A UI mantem o controle de reproduzir, pausar, parar, volume e selecionar tela.
+- Um item `Pronto` abre seu arquivo local no VLC, sem requisicao de rede; na ausencia dele, usa o player padrao do Windows.
+- O VLC pode abrir em tela cheia no monitor selecionado pelo operador.
+- A UI mantem a escolha da tela de saida e registra que a abertura foi iniciada.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
 ## Fora do MVP

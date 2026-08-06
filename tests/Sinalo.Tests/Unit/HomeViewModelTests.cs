@@ -36,6 +36,23 @@ public sealed class HomeViewModelTests
     }
 
     [Fact]
+    public void SourceActions_ShouldFollowTheSelectedSourceAndDisableHealthUntilSupported()
+    {
+        var viewModel = CreateViewModel([]);
+
+        Assert.False(viewModel.CanOperateSelectedSource);
+        Assert.Equal("Selecione uma fonte", viewModel.SelectedSourceActionLabel);
+
+        viewModel.SelectedSource = "Informativo das Missões";
+        Assert.True(viewModel.CanOperateSelectedSource);
+        Assert.Equal("Informativo das Missões", viewModel.SelectedSourceActionLabel);
+
+        viewModel.SelectedSource = "Minuto de Saúde";
+        Assert.False(viewModel.CanOperateSelectedSource);
+        Assert.True(viewModel.IsHealthSelected);
+    }
+
+    [Fact]
     public void Schedule_ShouldAddOnlyOnceRemoveAndReorderItems()
     {
         var viewModel = CreateViewModel(

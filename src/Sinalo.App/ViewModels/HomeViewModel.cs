@@ -66,7 +66,21 @@ public sealed partial class HomeViewModel : ObservableObject
     public string SelectedItemPath => SelectedCatalogItem?.LocalPath ?? "Arquivo local ainda não disponível.";
     public bool HasSelectedItem => SelectedCatalogItem is not null;
 
-    partial void OnSelectedSourceChanged(string value) => ApplyFilters();
+    public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione uma fonte" : SelectedSource;
+    public string RefreshSelectedSourceLabel => $"Atualizar {SelectedSourceActionLabel}";
+    public string SynchronizeSelectedSourceLabel => $"Sincronizar {SelectedSourceActionLabel}";
+    public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede;
+    public bool IsHealthSelected => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source == ContentSource.Health;
+
+    partial void OnSelectedSourceChanged(string value)
+    {
+        ApplyFilters();
+        OnPropertyChanged(nameof(SelectedSourceActionLabel));
+        OnPropertyChanged(nameof(RefreshSelectedSourceLabel));
+        OnPropertyChanged(nameof(SynchronizeSelectedSourceLabel));
+        OnPropertyChanged(nameof(CanOperateSelectedSource));
+        OnPropertyChanged(nameof(IsHealthSelected));
+    }
     partial void OnSelectedAvailabilityChanged(string value) => ApplyFilters();
     partial void OnSearchQueryChanged(string value) => ApplyFilters();
     partial void OnSelectedCatalogItemChanged(CatalogCard? value)

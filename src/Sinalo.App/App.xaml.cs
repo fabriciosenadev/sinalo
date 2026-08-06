@@ -29,9 +29,12 @@ public partial class App : System.Windows.Application
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36");
         var discoveryService = new ContentDiscoveryService(
         [
-            new ProvaiEVedeDiscoveryConnector(_httpClient)
+            new ProvaiEVedeDiscoveryConnector(_httpClient),
+            new MissionsDiscoveryConnector(_httpClient)
         ], contentCatalog);
-        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, new OfficialMediaDownloadService(_httpClient, pathService));
+        var downloader = new OfficialMediaDownloadService(_httpClient, pathService);
+        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader);
+        var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
 
         var mainWindow = new MainWindow
         {
@@ -41,6 +44,7 @@ public partial class App : System.Windows.Application
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
             ProvaiEVedeSynchronizationService = synchronizationService,
+            MissionsSynchronizationService = missionsSynchronizationService,
             PlaybackService = new PlaybackService(contentCatalog, new WindowsPlaybackLauncher())
         };
 

@@ -10,7 +10,7 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
         var asset = item.Assets.SingleOrDefault() ?? throw new InvalidOperationException("O item não possui arquivo oficial.");
         paths.EnsureFolders(); var p = paths.GetPaths(); var fileName = Path.GetFileName(asset.FileName);
         if (string.IsNullOrWhiteSpace(fileName) || fileName != asset.FileName) throw new InvalidOperationException("Nome de arquivo inválido.");
-        var targetDirectory = Path.Combine(p.ContentPath, item.Quarter.ToString(), "provai-e-vede"); Directory.CreateDirectory(targetDirectory);
+        var targetDirectory = Path.Combine(p.ContentPath, item.Quarter.ToString(), GetSourceFolder(item.Source)); Directory.CreateDirectory(targetDirectory);
         var part = Path.Combine(p.TempDownloadsPath, asset.Id + ".part"); var target = Path.Combine(targetDirectory, fileName);
         using var response = await httpClient.GetAsync(asset.DownloadUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken); response.EnsureSuccessStatusCode();
         var totalBytes = response.Content.Headers.ContentLength;
@@ -43,4 +43,12 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
         progress?.Report(new DownloadProgress(completed, new FileInfo(target).Length, new FileInfo(target).Length, "Disponível offline"));
         return completed;
     }
+
+    private static string GetSourceFolder(ContentSource source) => source switch
+    {
+        ContentSource.Missions => "missions",
+        ContentSource.ProvaiEVede => "provai-e-vede",
+        ContentSource.Health => "health",
+        _ => throw new ArgumentOutOfRangeException(nameof(source))
+    };
 }

@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Sinalo.Application.Playback;
+using Sinalo.Application.Synchronization;
 using System.IO;
 
 namespace Sinalo.Tests.EndToEnd;
@@ -154,8 +155,8 @@ public sealed class HomeWorkflowTests
 
         Assert.Null(exception);
         Assert.IsType<HomeViewModel>(dataContext);
-        Assert.Single(catalog.RequestedSources);
-        Assert.Equal(Sinalo.Domain.ContentSource.ProvaiEVede, catalog.RequestedSources[0]);
+        Assert.Contains(Sinalo.Domain.ContentSource.ProvaiEVede, catalog.RequestedSources);
+        Assert.Equal(3, catalog.RequestedSources.Distinct().Count());
     }
 
     [Fact]
@@ -223,6 +224,42 @@ public sealed class HomeWorkflowTests
         Assert.Null(exception);
     }
 
+    [Fact]
+    public void SourceActionWorkflow_ShouldRunTheContextualMissionsActionsWithoutNetwork()
+    {
+        Exception? exception = null;
+        var catalog = new MemoryCatalog();
+        var configurations = new FakeConfigurationService();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var window = new Sinalo.App.MainWindow
+                {
+                    DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations.LoadSourcesAsync().Result),
+                    ConfigurationService = configurations,
+                    ContentCatalog = catalog,
+                    DiscoveryService = new ContentDiscoveryService([], catalog),
+                    MissionsSynchronizationService = new MissionsSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService(), () => new DateOnly(2026, 8, 3))
+                };
+
+                ((Task)typeof(Sinalo.App.MainWindow).GetMethod("RefreshSourceAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Sinalo.Domain.ContentSource.Missions])!).GetAwaiter().GetResult();
+                ((Task)typeof(Sinalo.App.MainWindow).GetMethod("SynchronizeSourceAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Sinalo.Domain.ContentSource.Missions])!).GetAwaiter().GetResult();
+
+                Assert.Contains(Sinalo.Domain.ContentSource.Missions, catalog.RequestedSources);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+    }
+
 
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
@@ -268,6 +305,11 @@ public sealed class HomeWorkflowTests
     private sealed class SuccessfulLauncher : IPlaybackLauncher
     {
         public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
+    }
+
+    private sealed class NoOpDownloader : IContentDownloadService
+    {
+        public Task<Sinalo.Domain.ContentItem> DownloadAsync(Sinalo.Domain.ContentItem item, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default) => Task.FromResult(item);
     }
 
 }

@@ -27,4 +27,4 @@ O script executa os testes, gera `TestResults\coverage.cobertura.xml` e falha qu
 - Não excluir código de produção da cobertura para elevar artificialmente a métrica.
 - Não depender de internet, arquivos de fontes reais ou o perfil do usuário nos testes automatizados.
 - Todo bug corrigido deve receber um teste que reproduza a falha anterior.
-- Recursos externos, como HTTP, mpv e FFmpeg, devem ser encapsulados por contratos para permitirem doubles de teste.
+- Recursos externos, como HTTP, VLC e FFmpeg, devem ser encapsulados por contratos para permitirem doubles de teste.

@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
+    public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public MainWindow()
     {
@@ -39,39 +40,62 @@ public partial class MainWindow : Window
 
     private async void RefreshCatalog_Click(object sender, RoutedEventArgs e)
     {
-        if (ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return;
-        SetBusy("Consultando a página oficial do Provai e Vede...");
-        try
-        {
-            var provaiEVede = (await ConfigurationService.LoadSourcesAsync()).Single(configuration => configuration.Source == Sinalo.Domain.ContentSource.ProvaiEVede);
-            await DiscoveryService.RefreshAsync(provaiEVede);
-
-            var catalogItems = new List<Sinalo.Domain.ContentItem>();
-            catalogItems.AddRange(await ContentCatalog.ListBySourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede));
-
-            ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), catalogItems, "Catálogo atualizado. A página trimestral foi identificada.");
-        }
-        catch (HttpRequestException)
-        {
-            System.Windows.MessageBox.Show(this, "Não foi possível atualizar o catálogo. Verifique sua conexão e as URLs configuradas.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-        finally { SetIdle(); }
+        await RefreshSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
     }
 
     private async void SynchronizeProvaiEVede_Click(object sender, RoutedEventArgs e)
     {
-        if (ProvaiEVedeSynchronizationService is null || ContentCatalog is null || ConfigurationService is null) return;
-        SetBusy("Sincronizando Provai e Vede. Os arquivos são validados antes de ficarem offline...");
+        await SynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
+    }
+
+    private async void RefreshSelectedSource_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        if (viewModel.SelectedSource == "Provai e Vede") await RefreshSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
+        if (viewModel.SelectedSource == "Informativo das Missões") await RefreshSourceAsync(Sinalo.Domain.ContentSource.Missions);
+    }
+
+    private async void SynchronizeSelectedSource_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        if (viewModel.SelectedSource == "Provai e Vede") await SynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
+        if (viewModel.SelectedSource == "Informativo das Missões") await SynchronizeSourceAsync(Sinalo.Domain.ContentSource.Missions);
+    }
+
+    private async Task RefreshSourceAsync(Sinalo.Domain.ContentSource source)
+    {
+        if (ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return;
+        var sourceName = source == Sinalo.Domain.ContentSource.Missions ? "Informativo das Missões" : "Provai e Vede";
+        SetBusy($"Consultando a fonte oficial {sourceName}...");
+        try
+        {
+            var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
+            await DiscoveryService.RefreshAsync(configuration);
+            ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), $"Catálogo atualizado. {sourceName} foi identificado.");
+        }
+        catch (HttpRequestException)
+        {
+            System.Windows.MessageBox.Show(this, $"Não foi possível atualizar {sourceName}. Verifique sua conexão e a URL configurada.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { SetIdle(); }
+    }
+
+    private async Task SynchronizeSourceAsync(Sinalo.Domain.ContentSource source)
+    {
+        if (ContentCatalog is null || ConfigurationService is null) return;
+        var sourceName = source == Sinalo.Domain.ContentSource.Missions ? "Informativo das Missões" : "Provai e Vede";
+        SetBusy($"Sincronizando {sourceName}. Os arquivos são validados antes de ficarem offline...");
         try
         {
             var progress = new Progress<DownloadProgress>(item =>
             {
                 if (DataContext is HomeViewModel viewModel) viewModel.ReportDownloadProgress(item);
             });
-            await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress);
-            ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await ContentCatalog.ListBySourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede), "Sincronização concluída. Os vídeos prontos podem ser usados offline.");
+            if (source == Sinalo.Domain.ContentSource.Missions && MissionsSynchronizationService is not null) await MissionsSynchronizationService.SynchronizeAsync(progress);
+            if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null) await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress);
+            ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), $"Sincronização concluída. Os vídeos de {sourceName} estão prontos offline.");
         }
-        catch (HttpRequestException) { System.Windows.MessageBox.Show(this, "Não foi possível sincronizar o Provai e Vede. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (HttpRequestException) { System.Windows.MessageBox.Show(this, $"Não foi possível sincronizar {sourceName}. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
         catch (IOException) { System.Windows.MessageBox.Show(this, "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally { SetIdle(); }
     }
@@ -127,6 +151,14 @@ public partial class MainWindow : Window
     private void SetIdle()
     {
         if (DataContext is HomeViewModel viewModel) viewModel.IsBusy = false;
+    }
+
+    private async Task<IReadOnlyList<Sinalo.Domain.ContentItem>> LoadCatalogAsync()
+    {
+        if (ContentCatalog is null) return [];
+        var items = new List<Sinalo.Domain.ContentItem>();
+        foreach (var source in Enum.GetValues<Sinalo.Domain.ContentSource>()) items.AddRange(await ContentCatalog.ListBySourceAsync(source));
+        return items;
     }
 
     private void ReplaceHomeViewModel(IReadOnlyList<Sinalo.Application.Configuration.SourceConfiguration> configurations, IReadOnlyList<Sinalo.Domain.ContentItem> items, string message)

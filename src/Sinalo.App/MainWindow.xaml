@@ -8,7 +8,7 @@
     </Window.Resources>
     <Grid Margin="18">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="190" />
+            <ColumnDefinition Width="250" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="290" />
         </Grid.ColumnDefinitions>
@@ -20,14 +20,12 @@
 
         <Border Grid.ColumnSpan="3" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,14">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="12" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="12" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Text="Sinalo" FontSize="30" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                     <TextBlock Text="Conteúdos prontos para a programação da igreja" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0" />
                 </StackPanel>
-                <Button Grid.Column="1" Content="Atualizar Provai e Vede" Padding="14,8" Click="RefreshCatalog_Click" Style="{DynamicResource Button.Busy}" />
-                <Button Grid.Column="3" Content="Sincronizar Provai e Vede" Padding="14,8" Click="SynchronizeProvaiEVede_Click" Style="{DynamicResource Button.Primary}" />
-                <Button Grid.Column="5" Content="Configurar fontes" Padding="14,8" Click="ConfigureSources_Click" Style="{DynamicResource Button.Busy}" />
+                <Button Grid.Column="1" Content="Configurar fontes" Padding="14,8" Click="ConfigureSources_Click" Style="{DynamicResource Button.Busy}" />
             </Grid>
         </Border>
 
@@ -64,6 +62,12 @@
 
         <Border Grid.Row="2" Grid.Column="2" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="10" Padding="14">
             <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+                <TextBlock Text="Ações da fonte" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock Text="{Binding SelectedSourceActionLabel}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,12,0,6" />
+                <Button Content="{Binding RefreshSelectedSourceLabel}" Click="RefreshSelectedSource_Click" Padding="8" Margin="0,0,0,6" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Busy}" />
+                <Button Content="{Binding SynchronizeSelectedSourceLabel}" Click="SynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Primary}" />
+                <TextBlock Text="O suporte ao Minuto de Saúde será disponibilizado em breve." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="{Binding IsHealthSelected, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <Separator Margin="0,18,0,14" />
                 <TextBlock Text="Reprodução" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="Tela de saída do VLC" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,14,0,4" />
                 <ComboBox ItemsSource="{Binding PlaybackScreens}" SelectedItem="{Binding SelectedPlaybackScreen}" SelectionChanged="PlaybackScreen_SelectionChanged" Padding="8">
@@ -73,17 +77,8 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <TextBlock Text="Com uma tela selecionada, o VLC abre o vídeo em tela cheia nela." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
-                <Separator Margin="0,18,0,14" />
-                <TextBlock Text="Detalhes" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                <TextBlock Text="{Binding SelectedItemTitle}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" TextWrapping="Wrap" Margin="0,14,0,0" />
-                <TextBlock Text="{Binding SelectedItemDetails}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,6,0,0" />
-                <TextBlock Text="{Binding SelectedItemPath}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0" />
-                <Button Content="Adicionar à programação" Click="AddToSchedule_Click" Margin="0,12,0,0" Padding="10" Style="{DynamicResource Button.Primary}" />
-                <Separator Margin="0,18,0,14" />
-                <TextBlock Text="Programação do sábado" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                <TextBlock Text="Organize os vídeos que serão usados." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,4,0,10" />
-                <ItemsControl ItemsSource="{Binding ScheduleItems}"><ItemsControl.ItemTemplate><DataTemplate><Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8"><Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding SourceName}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" /></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal"><Button Content="↑" Tag="{Binding}" Click="MoveScheduleUp_Click" Style="{DynamicResource Button.Icon}" /><Button Content="↓" Tag="{Binding}" Click="MoveScheduleDown_Click" Style="{DynamicResource Button.Icon}" /><Button Content="×" Tag="{Binding}" Click="RemoveSchedule_Click" Style="{DynamicResource Button.Icon}" /></StackPanel></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                    <TextBlock Text="Com uma tela selecionada, o VLC abre o vídeo em tela cheia nela." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
+                    <ItemsControl ItemsSource="{Binding ScheduleItems}"><ItemsControl.ItemTemplate><DataTemplate><Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8"><Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding SourceName}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" /></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal"><Button Content="↑" Tag="{Binding}" Click="MoveScheduleUp_Click" Style="{DynamicResource Button.Icon}" /><Button Content="↓" Tag="{Binding}" Click="MoveScheduleDown_Click" Style="{DynamicResource Button.Icon}" /><Button Content="×" Tag="{Binding}" Click="RemoveSchedule_Click" Style="{DynamicResource Button.Icon}" /></StackPanel></Grid></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
             </StackPanel></ScrollViewer>
         </Border>
     </Grid>
