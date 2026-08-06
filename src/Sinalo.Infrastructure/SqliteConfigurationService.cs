@@ -15,11 +15,11 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         var defaults = DefaultSources();
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT source, page_url FROM source_configurations;";
-        var saved = new Dictionary<ContentSource, string>();
+        command.CommandText = "SELECT source, page_url, policy FROM source_configurations;";
+        var saved = new Dictionary<ContentSource, (string PageUrl, AvailabilityPolicy Policy)>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken)) saved[(ContentSource)reader.GetInt32(0)] = reader.GetString(1);
-        return defaults.Select(item => item with { PageUrl = saved.GetValueOrDefault(item.Source, item.PageUrl) }).ToArray();
+        while (await reader.ReadAsync(cancellationToken)) saved[(ContentSource)reader.GetInt32(0)] = (reader.GetString(1), (AvailabilityPolicy)reader.GetInt32(2));
+        return defaults.Select(item => saved.TryGetValue(item.Source, out var value) ? item with { PageUrl = value.PageUrl, Policy = value.Policy } : item).ToArray();
     }
 
     public async Task SaveSourcesAsync(IReadOnlyList<SourceConfiguration> sources, CancellationToken cancellationToken = default)
@@ -29,8 +29,9 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         foreach (var source in sources)
         {
             var command = connection.CreateCommand(); command.Transaction = transaction;
-            command.CommandText = "INSERT INTO source_configurations (source, page_url) VALUES ($source, $pageUrl) ON CONFLICT(source) DO UPDATE SET page_url = excluded.page_url;";
+            command.CommandText = "INSERT INTO source_configurations (source, page_url, policy) VALUES ($source, $pageUrl, $policy) ON CONFLICT(source) DO UPDATE SET page_url = excluded.page_url, policy = excluded.policy;";
             command.Parameters.AddWithValue("$source", (int)source.Source); command.Parameters.AddWithValue("$pageUrl", source.PageUrl.Trim());
+            command.Parameters.AddWithValue("$policy", (int)source.Policy);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);

@@ -33,7 +33,7 @@ public partial class App : System.Windows.Application
             new MissionsDiscoveryConnector(_httpClient)
         ], contentCatalog);
         var downloader = new OfficialMediaDownloadService(_httpClient, pathService);
-        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader);
+        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
         var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
 
         var mainWindow = new MainWindow

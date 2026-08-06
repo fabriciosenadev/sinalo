@@ -64,7 +64,7 @@ public sealed class StorageAndDatabaseTests : IDisposable
         await service.SaveSourcesAsync(
         [
             new(ContentSource.Missions, "Informativo das Missões", " https://missions.example/ ", AvailabilityPolicy.MonthlyFull),
-            new(ContentSource.ProvaiEVede, "Provai e Vede", "https://provai.example/", AvailabilityPolicy.QuarterlyFull),
+            new(ContentSource.ProvaiEVede, "Provai e Vede", "https://provai.example/", AvailabilityPolicy.RollingSaturday),
             new(ContentSource.Health, "Minuto de Saúde", "https://health.example/", AvailabilityPolicy.MonthlyFull)
         ]);
         await service.SaveSourcesAsync([new(ContentSource.Health, "Minuto de Saúde", "https://novo-health.example/", AvailabilityPolicy.MonthlyFull)]);
@@ -73,6 +73,7 @@ public sealed class StorageAndDatabaseTests : IDisposable
 
         Assert.Equal("https://missions.example/", sources.Single(source => source.Source == ContentSource.Missions).PageUrl);
         Assert.Equal("https://provai.example/", sources.Single(source => source.Source == ContentSource.ProvaiEVede).PageUrl);
+        Assert.Equal(AvailabilityPolicy.RollingSaturday, sources.Single(source => source.Source == ContentSource.ProvaiEVede).Policy);
         Assert.Equal("https://novo-health.example/", sources.Single(source => source.Source == ContentSource.Health).PageUrl);
     }
 

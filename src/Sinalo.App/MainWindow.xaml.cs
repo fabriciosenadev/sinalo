@@ -95,7 +95,11 @@ public partial class MainWindow : Window
             });
             IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = [];
             if (source == Sinalo.Domain.ContentSource.Missions && MissionsSynchronizationService is not null) synchronized = await MissionsSynchronizationService.SynchronizeAsync(progress);
-            if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null) synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress);
+            if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null)
+            {
+                var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
+                synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress, configuration.Policy);
+            }
             var message = synchronized.Count > 0
                 ? $"Sincronização concluída. {synchronized.Count} vídeo(s) de {sourceName} estão prontos offline."
                 : $"Nenhum vídeo novo de {sourceName} estava disponível para sincronizar.";

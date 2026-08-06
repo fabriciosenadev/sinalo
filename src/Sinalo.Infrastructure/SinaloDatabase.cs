@@ -34,7 +34,8 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
 
             CREATE TABLE IF NOT EXISTS source_configurations (
                 source INTEGER NOT NULL PRIMARY KEY,
-                page_url TEXT NOT NULL
+                page_url TEXT NOT NULL,
+                policy INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS playback_configuration (
@@ -60,6 +61,7 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
         await AddColumnIfMissingAsync(connection, "content_items", "play_count", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await AddColumnIfMissingAsync(connection, "content_items", "first_played_at_utc", "TEXT NULL", cancellationToken);
         await AddColumnIfMissingAsync(connection, "content_items", "last_played_at_utc", "TEXT NULL", cancellationToken);
+        await AddColumnIfMissingAsync(connection, "source_configurations", "policy", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
     }
 
     private static async Task AddColumnIfMissingAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken)

@@ -22,7 +22,16 @@ public sealed class ProvaiEVedeSynchronizationServiceTests
         Assert.Contains(events, item => item.Item.Id == "pending" && item.Stage == "Iniciando download");
         Assert.Contains(events, item => item.Item.Id == "pending" && item.Stage == "Validado e disponível offline");
     }
-    private static ContentItem Item(string id,SyncState state,bool asset)=>new(id,ContentSource.ProvaiEVede,id,new DateOnly(2026,8,8),new Uri("https://example.test"),asset?[new MediaAsset(id,new Uri("https://example.test/a.mp4"),"a.mp4",null,null)]:[],state);
+    [Fact] public async Task SynchronizeQuarterAsync_ShouldUseTheSaturdayWindowWhenConfigured()
+    {
+        var catalog = new Catalog([Item("old", SyncState.Pending, true, new DateOnly(2026, 7, 25)), Item("previous", SyncState.Pending, true, new DateOnly(2026, 8, 1)), Item("current", SyncState.Pending, true, new DateOnly(2026, 8, 8)), Item("next", SyncState.Pending, true, new DateOnly(2026, 8, 15)), Item("later", SyncState.Pending, true, new DateOnly(2026, 8, 22))]);
+        var downloader = new Downloader();
+
+        await new ProvaiEVedeSynchronizationService(catalog, downloader, operatingDate: () => new DateOnly(2026, 8, 8)).SynchronizeQuarterAsync(policy: AvailabilityPolicy.RollingSaturday);
+
+        Assert.Equal(["previous", "current", "next"], downloader.Items.Select(item => item.Id));
+    }
+    private static ContentItem Item(string id,SyncState state,bool asset, DateOnly? date = null)=>new(id,ContentSource.ProvaiEVede,id,date ?? new DateOnly(2026,8,8),new Uri("https://example.test"),asset?[new MediaAsset(id,new Uri("https://example.test/a.mp4"),"a.mp4",null,null)]:[],state);
     private sealed class Catalog(IReadOnlyList<ContentItem> items):IContentCatalog { public List<ContentItem> Saved {get;}=[]; public Task<IReadOnlyList<ContentItem>> ListBySourceAsync(ContentSource s,CancellationToken c=default)=>Task.FromResult(items); public Task UpsertAsync(IReadOnlyList<ContentItem> i,CancellationToken c=default){Saved.AddRange(i);return Task.CompletedTask;} }
     private sealed class Downloader:IContentDownloadService { public List<ContentItem> Items {get;}=[]; public Task<ContentItem> DownloadAsync(ContentItem i, IProgress<DownloadProgress>? progress = null, CancellationToken c=default){Items.Add(i); progress?.Report(new DownloadProgress(i, 1, 1, "Disponível offline")); return Task.FromResult(i with {SyncState=SyncState.Ready,LocalPath="C:\\video.mp4"});} }
     private sealed class InlineProgress(List<DownloadProgress> events) : IProgress<DownloadProgress> { public void Report(DownloadProgress value) => events.Add(value); }
