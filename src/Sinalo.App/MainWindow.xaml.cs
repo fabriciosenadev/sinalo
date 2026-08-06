@@ -34,7 +34,9 @@ public partial class MainWindow : Window
         if (window.Saved)
         {
             var previous = DataContext as HomeViewModel;
-            DataContext = new ViewModels.HomeViewModel(new Infrastructure.SaturdayWindowService(), new Infrastructure.LocalSinaloPathService(), await ConfigurationService.LoadSourcesAsync(), playbackScreens: previous?.PlaybackScreens, selectedPlaybackScreenNumber: previous?.SelectedPlaybackScreen?.ScreenNumber);
+            var viewModel = new ViewModels.HomeViewModel(new Infrastructure.SaturdayWindowService(), new Infrastructure.LocalSinaloPathService(), await ConfigurationService.LoadSourcesAsync(), playbackScreens: previous?.PlaybackScreens, selectedPlaybackScreenNumber: previous?.SelectedPlaybackScreen?.ScreenNumber);
+            RestoreFilters(viewModel, previous);
+            DataContext = viewModel;
         }
     }
 
@@ -165,6 +167,15 @@ public partial class MainWindow : Window
     {
         var previous = DataContext as HomeViewModel;
         var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items, previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber) { OperationMessage = message };
+        RestoreFilters(viewModel, previous);
         DataContext = viewModel;
+    }
+
+    private static void RestoreFilters(HomeViewModel current, HomeViewModel? previous)
+    {
+        if (previous is null) return;
+        current.SelectedSource = previous.SelectedSource;
+        current.SelectedAvailability = previous.SelectedAvailability;
+        current.SearchQuery = previous.SearchQuery;
     }
 }

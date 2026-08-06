@@ -43,13 +43,7 @@
             <StackPanel>
                 <TextBlock Text="Biblioteca" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="Fontes" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,18,0,6" />
-                <Button Content="Todas as fontes" Tag="Todos" Click="SourceFilter_Click" Padding="8" Style="{DynamicResource Button.Navigation}" />
                 <ItemsControl ItemsSource="{Binding Sources}"><ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding Name}" Tag="{Binding Name}" Click="SourceFilter_Click" Padding="8" ToolTip="{Binding Status}" Style="{DynamicResource Button.Navigation}" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-                <TextBlock Text="Disponibilidade" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,18,0,6" />
-                <Button Content="Todos" Tag="Todos" Click="AvailabilityFilter_Click" Padding="8" Style="{DynamicResource Button.Navigation}" />
-                <Button Content="Pronto offline" Tag="Pronto offline" Click="AvailabilityFilter_Click" Padding="8" Style="{DynamicResource Button.Navigation}" />
-                <Button Content="Disponível para sincronizar" Tag="Disponível para sincronizar" Click="AvailabilityFilter_Click" Padding="8" Style="{DynamicResource Button.Navigation}" />
-                <Button Content="Somente online" Tag="Somente online" Click="AvailabilityFilter_Click" Padding="8" Style="{DynamicResource Button.Navigation}" />
                 <TextBlock Text="{Binding ContentPath, StringFormat=Conteúdo local: {0}}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,20,0,0" />
             </StackPanel>
         </Border>

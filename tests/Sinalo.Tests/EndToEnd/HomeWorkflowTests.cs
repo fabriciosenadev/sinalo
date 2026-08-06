@@ -242,6 +242,7 @@ public sealed class HomeWorkflowTests
                     DiscoveryService = new ContentDiscoveryService([], catalog),
                     MissionsSynchronizationService = new MissionsSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService(), () => new DateOnly(2026, 8, 3))
                 };
+                ((HomeViewModel)window.DataContext).SelectedSource = "Informativo das Missões";
 
                 ((Task)typeof(Sinalo.App.MainWindow).GetMethod("RefreshSourceAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
                     .Invoke(window, [Sinalo.Domain.ContentSource.Missions])!).GetAwaiter().GetResult();
@@ -249,6 +250,7 @@ public sealed class HomeWorkflowTests
                     .Invoke(window, [Sinalo.Domain.ContentSource.Missions])!).GetAwaiter().GetResult();
 
                 Assert.Contains(Sinalo.Domain.ContentSource.Missions, catalog.RequestedSources);
+                Assert.Equal("Informativo das Missões", ((HomeViewModel)window.DataContext).SelectedSource);
                 window.Close();
             }
             catch (Exception caught) { exception = caught; }
