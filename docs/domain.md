@@ -37,3 +37,10 @@ As URLs de pagina/canal de cada fonte sao configuradas pelo operador. A fonte po
 - Videos nao sao gravados no SQLite.
 - Itens fixados nao sao removidos automaticamente.
 - O trimestre anterior pode ser limpo somente apos sincronizacao completa do novo, respeitando o periodo de tolerancia configurado.
+
+## Fila de sincronizacao
+
+- Um pedido pode estar `Waiting`, `Running`, `Completed`, `Failed` ou `Cancelled`.
+- Apenas um pedido executa descoberta e download por vez.
+- A mesma fonte nao pode estar duas vezes em estados `Waiting` ou `Running`.
+- Falha e cancelamento nao tornam nenhum arquivo parcial disponivel offline.

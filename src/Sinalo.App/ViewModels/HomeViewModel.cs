@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Services;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 
 namespace Sinalo.App.ViewModels;
@@ -54,10 +55,12 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private double syncProgressPercent;
     [ObservableProperty] private string syncProgressLabel = string.Empty;
     [ObservableProperty] private PlaybackScreenOption? selectedPlaybackScreen;
+    [ObservableProperty] private bool isQueueActive;
 
     public IReadOnlyList<SourceCard> Sources { get; }
     public ObservableCollection<CatalogCard> CatalogItems { get; } = [];
     public ObservableCollection<ScheduleCard> ScheduleItems { get; } = [];
+    public ObservableCollection<SynchronizationQueueCard> SynchronizationQueueItems { get; } = [];
     public IReadOnlyList<PlaybackScreenOption> PlaybackScreens { get; }
 
     public string SelectedItemTitle => SelectedCatalogItem?.Title ?? "Selecione um vídeo";
@@ -70,6 +73,7 @@ public sealed partial class HomeViewModel : ObservableObject
     public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione uma fonte" : SelectedSource;
     public string UpdateAndSynchronizeSelectedSourceLabel => $"Buscar e baixar {SelectedSourceActionLabel}";
     public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede or ContentSource.Health;
+    public bool CanQueueSelectedSource => CanOperateSelectedSource && !SynchronizationQueueItems.Any(item => item.SourceName == SelectedSource && item.IsPending);
     public bool IsHealthSelected => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source == ContentSource.Health;
 
     partial void OnSelectedSourceChanged(string value)
@@ -78,6 +82,7 @@ public sealed partial class HomeViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedSourceActionLabel));
         OnPropertyChanged(nameof(UpdateAndSynchronizeSelectedSourceLabel));
         OnPropertyChanged(nameof(CanOperateSelectedSource));
+        OnPropertyChanged(nameof(CanQueueSelectedSource));
         OnPropertyChanged(nameof(IsHealthSelected));
     }
     partial void OnSelectedAvailabilityChanged(string value) => ApplyFilters();
@@ -121,6 +126,33 @@ public sealed partial class HomeViewModel : ObservableObject
             : $"{progress.Item.Title}: {progress.Stage}";
         OperationMessage = SyncProgressLabel;
         if (progress.Item.SyncState == SyncState.Ready) MarkItemAsReady(progress.Item);
+    }
+
+    public void UpdateSynchronizationQueue(SynchronizationQueueSnapshot snapshot)
+    {
+        IsQueueActive = snapshot.IsProcessing;
+        SynchronizationQueueItems.Clear();
+        foreach (var entry in snapshot.Entries)
+        {
+            var pending = entry.State is SynchronizationQueueState.Waiting or SynchronizationQueueState.Running;
+            SynchronizationQueueItems.Add(new SynchronizationQueueCard(entry.SourceName, GetQueueStateLabel(entry.State), entry.Message, pending));
+        }
+
+        var active = snapshot.Entries.FirstOrDefault(entry => entry.State == SynchronizationQueueState.Running);
+        if (active is not null)
+        {
+            IsBusy = true;
+            SyncProgressPercent = active.Percentage ?? 0;
+            SyncProgressLabel = active.Message;
+            OperationMessage = $"{active.SourceName}: {active.Message}";
+        }
+        else
+        {
+            IsBusy = false;
+            var last = snapshot.Entries.LastOrDefault();
+            if (last is not null) OperationMessage = $"{last.SourceName}: {last.Message}";
+        }
+        OnPropertyChanged(nameof(CanQueueSelectedSource));
     }
 
     public void MarkItemAsReady(ContentItem item)
@@ -186,6 +218,16 @@ public sealed partial class HomeViewModel : ObservableObject
         item.SyncState == SyncState.OnlineOnly ? "Somente online" :
         item.SyncState == SyncState.Ready ? "Pronto offline" :
         item.SyncState == SyncState.Failed ? "Falhou" : "Disponível para sincronizar";
+
+    private static string GetQueueStateLabel(SynchronizationQueueState state) => state switch
+    {
+        SynchronizationQueueState.Waiting => "Na fila",
+        SynchronizationQueueState.Running => "Baixando",
+        SynchronizationQueueState.Completed => "Concluída",
+        SynchronizationQueueState.Failed => "Falhou",
+        SynchronizationQueueState.Cancelled => "Cancelada",
+        _ => state.ToString()
+    };
 }
 
 public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);
@@ -196,3 +238,4 @@ public sealed record CatalogCard(string Id, string Title, string SourceName, str
 }
 public sealed record ScheduleCard(string Id, string Title, string SourceName, string Status);
 public sealed record PlaybackScreenOption(string Label, int? ScreenNumber);
+public sealed record SynchronizationQueueCard(string SourceName, string State, string Details, bool IsPending);

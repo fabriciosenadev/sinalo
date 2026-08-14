@@ -58,7 +58,23 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
                 <TextBlock Text="Ações da fonte" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="{Binding SelectedSourceActionLabel}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,12,0,6" />
-                <Button Content="{Binding UpdateAndSynchronizeSelectedSourceLabel}" Click="UpdateAndSynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanOperateSelectedSource}" Style="{DynamicResource Button.Primary}" />
+                <Button Content="{Binding UpdateAndSynchronizeSelectedSourceLabel}" Click="UpdateAndSynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanQueueSelectedSource}" Style="{DynamicResource Button.Primary}" />
+                <TextBlock Text="A solicitação entra em uma fila única para não sobrecarregar o computador." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
+                <Separator Margin="0,18,0,14" />
+                <TextBlock Text="Fila de sincronização" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                <ItemsControl ItemsSource="{Binding SynchronizationQueueItems}" Margin="0,10,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,7">
+                                <StackPanel>
+                                    <DockPanel><TextBlock Text="{Binding SourceName}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding State}" Foreground="{DynamicResource Brush.Accent}" FontSize="11" HorizontalAlignment="Right" /></DockPanel>
+                                    <TextBlock Text="{Binding Details}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Content="Cancelar fila" Click="CancelSynchronizationQueue_Click" IsEnabled="{Binding IsQueueActive}" Padding="8" Style="{DynamicResource Button.Busy}" />
                 <Separator Margin="0,18,0,14" />
                 <TextBlock Text="Reprodução" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="Tela de saída do VLC" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,14,0,4" />

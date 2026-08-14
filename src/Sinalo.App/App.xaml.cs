@@ -51,6 +51,8 @@ public partial class App : System.Windows.Application
             PlaybackService = new PlaybackService(contentCatalog, new WindowsPlaybackLauncher())
         };
 
+        mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
+
         mainWindow.Show();
     }
 

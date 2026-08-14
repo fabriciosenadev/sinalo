@@ -13,6 +13,7 @@ namespace Sinalo.App;
 
 public partial class MainWindow : Window
 {
+    private SynchronizationQueue? _synchronizationQueue;
     public ISinaloConfigurationService? ConfigurationService { get; init; }
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
@@ -22,6 +23,16 @@ public partial class MainWindow : Window
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
+    public SynchronizationQueue? SynchronizationQueue
+    {
+        get => _synchronizationQueue;
+        set
+        {
+            if (_synchronizationQueue is not null) _synchronizationQueue.Changed -= SynchronizationQueue_Changed;
+            _synchronizationQueue = value;
+            if (_synchronizationQueue is not null) _synchronizationQueue.Changed += SynchronizationQueue_Changed;
+        }
+    }
     public MainWindow()
     {
         InitializeComponent();
@@ -55,9 +66,63 @@ public partial class MainWindow : Window
     private async void UpdateAndSynchronizeSelectedSource_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
-        if (viewModel.SelectedSource == "Provai e Vede") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
-        if (viewModel.SelectedSource == "Informativo das Missões") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.Missions);
-        if (viewModel.SelectedSource == "Minuto de Saúde") await UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource.Health);
+        if (viewModel.SelectedSource == "Provai e Vede") await EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource.ProvaiEVede);
+        if (viewModel.SelectedSource == "Informativo das Missões") await EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource.Missions);
+        if (viewModel.SelectedSource == "Minuto de Saúde") await EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource.Health);
+    }
+
+    private async void CancelSynchronizationQueue_Click(object sender, RoutedEventArgs e)
+    {
+        SynchronizationQueue?.CancelAll();
+        await Task.CompletedTask;
+    }
+
+    public SynchronizationQueue CreateSynchronizationQueue() => new(ExecuteQueuedSynchronizationAsync);
+
+    private async Task EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource source)
+    {
+        if (SynchronizationQueue is null || ConfigurationService is null || DataContext is not HomeViewModel viewModel) return;
+        var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
+        var result = SynchronizationQueue.Enqueue(new SynchronizationQueueRequest(configuration));
+        viewModel.OperationMessage = result.Message;
+    }
+
+    private async Task<SynchronizationQueueCompletion> ExecuteQueuedSynchronizationAsync(
+        SynchronizationQueueRequest request,
+        IProgress<SynchronizationQueueProgress> queueProgress,
+        CancellationToken cancellationToken)
+    {
+        if (DiscoveryService is null || ContentCatalog is null) throw new InvalidOperationException("Os serviços de sincronização não estão disponíveis.");
+        queueProgress.Report(new SynchronizationQueueProgress("Consultando a fonte oficial..."));
+        await DiscoveryService.RefreshAsync(request.Configuration, cancellationToken);
+        queueProgress.Report(new SynchronizationQueueProgress("Catálogo atualizado. Preparando downloads..."));
+        var downloadProgress = new Progress<DownloadProgress>(progress =>
+        {
+            queueProgress.Report(new SynchronizationQueueProgress(
+                progress.Percentage is { } percentage
+                    ? $"{progress.Item.Title}: {progress.Stage} ({percentage:0.0}%)"
+                    : $"{progress.Item.Title}: {progress.Stage}",
+                progress.Percentage));
+            if (progress.Item.SyncState == Sinalo.Domain.SyncState.Ready)
+            {
+                Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.MarkItemAsReady(progress.Item));
+            }
+        });
+
+        IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = request.Configuration.Source switch
+        {
+            Sinalo.Domain.ContentSource.Missions when MissionsSynchronizationService is not null => await MissionsSynchronizationService.SynchronizeAsync(downloadProgress, cancellationToken),
+            Sinalo.Domain.ContentSource.ProvaiEVede when ProvaiEVedeSynchronizationService is not null => await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(downloadProgress, request.Configuration.Policy, cancellationToken),
+            Sinalo.Domain.ContentSource.Health when HealthSynchronizationService is not null => await HealthSynchronizationService.SynchronizeAsync(request.Configuration.Policy, downloadProgress, cancellationToken),
+            _ => throw new InvalidOperationException("A fonte selecionada não está disponível para sincronização.")
+        };
+
+        return new SynchronizationQueueCompletion(synchronized.Count);
+    }
+
+    private void SynchronizationQueue_Changed(SynchronizationQueueSnapshot snapshot)
+    {
+        Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.UpdateSynchronizationQueue(snapshot));
     }
 
     private async Task UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource source)

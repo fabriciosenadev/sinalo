@@ -22,7 +22,7 @@ URLs das fontes configuradas
 Conectores de descoberta ----> catalogo local (SQLite)
                                      |
                                      v
-Servico de sincronizacao ----> arquivos .part ----> validacao SHA-256
+Fila unica de sincronizacao ----> arquivos .part ----> validacao SHA-256
           |                                                |
           v                                                v
       SQLite local <-------------------------- biblioteca local por trimestre
@@ -159,6 +159,10 @@ O aplicativo sera instalado em `C:\Program Files\Sinalo`, como o MidiaDeck. Dado
 7. Marca o item como `Pronto` no SQLite e gera miniatura sob demanda.
 
 Downloads devem ter baixa concorrencia (padrao: um por vez), limite configuravel de banda e pausa automatica enquanto houver reproducao.
+
+### Fila de sincronizacao
+
+Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a fonte e sua configuracao no instante em que foi solicitado, atualiza o catalogo e baixa os videos aplicaveis antes de iniciar o proximo pedido. A fila nao aceita a mesma fonte duas vezes enquanto ela estiver aguardando ou em execucao. Uma falha em uma fonte nao interrompe as seguintes; o operador pode cancelar a tarefa ativa e todas as pendentes. A interface mostra fonte, estado, progresso e resultado. Ao fechar o aplicativo, pedidos pendentes nao sao retomados automaticamente.
 
 ## Politica trimestral
 

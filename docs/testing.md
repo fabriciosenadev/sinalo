@@ -28,3 +28,4 @@ O script executa os testes, gera `TestResults\coverage.cobertura.xml` e falha qu
 - Não depender de internet, arquivos de fontes reais ou o perfil do usuário nos testes automatizados.
 - Todo bug corrigido deve receber um teste que reproduza a falha anterior.
 - Recursos externos, como HTTP, VLC e FFmpeg, devem ser encapsulados por contratos para permitirem doubles de teste.
+- A fila de sincronizacao deve ter testes para serializacao, deduplicacao, cancelamento e continuidade apos falha; ao menos um teste de integracao deve confirmar que fontes diferentes nao executam downloads simultaneos.

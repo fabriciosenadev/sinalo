@@ -75,6 +75,27 @@ public sealed class HomeWorkflowTests
         Assert.EndsWith("Sinalo\\content", viewModel.ContentPath, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void HomeWorkflow_ShouldShowAQueuedSynchronizationAndPreventDuplicateSelection()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result);
+        viewModel.SelectedSource = "Minuto de Saúde";
+
+        viewModel.UpdateSynchronizationQueue(new SynchronizationQueueSnapshot(true,
+        [new SynchronizationQueueEntry(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", SynchronizationQueueState.Waiting, "Aguardando na fila.", null)]));
+
+        Assert.True(viewModel.IsQueueActive);
+        Assert.False(viewModel.CanQueueSelectedSource);
+        Assert.Equal("Na fila", Assert.Single(viewModel.SynchronizationQueueItems).State);
+
+        viewModel.UpdateSynchronizationQueue(new SynchronizationQueueSnapshot(false,
+        [new SynchronizationQueueEntry(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", SynchronizationQueueState.Completed, "1 vídeo disponível offline.", 100, 1)]));
+
+        Assert.False(viewModel.IsQueueActive);
+        Assert.True(viewModel.CanQueueSelectedSource);
+        Assert.Equal("Concluída", Assert.Single(viewModel.SynchronizationQueueItems).State);
+    }
+
     private static Sinalo.Domain.ContentItem CatalogItem(string title, IReadOnlyList<Sinalo.Domain.MediaAsset> assets, Sinalo.Domain.SyncState syncState) => new(title, Sinalo.Domain.ContentSource.ProvaiEVede, title, new DateOnly(2026, 8, 8), new Uri("https://example.test/" + title), assets, syncState);
     private static Sinalo.Domain.MediaAsset Asset(string id) => new(id, new Uri("https://example.test/" + id + ".mp4"), id + ".mp4", null, null);
 
@@ -287,6 +308,50 @@ public sealed class HomeWorkflowTests
 
                 Assert.Contains(Sinalo.Domain.ContentSource.Health, catalog.RequestedSources);
                 Assert.Equal("Minuto de Saúde", ((HomeViewModel)window.DataContext).SelectedSource);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void SourceActionWorkflow_ShouldQueueAllSourcesWithoutConcurrentSynchronization()
+    {
+        Exception? exception = null;
+        var catalog = new MemoryCatalog();
+        var configurations = new FakeConfigurationService();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var window = new Sinalo.App.MainWindow
+                {
+                    DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations.LoadSourcesAsync().Result),
+                    ConfigurationService = configurations,
+                    ContentCatalog = catalog,
+                    DiscoveryService = new ContentDiscoveryService([], catalog),
+                    MissionsSynchronizationService = new MissionsSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService()),
+                    ProvaiEVedeSynchronizationService = new ProvaiEVedeSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService()),
+                    HealthSynchronizationService = new HealthSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService())
+                };
+                window.SynchronizationQueue = window.CreateSynchronizationQueue();
+                var viewModel = (HomeViewModel)window.DataContext;
+
+                foreach (var sourceName in new[] { "Informativo das Missões", "Provai e Vede", "Minuto de Saúde" })
+                {
+                    viewModel.SelectedSource = sourceName;
+                    typeof(Sinalo.App.MainWindow).GetMethod("UpdateAndSynchronizeSelectedSource_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                        .Invoke(window, [window, new RoutedEventArgs()]);
+                    window.SynchronizationQueue.WhenIdleAsync().GetAwaiter().GetResult();
+                }
+
+                Assert.Equal([Sinalo.Domain.ContentSource.Missions, Sinalo.Domain.ContentSource.ProvaiEVede, Sinalo.Domain.ContentSource.Health], catalog.RequestedSources);
+                Assert.False(viewModel.IsQueueActive);
                 window.Close();
             }
             catch (Exception caught) { exception = caught; }
