@@ -8,13 +8,13 @@ O MVP funcional possui descoberta, sincronização, reprodução local e exclus�
 - Informativo das Missões.
 - Minuto de Saúde, usando a coleção trimestral oficial de downloads.
 
-O Minuto de Saúde está implementado e coberto por testes, mas aguarda **validação manual no aplicativo real** antes de receber commit. Esta validação deve confirmar a descoberta da coleção do trimestre, a leitura de datas e títulos e o download de pelo menos um MP4 para `content\AAAA-TN\health`.
+O Minuto de Saúde está implementado, validado manualmente e coberto por testes. A descoberta da coleção trimestral, a leitura de datas e títulos e o download para `content\AAAA-TN\health` foram confirmados.
 
 ## Próxima etapa aprovada
 
 ### Distribuição e instalação
 
-Preparar uma distribuição para os operadores baixarem e instalarem o Sinalo no Windows 11. O escopo será definido antes da implementação e deve incluir publicação Release, versão, instalador, desinstalação e dados graváveis separados da pasta do aplicativo.
+Preparar uma distribuição para os operadores baixarem e instalarem o Sinalo no Windows 11. A primeira entrega usa publicação Release self-contained para `win-x64` e Inno Setup, com instalação em `Program Files`, desinstalação que preserva os dados graváveis e geração local documentada. Automação no GitHub, assinatura de código e atualização automática permanecem fora deste primeiro escopo.
 
 ## Melhorias mapeadas para depois
 

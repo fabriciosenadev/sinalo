@@ -7,6 +7,7 @@
 **/bin/
 **/obj/
 TestResults/
+.release/
 
 # Local runtime data
 data/
