@@ -21,9 +21,18 @@ public sealed class HealthDiscoveryConnector(HttpClient httpClient, Func<DateOnl
         var sourceUri = new Uri(configuration.PageUrl);
         var referenceDate = _operatingDate();
         var sourceHtml = await _httpClient.GetStringAsync(sourceUri, cancellationToken);
-        var quarterUri = FindQuarterPage(sourceHtml, sourceUri, referenceDate) ?? (IsCurrentQuarterPage(sourceUri, referenceDate) ? sourceUri : null);
-        if (quarterUri is null) return [];
-        var quarterHtml = quarterUri == sourceUri ? sourceHtml : await _httpClient.GetStringAsync(quarterUri, cancellationToken);
+        var quarterUri = FindQuarterPage(sourceHtml, sourceUri, referenceDate)
+            ?? (IsCurrentQuarterPage(sourceUri, referenceDate) ? sourceUri : CreateQuarterPageUri(sourceUri, referenceDate));
+        string quarterHtml;
+        try
+        {
+            quarterHtml = quarterUri == sourceUri ? sourceHtml : await _httpClient.GetStringAsync(quarterUri, cancellationToken);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            return [];
+        }
+
         return ParseVideos(quarterHtml, quarterUri, referenceDate.Year).OrderBy(item => item.ScheduledDate).ToArray();
     }
 
@@ -40,6 +49,16 @@ public sealed class HealthDiscoveryConnector(HttpClient httpClient, Func<DateOnl
     }
 
     private static bool IsCurrentQuarterPage(Uri uri, DateOnly referenceDate) => uri.AbsolutePath.Contains($"momento-vida-e-saude-{Quarter.From(referenceDate).Number}trim-{referenceDate.Year}", StringComparison.OrdinalIgnoreCase);
+
+    private static Uri CreateQuarterPageUri(Uri sourceUri, DateOnly referenceDate)
+    {
+        var quarter = Quarter.From(referenceDate);
+        var builder = new UriBuilder(sourceUri.Scheme, sourceUri.Host, sourceUri.IsDefaultPort ? -1 : sourceUri.Port)
+        {
+            Path = $"/pt/saude/video/momento-vida-e-saude-{quarter.Number}trim-{quarter.Year}/"
+        };
+        return builder.Uri;
+    }
 
     private static IEnumerable<ContentItem> ParseVideos(string html, Uri pageUri, int year)
     {

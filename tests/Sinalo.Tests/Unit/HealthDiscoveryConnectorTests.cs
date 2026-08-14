@@ -40,6 +40,17 @@ public sealed class HealthDiscoveryConnectorTests
     }
 
     [Fact]
+    public async Task DiscoverAsync_ShouldUseThePredictableQuarterPageWhenTheSourceDoesNotLinkToIt()
+    {
+        const string quarter = "<tr><td><span title='6. 08/08 - Ansiedade'>MP4</span></td><td>343MB</td><td><a href='https://files.example/health.mp4'>Baixar</a></td></tr>";
+        var connector = new HealthDiscoveryConnector(new HttpClient(new PagesHandler("<a href='/pt/saude/video/momento-vida-e-saude/'>Coleção geral</a>", quarter)), () => new DateOnly(2026, 8, 6));
+
+        var item = Assert.Single(await connector.DiscoverAsync(Configuration()));
+
+        Assert.Equal(new Uri("https://downloads.example/pt/saude/video/momento-vida-e-saude-3trim-2026/"), item.PageUri);
+    }
+
+    [Fact]
     public async Task DiscoverAsync_ShouldRejectAnotherSource()
     {
         var connector = new HealthDiscoveryConnector(new HttpClient(new PagesHandler("", "")));
