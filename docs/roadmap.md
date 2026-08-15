@@ -14,7 +14,7 @@ O Minuto de Saúde está implementado, validado manualmente e coberto por testes
 
 ### Distribuição e instalação
 
-Preparar uma distribuição para os operadores baixarem e instalarem o Sinalo no Windows 11. A primeira entrega usa publicação Release self-contained para `win-x64` e Inno Setup, com instalação em `Program Files`, desinstalação que preserva os dados graváveis e geração local documentada. Automação no GitHub, assinatura de código e atualização automática permanecem fora deste primeiro escopo.
+Preparar uma distribuição para os operadores baixarem e instalarem o Sinalo no Windows 11. A primeira entrega usa publicação Release self-contained para `win-x64` e Inno Setup, com instalação em `Program Files`, desinstalação que preserva os dados graváveis e geração local documentada. O GitHub Actions executa CI em pushes e Pull Requests e publica o instalador em uma GitHub Release quando uma tag `vMAJOR.MINOR.PATCH` é enviada. Assinatura de código e atualização automática permanecem fora deste primeiro escopo.
 
 ## Melhorias mapeadas para depois
 

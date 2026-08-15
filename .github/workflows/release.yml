@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build and publish installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout tagged version
+        uses: actions/checkout@v4
+
+      - name: Configure .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+
+      - name: Read and validate release version
+        id: version
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') { throw "A tag deve usar o formato vmajor.minor.patch." }
+          [xml]$project = Get-Content .\src\Sinalo.App\Sinalo.App.csproj
+          if ($project.Project.PropertyGroup.Version -ne $version) { throw "A tag v$version nao corresponde a versao $($project.Project.PropertyGroup.Version) do projeto." }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Generate installer
+        shell: pwsh
+        run: .\releaser.ps1 -Version ${{ steps.version.outputs.value }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sinalo-Setup-win-x64-${{ steps.version.outputs.value }}
+          path: .release/installer/Sinalo-Setup-win-x64.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          $installer = ".release\installer\Sinalo-Setup-win-x64.exe"
+          gh release view $env:TAG 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:TAG $installer --title "Sinalo $env:VERSION" --generate-notes
+          }
+          else {
+            gh release upload $env:TAG $installer --clobber
+          }
