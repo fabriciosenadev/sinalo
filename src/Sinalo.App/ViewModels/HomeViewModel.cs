@@ -201,7 +201,9 @@ public sealed partial class HomeViewModel : ObservableObject
         var filtered = _allCatalogItems.Where(item =>
             (SelectedSource == "Todos" || item.SourceName == SelectedSource) &&
             (SelectedAvailability == "Todos" || item.Status == SelectedAvailability) &&
-            (string.IsNullOrWhiteSpace(SearchQuery) || item.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)));
+            (string.IsNullOrWhiteSpace(SearchQuery) ||
+             item.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
+             item.ScheduledDate.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)));
 
         CatalogItems.Clear();
         foreach (var item in filtered) CatalogItems.Add(item);

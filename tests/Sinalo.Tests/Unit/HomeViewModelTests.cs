@@ -36,6 +36,20 @@ public sealed class HomeViewModelTests
     }
 
     [Fact]
+    public void Search_ShouldFindVideosByTheirDisplayedDate()
+    {
+        var videoOnTheEighth = Item("eighth", ContentSource.Missions, "Primeiro vídeo", SyncState.Ready);
+        var videoOnTheFifteenth = new ContentItem(
+            "fifteenth", ContentSource.Missions, "Segundo vídeo", new DateOnly(2026, 8, 15), new Uri("https://example.test/fifteenth"),
+            [new MediaAsset("fifteenth-asset", new Uri("https://example.test/fifteenth.mp4"), "fifteenth.mp4", null, null)], SyncState.Ready);
+        var viewModel = CreateViewModel([videoOnTheEighth, videoOnTheFifteenth]);
+
+        viewModel.SearchQuery = "15/08/2026";
+
+        Assert.Equal("fifteenth", Assert.Single(viewModel.CatalogItems).Id);
+    }
+
+    [Fact]
     public void SourceActions_ShouldFollowTheSelectedSourceAndEnableHealth()
     {
         var viewModel = CreateViewModel([]);
