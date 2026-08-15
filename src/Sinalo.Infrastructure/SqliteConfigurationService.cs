@@ -15,16 +15,22 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         var defaults = DefaultSources();
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT source, page_url, policy FROM source_configurations;";
-        var saved = new Dictionary<ContentSource, (string PageUrl, AvailabilityPolicy Policy)>();
+        command.CommandText = "SELECT source, page_url, policy, download_previous_saturday, download_current_saturday, download_next_saturday FROM source_configurations;";
+        var saved = new Dictionary<ContentSource, (string PageUrl, AvailabilityPolicy Policy, DownloadSelection? Selection)>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken)) saved[(ContentSource)reader.GetInt32(0)] = (reader.GetString(1), (AvailabilityPolicy)reader.GetInt32(2));
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var selection = reader.IsDBNull(3)
+                ? null
+                : new DownloadSelection(reader.GetBoolean(3), reader.GetBoolean(4), reader.GetBoolean(5));
+            saved[(ContentSource)reader.GetInt32(0)] = (reader.GetString(1), (AvailabilityPolicy)reader.GetInt32(2), selection);
+        }
         return defaults.Select(item =>
         {
             if (!saved.TryGetValue(item.Source, out var value)) return item;
             // Migra a configuração inicial do canal do YouTube para a fonte oficial de MP4.
             if (item.Source == ContentSource.Health && IsLegacyHealthYouTubeUrl(value.PageUrl)) return item;
-            return item with { PageUrl = value.PageUrl, Policy = value.Policy };
+            return item with { PageUrl = value.PageUrl, Policy = value.Policy, DownloadSelection = value.Selection };
         }).ToArray();
     }
 
@@ -35,9 +41,12 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         foreach (var source in sources)
         {
             var command = connection.CreateCommand(); command.Transaction = transaction;
-            command.CommandText = "INSERT INTO source_configurations (source, page_url, policy) VALUES ($source, $pageUrl, $policy) ON CONFLICT(source) DO UPDATE SET page_url = excluded.page_url, policy = excluded.policy;";
+            command.CommandText = "INSERT INTO source_configurations (source, page_url, policy, download_previous_saturday, download_current_saturday, download_next_saturday) VALUES ($source, $pageUrl, $policy, $previous, $current, $next) ON CONFLICT(source) DO UPDATE SET page_url = excluded.page_url, policy = excluded.policy, download_previous_saturday = excluded.download_previous_saturday, download_current_saturday = excluded.download_current_saturday, download_next_saturday = excluded.download_next_saturday;";
             command.Parameters.AddWithValue("$source", (int)source.Source); command.Parameters.AddWithValue("$pageUrl", source.PageUrl.Trim());
             command.Parameters.AddWithValue("$policy", (int)source.Policy);
+            command.Parameters.AddWithValue("$previous", source.DownloadSelection is null ? DBNull.Value : source.DownloadSelection.PreviousSaturday);
+            command.Parameters.AddWithValue("$current", source.DownloadSelection is null ? DBNull.Value : source.DownloadSelection.CurrentSaturday);
+            command.Parameters.AddWithValue("$next", source.DownloadSelection is null ? DBNull.Value : source.DownloadSelection.NextSaturday);
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);

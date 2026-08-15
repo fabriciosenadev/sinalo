@@ -8,11 +8,14 @@ public sealed class ProvaiEVedeSynchronizationService(IContentCatalog catalog, I
     private readonly Func<DateOnly> _operatingDate = operatingDate ?? (() => DateOnly.FromDateTime(DateTime.Today));
 
     public async Task<IReadOnlyList<ContentItem>> SynchronizeQuarterAsync(IProgress<DownloadProgress>? progress = null, AvailabilityPolicy policy = AvailabilityPolicy.QuarterlyFull, CancellationToken cancellationToken = default)
+        => await SynchronizeQuarterAsync(progress, DownloadSelection.FromLegacyPolicy(policy), cancellationToken);
+
+    public async Task<IReadOnlyList<ContentItem>> SynchronizeQuarterAsync(IProgress<DownloadProgress>? progress, DownloadSelection selection, CancellationToken cancellationToken = default)
     {
         var ready = new List<ContentItem>();
         var candidates = (await catalog.ListBySourceAsync(ContentSource.ProvaiEVede, cancellationToken)).Where(item => item.Assets.Count > 0 && item.SyncState != SyncState.Ready).ToArray();
-        var selected = policy == AvailabilityPolicy.RollingSaturday
-            ? GetPriorityDates(_operatingDate()).SelectMany(date => candidates.Where(item => item.ScheduledDate == date))
+        var selected = !selection.DownloadsQuarterly
+            ? GetPriorityDates(_operatingDate(), selection).SelectMany(date => candidates.Where(item => item.ScheduledDate == date))
             : candidates;
         foreach (var item in selected)
         {
@@ -25,10 +28,14 @@ public sealed class ProvaiEVedeSynchronizationService(IContentCatalog catalog, I
         return ready;
     }
 
-    private IReadOnlyList<DateOnly> GetPriorityDates(DateOnly referenceDate)
+    private IReadOnlyList<DateOnly> GetPriorityDates(DateOnly referenceDate, DownloadSelection selection)
     {
-        if (_saturdayWindowService is not null) return _saturdayWindowService.GetWindow(referenceDate).InPriorityOrder;
+        if (_saturdayWindowService is not null)
+        {
+            var window = _saturdayWindowService.GetWindow(referenceDate);
+            return [.. new[] { (window.Previous, selection.PreviousSaturday), (window.Current, selection.CurrentSaturday), (window.Next, selection.NextSaturday) }.Where(item => item.Item2).Select(item => item.Item1)];
+        }
         var current = referenceDate.AddDays(-((int)referenceDate.DayOfWeek + 1) % 7);
-        return [current.AddDays(-7), current, current.AddDays(7)];
+        return [.. new[] { (current.AddDays(-7), selection.PreviousSaturday), (current, selection.CurrentSaturday), (current.AddDays(7), selection.NextSaturday) }.Where(item => item.Item2).Select(item => item.Item1)];
     }
 }

@@ -26,7 +26,7 @@ public sealed partial class HomeViewModel : ObservableObject
         Sources = configurations.Select(item => new SourceCard(
             item.Source,
             item.DisplayName,
-            item.Policy == AvailabilityPolicy.QuarterlyFull ? "Trimestre completo" : "Janela semanal ou mês completo",
+            GetSyncPolicyDescription(item),
             string.IsNullOrWhiteSpace(item.PageUrl) ? "Configuração da fonte pendente" : "Fonte configurada"))
             .ToArray();
         _allCatalogItems = (catalogItems ?? [])
@@ -40,6 +40,19 @@ public sealed partial class HomeViewModel : ObservableObject
         OperationMessage = _allCatalogItems.Count == 0
             ? "Nenhum vídeo offline disponível. Escolha uma fonte e use Buscar e baixar."
             : $"{_allCatalogItems.Count} vídeo(s) offline no catálogo local.";
+    }
+
+    private static string GetSyncPolicyDescription(SourceConfiguration configuration)
+    {
+        if (configuration.Source == ContentSource.Missions && configuration.DownloadSelection is null) return "Janela semanal ou mês completo";
+        if (configuration.ResolvedDownloadSelection.DownloadsQuarterly) return "Trimestre completo";
+        var selected = new[]
+        {
+            ("Sáb. anterior", configuration.ResolvedDownloadSelection.PreviousSaturday),
+            ("Sáb. atual", configuration.ResolvedDownloadSelection.CurrentSaturday),
+            ("Próximo sáb.", configuration.ResolvedDownloadSelection.NextSaturday)
+        }.Where(item => item.Item2).Select(item => item.Item1);
+        return string.Join(", ", selected);
     }
 
     [ObservableProperty] private string previousSaturday = string.Empty;

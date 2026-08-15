@@ -55,6 +55,17 @@ public sealed class MissionsSynchronizationServiceTests
         Assert.Empty(downloader.Items);
     }
 
+    [Fact]
+    public async Task SynchronizeAsync_ShouldOnlyDownloadTheExplicitlySelectedSaturday()
+    {
+        var downloader = new Downloader();
+        var service = new MissionsSynchronizationService(new Catalog([Item(1), Item(8), Item(15)]), downloader, new SaturdayWindowService(), () => new DateOnly(2026, 8, 8));
+
+        await service.SynchronizeAsync(new DownloadSelection(false, true, false));
+
+        Assert.Equal([new DateOnly(2026, 8, 8)], downloader.Items.Select(item => item.ScheduledDate));
+    }
+
     private static ContentItem Item(int day) => new($"missions-2026-08-{day:00}", ContentSource.Missions, "Informativo", new DateOnly(2026, 8, day), new Uri("https://example.test/post"), [new MediaAsset($"asset-{day}", new Uri($"https://example.test/{day}.mp4"), $"{day}.mp4", null, null)]);
 
     private sealed class Catalog(IReadOnlyList<ContentItem> items) : IContentCatalog

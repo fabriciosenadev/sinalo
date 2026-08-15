@@ -152,7 +152,7 @@ O aplicativo sera instalado em `C:\Program Files\Sinalo`, como o MidiaDeck. Dado
 
 1. O app consulta as fontes configuradas em tarefa de fundo, com timeout curto.
 2. Os conectores atualizam o catalogo local com os itens efetivamente publicados.
-3. Calcula os sabados anterior, atual e proximo; enfileira seus itens nessa prioridade.
+3. Para fontes configuradas por sábado, aplica as datas selecionadas pelo operador entre anterior, atual e próximo; quando nenhuma data estiver selecionada, usa o trimestre completo. Os itens são enfileirados na ordem anterior, atual e próximo.
 4. Enfileira somente arquivos ausentes, alterados ou corrompidos.
 5. Baixa para `.part`, com suporte a retomada HTTP Range quando a origem permitir.
 6. Valida tamanho e SHA-256; somente entao move o arquivo de modo atomico para `content`.

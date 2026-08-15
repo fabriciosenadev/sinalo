@@ -18,6 +18,20 @@ As URLs de pagina/canal de cada fonte sao configuradas pelo operador. A fonte po
 - **Trimestre**: `AAAA-TN`, onde N e 1 a 4, por exemplo `2026-T3`.
 - **Janela de sabados**: conjunto priorizado de anterior, atual e proximo; usada enquanto ainda nao houver lote mensal completo.
 
+## Seleção de downloads
+
+Para Informativo das Missoes, Provai e Vede e Minuto de Saude, o operador define na configuração quais datas
+da janela operacional devem ser baixadas: sábado anterior, sábado atual e/ou próximo
+sábado. As datas marcadas são baixadas nessa ordem. Quando nenhuma delas está marcada,
+o aplicativo baixa o trimestre inteiro.
+
+Instalações criadas antes dessa configuração mantêm o comportamento escolhido: a antiga
+opção de janela semanal é migrada como os três sábados marcados; a antiga opção de
+trimestre completo permanece como nenhuma data marcada.
+
+A seleção é uma regra de busca, não uma garantia de download: o aplicativo só baixa
+itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
+
 ## Estados de sincronizacao
 
 | Estado | Significado |

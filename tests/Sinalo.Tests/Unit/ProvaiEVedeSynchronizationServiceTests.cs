@@ -31,6 +31,16 @@ public sealed class ProvaiEVedeSynchronizationServiceTests
 
         Assert.Equal(["previous", "current", "next"], downloader.Items.Select(item => item.Id));
     }
+    [Fact] public async Task SynchronizeQuarterAsync_ShouldOnlyDownloadTheExplicitlySelectedSaturdays()
+    {
+        var catalog = new Catalog([Item("previous", SyncState.Pending, true, new DateOnly(2026, 8, 1)), Item("current", SyncState.Pending, true, new DateOnly(2026, 8, 8)), Item("next", SyncState.Pending, true, new DateOnly(2026, 8, 15))]);
+        var downloader = new Downloader();
+
+        await new ProvaiEVedeSynchronizationService(catalog, downloader, operatingDate: () => new DateOnly(2026, 8, 8))
+            .SynchronizeQuarterAsync(null, new DownloadSelection(false, true, false));
+
+        Assert.Equal(["current"], downloader.Items.Select(item => item.Id));
+    }
     private static ContentItem Item(string id,SyncState state,bool asset, DateOnly? date = null)=>new(id,ContentSource.ProvaiEVede,id,date ?? new DateOnly(2026,8,8),new Uri("https://example.test"),asset?[new MediaAsset(id,new Uri("https://example.test/a.mp4"),"a.mp4",null,null)]:[],state);
     private sealed class Catalog(IReadOnlyList<ContentItem> items):IContentCatalog { public List<ContentItem> Saved {get;}=[]; public Task<IReadOnlyList<ContentItem>> ListBySourceAsync(ContentSource s,CancellationToken c=default)=>Task.FromResult(items); public Task UpsertAsync(IReadOnlyList<ContentItem> i,CancellationToken c=default){Saved.AddRange(i);return Task.CompletedTask;} }
     private sealed class Downloader:IContentDownloadService { public List<ContentItem> Items {get;}=[]; public Task<ContentItem> DownloadAsync(ContentItem i, IProgress<DownloadProgress>? progress = null, CancellationToken c=default){Items.Add(i); progress?.Report(new DownloadProgress(i, 1, 1, "Disponível offline")); return Task.FromResult(i with {SyncState=SyncState.Ready,LocalPath="C:\\video.mp4"});} }

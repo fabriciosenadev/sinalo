@@ -111,9 +111,11 @@ public partial class MainWindow : Window
 
         IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = request.Configuration.Source switch
         {
-            Sinalo.Domain.ContentSource.Missions when MissionsSynchronizationService is not null => await MissionsSynchronizationService.SynchronizeAsync(downloadProgress, cancellationToken),
-            Sinalo.Domain.ContentSource.ProvaiEVede when ProvaiEVedeSynchronizationService is not null => await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(downloadProgress, request.Configuration.Policy, cancellationToken),
-            Sinalo.Domain.ContentSource.Health when HealthSynchronizationService is not null => await HealthSynchronizationService.SynchronizeAsync(request.Configuration.Policy, downloadProgress, cancellationToken),
+            Sinalo.Domain.ContentSource.Missions when MissionsSynchronizationService is not null => request.Configuration.DownloadSelection is { } missionSelection
+                ? await MissionsSynchronizationService.SynchronizeAsync(missionSelection, downloadProgress, cancellationToken)
+                : await MissionsSynchronizationService.SynchronizeAsync(downloadProgress, cancellationToken),
+            Sinalo.Domain.ContentSource.ProvaiEVede when ProvaiEVedeSynchronizationService is not null => await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(downloadProgress, request.Configuration.ResolvedDownloadSelection, cancellationToken),
+            Sinalo.Domain.ContentSource.Health when HealthSynchronizationService is not null => await HealthSynchronizationService.SynchronizeAsync(request.Configuration.ResolvedDownloadSelection, downloadProgress, cancellationToken),
             _ => throw new InvalidOperationException("A fonte selecionada não está disponível para sincronização.")
         };
 
@@ -162,16 +164,22 @@ public partial class MainWindow : Window
                 if (DataContext is HomeViewModel viewModel) viewModel.ReportDownloadProgress(item);
             });
             IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = [];
-            if (source == Sinalo.Domain.ContentSource.Missions && MissionsSynchronizationService is not null) synchronized = await MissionsSynchronizationService.SynchronizeAsync(progress);
+            if (source == Sinalo.Domain.ContentSource.Missions && MissionsSynchronizationService is not null)
+            {
+                var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
+                synchronized = configuration.DownloadSelection is { } missionSelection
+                    ? await MissionsSynchronizationService.SynchronizeAsync(missionSelection, progress)
+                    : await MissionsSynchronizationService.SynchronizeAsync(progress);
+            }
             if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null)
             {
                 var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
-                synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress, configuration.Policy);
+                synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress, configuration.ResolvedDownloadSelection);
             }
             if (source == Sinalo.Domain.ContentSource.Health && HealthSynchronizationService is not null)
             {
                 var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
-                synchronized = await HealthSynchronizationService.SynchronizeAsync(configuration.Policy, progress);
+                synchronized = await HealthSynchronizationService.SynchronizeAsync(configuration.ResolvedDownloadSelection, progress);
             }
             var message = synchronized.Count > 0
                 ? $"Sincronização concluída. {synchronized.Count} vídeo(s) de {sourceName} estão prontos offline."

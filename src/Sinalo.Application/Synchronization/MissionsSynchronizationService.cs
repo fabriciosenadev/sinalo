@@ -9,11 +9,19 @@ public sealed class MissionsSynchronizationService(IContentCatalog catalog, ICon
     private readonly Func<DateOnly> _operatingDate = operatingDate ?? (() => DateOnly.FromDateTime(DateTime.Today));
 
     public async Task<IReadOnlyList<ContentItem>> SynchronizeAsync(IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        => await SynchronizeAsyncCore(null, progress, cancellationToken);
+
+    public async Task<IReadOnlyList<ContentItem>> SynchronizeAsync(DownloadSelection selection, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        => await SynchronizeAsyncCore(selection, progress, cancellationToken);
+
+    private async Task<IReadOnlyList<ContentItem>> SynchronizeAsyncCore(DownloadSelection? selection, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
         var candidates = (await catalog.ListBySourceAsync(ContentSource.Missions, cancellationToken))
             .Where(item => item.Assets.Count > 0 && item.SyncState != SyncState.Ready)
             .ToArray();
-        var selected = SelectItemsToSynchronize(candidates, _operatingDate(), saturdayWindowService);
+        var selected = selection is null
+            ? SelectItemsToSynchronize(candidates, _operatingDate(), saturdayWindowService)
+            : SelectItemsToSynchronize(candidates, _operatingDate(), saturdayWindowService, selection);
         var ready = new List<ContentItem>();
 
         foreach (var item in selected)
@@ -37,6 +45,19 @@ public sealed class MissionsSynchronizationService(IContentCatalog catalog, ICon
 
         var priorities = saturdayWindowService.GetWindow(referenceDate).InPriorityOrder;
         return priorities.SelectMany(date => items.Where(item => item.ScheduledDate == date)).ToArray();
+    }
+
+    public static IReadOnlyList<ContentItem> SelectItemsToSynchronize(IReadOnlyList<ContentItem> items, DateOnly referenceDate, ISaturdayWindowService saturdayWindowService, DownloadSelection selection)
+    {
+        if (selection.DownloadsQuarterly) return items.OrderBy(item => item.ScheduledDate).ToArray();
+        var window = saturdayWindowService.GetWindow(referenceDate);
+        var dates = new[]
+        {
+            (window.Previous, selection.PreviousSaturday),
+            (window.Current, selection.CurrentSaturday),
+            (window.Next, selection.NextSaturday)
+        }.Where(item => item.Item2).Select(item => item.Item1);
+        return dates.SelectMany(date => items.Where(item => item.ScheduledDate == date)).ToArray();
     }
 
     private static IEnumerable<DateOnly> SaturdaysInMonth(int year, int month)

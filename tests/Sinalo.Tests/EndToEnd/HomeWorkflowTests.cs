@@ -159,6 +159,15 @@ public sealed class HomeWorkflowTests
                     ((TextBox)window.FindName("MissionsUrl")).Text = "https://missions.example/";
                     ((TextBox)window.FindName("ProvaiUrl")).Text = "https://provai.example/";
                     ((TextBox)window.FindName("HealthUrl")).Text = "https://health.example/";
+                    var provaiPrevious = (CheckBox)window.FindName("ProvaiPreviousSaturday");
+                    var provaiCurrent = (CheckBox)window.FindName("ProvaiCurrentSaturday");
+                    var provaiQuarterly = (CheckBox)window.FindName("ProvaiQuarterly");
+                    provaiPrevious.IsChecked = true;
+                    Assert.False(provaiQuarterly.IsEnabled);
+                    provaiPrevious.IsChecked = false;
+                    provaiQuarterly.IsChecked = false;
+                    Assert.True(provaiQuarterly.IsChecked);
+                    provaiCurrent.IsChecked = true;
                     typeof(Sinalo.App.SettingsWindow)
                         .GetMethod("Save_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
                         .Invoke(window, [window, new RoutedEventArgs()]);
@@ -181,6 +190,7 @@ public sealed class HomeWorkflowTests
         Assert.Equal("https://missions.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.Missions).PageUrl);
         Assert.Equal("https://provai.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.ProvaiEVede).PageUrl);
         Assert.Equal("https://health.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.Health).PageUrl);
+        Assert.Equal(new Sinalo.Domain.DownloadSelection(false, true, false), service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.ProvaiEVede).DownloadSelection);
     }
 
     [Fact]

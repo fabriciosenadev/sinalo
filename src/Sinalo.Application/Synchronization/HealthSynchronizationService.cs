@@ -9,9 +9,14 @@ public sealed class HealthSynchronizationService(IContentCatalog catalog, IConte
     private readonly Func<DateOnly> _operatingDate = operatingDate ?? (() => DateOnly.FromDateTime(DateTime.Today));
 
     public async Task<IReadOnlyList<ContentItem>> SynchronizeAsync(AvailabilityPolicy policy, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        => await SynchronizeAsync(DownloadSelection.FromLegacyPolicy(policy), progress, cancellationToken);
+
+    public async Task<IReadOnlyList<ContentItem>> SynchronizeAsync(DownloadSelection selection, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var candidates = (await catalog.ListBySourceAsync(ContentSource.Health, cancellationToken)).Where(item => item.Assets.Count > 0 && item.SyncState != SyncState.Ready).ToArray();
-        var selected = policy == AvailabilityPolicy.RollingSaturday ? saturdayWindowService.GetWindow(_operatingDate()).InPriorityOrder.SelectMany(date => candidates.Where(item => item.ScheduledDate == date)) : candidates;
+        var selected = selection.DownloadsQuarterly
+            ? candidates
+            : GetSelectedDates(saturdayWindowService.GetWindow(_operatingDate()), selection).SelectMany(date => candidates.Where(item => item.ScheduledDate == date));
         var ready = new List<ContentItem>();
         foreach (var item in selected)
         {
@@ -22,4 +27,7 @@ public sealed class HealthSynchronizationService(IContentCatalog catalog, IConte
         }
         return ready;
     }
+
+    private static IReadOnlyList<DateOnly> GetSelectedDates(SaturdayWindow window, DownloadSelection selection) =>
+        [.. new[] { (window.Previous, selection.PreviousSaturday), (window.Current, selection.CurrentSaturday), (window.Next, selection.NextSaturday) }.Where(item => item.Item2).Select(item => item.Item1)];
 }

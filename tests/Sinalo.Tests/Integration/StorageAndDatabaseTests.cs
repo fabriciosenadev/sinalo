@@ -92,6 +92,39 @@ public sealed class StorageAndDatabaseTests : IDisposable
     }
 
     [Fact]
+    public async Task ConfigurationService_ShouldResolveLegacyPoliciesWithoutNewSelectionColumns()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+
+        // O construtor anterior não informava DownloadSelection e, por isso, grava NULL
+        // nas colunas novas, simulando uma instalação atualizada.
+        await service.SaveSourcesAsync([new(ContentSource.ProvaiEVede, "Provai e Vede", "https://provai.example/", AvailabilityPolicy.RollingSaturday)]);
+
+        var provai = (await service.LoadSourcesAsync()).Single(source => source.Source == ContentSource.ProvaiEVede);
+
+        Assert.Null(provai.DownloadSelection);
+        Assert.Equal(DownloadSelection.SaturdayWindow, provai.ResolvedDownloadSelection);
+    }
+
+    [Fact]
+    public async Task ConfigurationService_ShouldPersistAnExplicitSaturdaySelection()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+        var selection = new DownloadSelection(true, false, true);
+
+        await service.SaveSourcesAsync([new(ContentSource.ProvaiEVede, "Provai e Vede", "https://provai.example/", AvailabilityPolicy.RollingSaturday, selection)]);
+
+        var provai = (await service.LoadSourcesAsync()).Single(source => source.Source == ContentSource.ProvaiEVede);
+
+        Assert.Equal(selection, provai.DownloadSelection);
+        Assert.False(provai.ResolvedDownloadSelection.DownloadsQuarterly);
+    }
+
+    [Fact]
     public async Task PlaybackConfiguration_ShouldPersistTheSelectedScreen()
     {
         var pathService = new TestPathService(_rootPath);
