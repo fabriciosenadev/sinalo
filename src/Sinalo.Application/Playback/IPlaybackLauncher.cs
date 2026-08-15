@@ -7,3 +7,8 @@ public interface IPlaybackLauncher
 {
     Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default);
 }
+
+public interface IPlaybackPreloader
+{
+    Task WarmAsync(CancellationToken cancellationToken = default);
+}

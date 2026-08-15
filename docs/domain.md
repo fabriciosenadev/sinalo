@@ -49,6 +49,7 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 - Banco SQLite, logs, cache e configuracoes usam `%LocalAppData%\Sinalo`.
 - A pasta de conteudo pode ser escolhida pelo operador, especialmente quando houver unidade com mais espaco.
 - Videos nao sao gravados no SQLite.
+- A reprodução prioritária usa o MPV incluído no Sinalo e mantido ocioso entre vídeos; VLC e o player padrão são contingências.
 - Itens fixados nao sao removidos automaticamente.
 - O trimestre anterior pode ser limpo somente apos sincronizacao completa do novo, respeitando o periodo de tolerancia configurado.
 

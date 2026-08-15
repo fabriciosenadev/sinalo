@@ -12,6 +12,7 @@ public partial class App : System.Windows.Application
 {
     private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
     private SystemThemeService? _themeService;
+    private MpvPlaybackLauncher? _mpvPlaybackLauncher;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -37,6 +38,8 @@ public partial class App : System.Windows.Application
         var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
         var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
 
+        var mpvPlaybackLauncher = new MpvPlaybackLauncher();
+        _mpvPlaybackLauncher = mpvPlaybackLauncher;
         var mainWindow = new MainWindow
         {
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: GetPlaybackScreens(), selectedPlaybackScreenNumber: playbackConfiguration.FullscreenScreenNumber),
@@ -48,12 +51,13 @@ public partial class App : System.Windows.Application
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService()),
-            PlaybackService = new PlaybackService(contentCatalog, new WindowsPlaybackLauncher())
+            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, new WindowsPlaybackLauncher()))
         };
 
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
 
         mainWindow.Show();
+        _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
     }
 
     private static IReadOnlyList<PlaybackScreenOption> GetPlaybackScreens()
@@ -66,6 +70,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         _themeService?.Dispose();
+        _mpvPlaybackLauncher?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         _httpClient.Dispose();
         base.OnExit(e);
     }

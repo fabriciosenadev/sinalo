@@ -1,0 +1,9 @@
+MPV playback runtime for Sinalo
+
+This directory contains the MPV runtime and its required native libraries.
+The runtime was validated from the package already used by MidiaDeck:
+mpv v0.41.0-dev-gae2384bce, built 2026-04-01.
+
+MPV and each bundled native dependency remain subject to their respective
+third-party licenses. Before a public installer release, the corresponding
+license notices and source-offer obligations must be reviewed and included.

@@ -28,7 +28,7 @@ Fila unica de sincronizacao ----> arquivos .part ----> validacao SHA-256
       SQLite local <-------------------------- biblioteca local por trimestre
           |
           v
-      Interface WPF ----> VLC ----> tela principal / projetor
+      Interface WPF ----> MPV persistente ----> tela principal / projetor
 ```
 
 Os conectores identificam os itens publicados nas URLs configuradas e montam um catalogo local. O video e baixado para armazenamento local antes do uso.
@@ -41,7 +41,7 @@ Os conectores identificam os itens publicados nas URLs configuradas e montam um 
 - **WPF / XAML**: interface nativa Windows, adequada a computadores modestos e multiplos monitores.
 - **MVVM com CommunityToolkit.Mvvm**: separa interface, estado e comandos.
 - **SQLite**: banco local de catalogo, estado de sincronizacao, configuracoes e historico basico.
-- **VLC**: processo externo priorizado para reproducao de arquivos locais; quando indisponivel, o Windows abre o player padrao.
+- **MPV**: processo externo embutido, pré-aquecido e controlado por IPC para reprodução ágil de arquivos locais. Se não estiver disponível, o Sinalo usa VLC e, por fim, o player padrão do Windows.
 - **FFmpeg/ffprobe**: leitura de metadados e geracao sob demanda de miniaturas.
 
 ### Descoberta e catalogo local
@@ -177,8 +177,8 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 ## Reproducao e telas
 
 - A tela principal e uma biblioteca de uso rapido: `Hoje`, `Proximo Sabado`, fontes e busca.
-- Um item `Pronto` abre seu arquivo local no VLC, sem requisicao de rede; na ausencia dele, usa o player padrao do Windows.
-- O VLC pode abrir em tela cheia no monitor selecionado pelo operador.
+- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; na falha dele, o Sinalo usa VLC e depois o player padrao do Windows.
+- O MPV permanece ocioso entre vídeos e recebe a troca de arquivo por IPC, reduzindo a espera em computadores com HD. Ele pode abrir em tela cheia no monitor selecionado pelo operador.
 - A UI mantem a escolha da tela de saida e registra que a abertura foi iniciada.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
