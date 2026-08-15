@@ -29,11 +29,8 @@ public sealed class HomeWorkflowTests
                 var window = new Sinalo.App.MainWindow();
                 title = window.Title;
 
-                var initializeComponent = typeof(Sinalo.App.MainWindow)
-                    .GetMethod("InitializeComponent", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                initializeComponent!.Invoke(window, null);
-                Sinalo.App.SystemThemeService.ApplyTitleBar(window, false);
-
+                window.Show();
+                window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 window.Close();
             }
             catch (Exception caught)
@@ -78,7 +75,7 @@ public sealed class HomeWorkflowTests
     [Fact]
     public void HomeWorkflow_ShouldShowAQueuedSynchronizationAndPreventDuplicateSelection()
     {
-        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result);
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources);
         viewModel.SelectedSource = "Minuto de Saúde";
 
         viewModel.UpdateSynchronizationQueue(new SynchronizationQueueSnapshot(true,
@@ -94,6 +91,54 @@ public sealed class HomeWorkflowTests
         Assert.False(viewModel.IsQueueActive);
         Assert.True(viewModel.CanQueueSelectedSource);
         Assert.Equal("Concluída", Assert.Single(viewModel.SynchronizationQueueItems).State);
+    }
+
+    [Fact]
+    public void HomeWorkflow_ShouldDescribeEveryCatalogAndQueueState()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources);
+        var getCatalogStatus = typeof(HomeViewModel).GetMethod("GetCatalogStatus", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+        Assert.Equal("Página trimestral identificada", getCatalogStatus.Invoke(null, [CatalogItem("page", [], Sinalo.Domain.SyncState.Pending)]));
+        Assert.Equal("Somente online", getCatalogStatus.Invoke(null, [CatalogItem("online", [Asset("online")], Sinalo.Domain.SyncState.OnlineOnly)]));
+        Assert.Equal("Pronto offline", getCatalogStatus.Invoke(null, [CatalogItem("ready", [Asset("ready")], Sinalo.Domain.SyncState.Ready)]));
+        Assert.Equal("Falhou", getCatalogStatus.Invoke(null, [CatalogItem("failed", [Asset("failed")], Sinalo.Domain.SyncState.Failed)]));
+        Assert.Equal("Disponível para sincronizar", getCatalogStatus.Invoke(null, [CatalogItem("pending", [Asset("pending")], Sinalo.Domain.SyncState.Pending)]));
+
+        viewModel.UpdateSynchronizationQueue(new SynchronizationQueueSnapshot(false,
+        [
+            new(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", SynchronizationQueueState.Waiting, "Aguardando", null),
+            new(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", SynchronizationQueueState.Running, "Baixando", 25),
+            new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", SynchronizationQueueState.Completed, "Concluído", 100),
+            new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", SynchronizationQueueState.Failed, "Falhou", null),
+            new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", SynchronizationQueueState.Cancelled, "Cancelado", null),
+            new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", (SynchronizationQueueState)99, "Desconhecido", null)
+        ]));
+
+        Assert.Equal(["Na fila", "Baixando", "Concluída", "Falhou", "Cancelada", "99"], viewModel.SynchronizationQueueItems.Select(item => item.State));
+        Assert.True(viewModel.IsBusy);
+        Assert.Equal(25, viewModel.SyncProgressPercent);
+    }
+
+    [Fact]
+    public void HomeWorkflow_ShouldMoveScheduledVideosAndRefreshThemeOnlyForRelevantPreferences()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources,
+        [
+            CatalogItem("first", [Asset("first")], Sinalo.Domain.SyncState.Ready),
+            CatalogItem("second", [Asset("second")], Sinalo.Domain.SyncState.Ready)
+        ]);
+        viewModel.SelectedCatalogItem = viewModel.CatalogItems[0];
+        viewModel.AddSelectedToSchedule();
+        viewModel.SelectedCatalogItem = viewModel.CatalogItems[1];
+        viewModel.AddSelectedToSchedule();
+
+        viewModel.MoveScheduleItem(viewModel.ScheduleItems[1], -1);
+
+        Assert.Equal(["second", "first"], viewModel.ScheduleItems.Select(item => item.Id));
+        Assert.True(Sinalo.App.SystemThemeService.ShouldRefreshFor(Microsoft.Win32.UserPreferenceCategory.General));
+        Assert.True(Sinalo.App.SystemThemeService.ShouldRefreshFor(Microsoft.Win32.UserPreferenceCategory.Color));
+        Assert.False(Sinalo.App.SystemThemeService.ShouldRefreshFor(Microsoft.Win32.UserPreferenceCategory.Keyboard));
     }
 
     private static Sinalo.Domain.ContentItem CatalogItem(string title, IReadOnlyList<Sinalo.Domain.MediaAsset> assets, Sinalo.Domain.SyncState syncState) => new(title, Sinalo.Domain.ContentSource.ProvaiEVede, title, new DateOnly(2026, 8, 8), new Uri("https://example.test/" + title), assets, syncState);
@@ -136,6 +181,105 @@ public sealed class HomeWorkflowTests
         Assert.Equal("https://missions.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.Missions).PageUrl);
         Assert.Equal("https://provai.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.ProvaiEVede).PageUrl);
         Assert.Equal("https://health.example/", service.SavedSources.Single(source => source.Source == Sinalo.Domain.ContentSource.Health).PageUrl);
+    }
+
+    [Fact]
+    public void ConfigureSourcesWorkflow_ShouldSaveAndRefreshTheHomeViewModel()
+    {
+        Exception? exception = null;
+        var service = new FakeConfigurationService();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var application = System.Windows.Application.Current ?? new System.Windows.Application
+                {
+                    ShutdownMode = ShutdownMode.OnExplicitShutdown
+                };
+                var initialViewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), service.LoadSourcesAsync().Result);
+                var window = new Sinalo.App.MainWindow
+                {
+                    ConfigurationService = service,
+                    DataContext = initialViewModel
+                };
+                window.Show();
+
+                window.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+                {
+                    var settings = application.Windows.OfType<Sinalo.App.SettingsWindow>().Single();
+                    ((TextBox)settings.FindName("MissionsUrl")).Text = "https://missions.example/";
+                    ((TextBox)settings.FindName("ProvaiUrl")).Text = "https://provai.example/";
+                    ((TextBox)settings.FindName("HealthUrl")).Text = "https://health.example/";
+                    typeof(Sinalo.App.SettingsWindow)
+                        .GetMethod("Save_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                        .Invoke(settings, [settings, new RoutedEventArgs()]);
+                });
+
+                typeof(Sinalo.App.MainWindow)
+                    .GetMethod("ConfigureSources_Click", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [window, new RoutedEventArgs()]);
+
+                window.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
+                var refreshedViewModel = Assert.IsType<HomeViewModel>(window.DataContext);
+                Assert.NotSame(initialViewModel, refreshedViewModel);
+                Assert.Equal("Fonte configurada", refreshedViewModel.Sources.Single(source => source.Source == Sinalo.Domain.ContentSource.Missions).Status);
+                window.Close();
+            }
+            catch (Exception caught)
+            {
+                exception = caught;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+        Assert.True(service.WasSaved);
+    }
+
+    [Fact]
+    public void PlaybackScreenWorkflow_ShouldPersistTheSelectedOutputScreen()
+    {
+        Exception? exception = null;
+        var configuration = new RecordingPlaybackConfigurationService();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result,
+                    playbackScreens: [new PlaybackScreenOption("Abrir normalmente", null), new PlaybackScreenOption("Tela 2", 2)],
+                    selectedPlaybackScreenNumber: 2);
+                var window = new Sinalo.App.MainWindow
+                {
+                    DataContext = viewModel,
+                    PlaybackConfigurationService = configuration
+                };
+                var args = new System.Windows.Controls.SelectionChangedEventArgs(
+                    System.Windows.Controls.Primitives.Selector.SelectionChangedEvent,
+                    new System.Collections.ArrayList(),
+                    new System.Collections.ArrayList());
+
+                typeof(Sinalo.App.MainWindow)
+                    .GetMethod("PlaybackScreen_SelectionChanged", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [window, args]);
+
+                Assert.Equal(2, configuration.Saved?.FullscreenScreenNumber);
+                window.Close();
+            }
+            catch (Exception caught)
+            {
+                exception = caught;
+            }
+        });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -196,6 +340,7 @@ public sealed class HomeWorkflowTests
                 typeof(Sinalo.App.MainWindow).GetMethod("AvailabilityFilter_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [availabilityButton, new RoutedEventArgs()]);
                 typeof(Sinalo.App.MainWindow).GetMethod("CatalogItem_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [catalogButton, new RoutedEventArgs()]);
                 typeof(Sinalo.App.MainWindow).GetMethod("AddToSchedule_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [window, new RoutedEventArgs()]);
+                typeof(Sinalo.App.MainWindow).GetMethod("MoveScheduleUp_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [new Button { Tag = viewModel.ScheduleItems[0] }, new RoutedEventArgs()]);
                 typeof(Sinalo.App.MainWindow).GetMethod("MoveScheduleDown_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [new Button { Tag = viewModel.ScheduleItems[0] }, new RoutedEventArgs()]);
                 typeof(Sinalo.App.MainWindow).GetMethod("RemoveSchedule_Click", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [new Button { Tag = viewModel.ScheduleItems[0] }, new RoutedEventArgs()]);
                 Assert.Equal("Provai e Vede", viewModel.SelectedSource);
@@ -366,16 +511,21 @@ public sealed class HomeWorkflowTests
 
     private sealed class FakeConfigurationService : ISinaloConfigurationService
     {
+        public static IReadOnlyList<SourceConfiguration> DefaultSources { get; } =
+        [
+            new(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull),
+            new(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull),
+            new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull)
+        ];
         public bool WasSaved { get; private set; }
         public IReadOnlyList<SourceConfiguration> SavedSources { get; private set; } = [];
 
         public Task<IReadOnlyList<SourceConfiguration>> LoadSourcesAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<SourceConfiguration>>(
-            [
-                new(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull),
-                new(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull),
-                new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull)
-            ]);
+                SavedSources.Count > 0
+                    ? SavedSources
+                    :
+                    DefaultSources);
 
         public Task SaveSourcesAsync(IReadOnlyList<SourceConfiguration> sources, CancellationToken cancellationToken = default)
         {
@@ -408,6 +558,17 @@ public sealed class HomeWorkflowTests
     private sealed class SuccessfulLauncher : IPlaybackLauncher
     {
         public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
+    }
+
+    private sealed class RecordingPlaybackConfigurationService : IPlaybackConfigurationService
+    {
+        public PlaybackConfiguration? Saved { get; private set; }
+        public Task<PlaybackConfiguration> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackConfiguration(null));
+        public Task SaveAsync(PlaybackConfiguration configuration, CancellationToken cancellationToken = default)
+        {
+            Saved = configuration;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class NoOpDownloader : IContentDownloadService

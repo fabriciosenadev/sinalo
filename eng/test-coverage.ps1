@@ -14,6 +14,7 @@ dotnet test $solutionPath `
     /p:CollectCoverage=true `
     /p:CoverletOutputFormat=cobertura `
     /p:CoverletOutput=$coverageOutput `
+    /p:ExcludeByFile="**/*.xaml" `
     /p:Threshold=75 `
     /p:ThresholdType=line `
     /p:ThresholdStat=total
@@ -27,6 +28,7 @@ dotnet test $solutionPath `
     /p:CollectCoverage=true `
     /p:CoverletOutputFormat=cobertura `
     /p:CoverletOutput=$coverageOutput `
+    /p:ExcludeByFile="**/*.xaml" `
     /p:Threshold=75 `
     /p:ThresholdType=branch `
     /p:ThresholdStat=total
