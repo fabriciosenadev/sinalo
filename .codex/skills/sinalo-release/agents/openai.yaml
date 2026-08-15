@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release do Sinalo"
+  short_description: "Prepara e publica releases do Sinalo"
+  default_prompt: "Use $sinalo-release para preparar a proxima release do Sinalo."
