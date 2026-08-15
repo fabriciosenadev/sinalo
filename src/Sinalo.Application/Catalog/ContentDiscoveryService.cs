@@ -21,14 +21,40 @@ public sealed class ContentDiscoveryService(
 
         var connector = _connectors.SingleOrDefault(item => item.Source == configuration.Source)
             ?? throw new InvalidOperationException($"Nenhum conector foi configurado para a fonte {configuration.Source}.");
-        var items = await connector.DiscoverAsync(configuration, cancellationToken);
+        var discoveredItems = await connector.DiscoverAsync(configuration, cancellationToken);
 
-        if (items.Any(item => item.Source != configuration.Source))
+        if (discoveredItems.Any(item => item.Source != configuration.Source))
         {
             throw new InvalidOperationException("O conector retornou conteúdo de uma fonte diferente da configurada.");
         }
 
+        var existingById = (await _catalog.ListBySourceAsync(configuration.Source, cancellationToken))
+            .ToDictionary(item => item.Id, StringComparer.Ordinal);
+        var items = discoveredItems
+            .Select(item => PreserveAvailableLocalFile(item, existingById))
+            .ToArray();
         await _catalog.UpsertAsync(items, cancellationToken);
         return items;
+    }
+
+    private static ContentItem PreserveAvailableLocalFile(ContentItem discovered, IReadOnlyDictionary<string, ContentItem> existingById)
+    {
+        if (!existingById.TryGetValue(discovered.Id, out var existing) ||
+            existing.SyncState != SyncState.Ready ||
+            string.IsNullOrWhiteSpace(existing.LocalPath) ||
+            !File.Exists(existing.LocalPath))
+        {
+            return discovered;
+        }
+
+        return discovered with
+        {
+            SyncState = SyncState.Ready,
+            LocalPath = existing.LocalPath,
+            IsPinned = existing.IsPinned,
+            PlayCount = existing.PlayCount,
+            FirstPlayedAtUtc = existing.FirstPlayedAtUtc,
+            LastPlayedAtUtc = existing.LastPlayedAtUtc
+        };
     }
 }

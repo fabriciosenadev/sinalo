@@ -47,7 +47,13 @@ public partial class MainWindow : Window
         if (window.Saved)
         {
             var previous = DataContext as HomeViewModel;
-            var viewModel = new ViewModels.HomeViewModel(new Infrastructure.SaturdayWindowService(), new Infrastructure.LocalSinaloPathService(), await ConfigurationService.LoadSourcesAsync(), playbackScreens: previous?.PlaybackScreens, selectedPlaybackScreenNumber: previous?.SelectedPlaybackScreen?.ScreenNumber);
+            var viewModel = new ViewModels.HomeViewModel(
+                new Infrastructure.SaturdayWindowService(),
+                new Infrastructure.LocalSinaloPathService(),
+                await ConfigurationService.LoadSourcesAsync(),
+                await LoadCatalogAsync(),
+                previous?.PlaybackScreens,
+                previous?.SelectedPlaybackScreen?.ScreenNumber);
             RestoreFilters(viewModel, previous);
             DataContext = viewModel;
         }
@@ -118,6 +124,18 @@ public partial class MainWindow : Window
             Sinalo.Domain.ContentSource.Health when HealthSynchronizationService is not null => await HealthSynchronizationService.SynchronizeAsync(request.Configuration.ResolvedDownloadSelection, downloadProgress, cancellationToken),
             _ => throw new InvalidOperationException("A fonte selecionada não está disponível para sincronização.")
         };
+
+        if (ConfigurationService is not null)
+        {
+            var configurations = await ConfigurationService.LoadSourcesAsync(cancellationToken);
+            var items = await LoadCatalogAsync();
+            await Dispatcher.InvokeAsync(() => ReplaceHomeViewModel(
+                configurations,
+                items,
+                synchronized.Count > 0
+                    ? $"Sincronização concluída. {synchronized.Count} vídeo(s) de {request.Configuration.DisplayName} estão prontos offline."
+                    : $"Catálogo atualizado. Nenhum vídeo novo de {request.Configuration.DisplayName} estava disponível."));
+        }
 
         return new SynchronizationQueueCompletion(synchronized.Count);
     }
