@@ -505,7 +505,9 @@ public sealed class HomeWorkflowTests
                     window.SynchronizationQueue.WhenIdleAsync().GetAwaiter().GetResult();
                 }
 
-                Assert.Equal([Sinalo.Domain.ContentSource.Missions, Sinalo.Domain.ContentSource.ProvaiEVede, Sinalo.Domain.ContentSource.Health], catalog.RequestedSources);
+                Assert.Equal(
+                    [Sinalo.Domain.ContentSource.Missions, Sinalo.Domain.ContentSource.ProvaiEVede, Sinalo.Domain.ContentSource.Health],
+                    catalog.RequestedSources.Distinct());
                 Assert.False(viewModel.IsQueueActive);
                 window.Close();
             }

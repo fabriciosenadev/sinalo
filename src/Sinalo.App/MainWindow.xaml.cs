@@ -111,7 +111,7 @@ public partial class MainWindow : Window
                 progress.Percentage));
             if (progress.Item.SyncState == Sinalo.Domain.SyncState.Ready)
             {
-                Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.MarkItemAsReady(progress.Item));
+                _ = Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.MarkItemAsReady(progress.Item));
             }
         });
 
@@ -129,7 +129,7 @@ public partial class MainWindow : Window
         {
             var configurations = await ConfigurationService.LoadSourcesAsync(cancellationToken);
             var items = await LoadCatalogAsync();
-            await Dispatcher.InvokeAsync(() => ReplaceHomeViewModel(
+            _ = Dispatcher.BeginInvoke(() => ReplaceHomeViewModel(
                 configurations,
                 items,
                 synchronized.Count > 0

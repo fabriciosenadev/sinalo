@@ -6,6 +6,10 @@ direto na instalação ou no uso do aplicativo.
 
 ## Não publicado
 
+Nenhuma mudança registrada ainda.
+
+## 0.1.4 - 15/08/2026
+
 ### Novo
 
 - A configuração de cada fonte permite escolher de forma independente o sábado
