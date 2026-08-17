@@ -27,3 +27,11 @@ Estas melhorias são válidas, mas estão fora do escopo atual e não devem bloq
 - Miniaturas reais geradas com FFmpeg.
 - Logs e diagnósticos mais detalhados para rede, URLs alteradas, disco cheio e arquivos corrompidos.
 - Empacotamento e atualização das dependências VLC e FFmpeg/ffprobe.
+- Distribuição confiável no Windows e redução de alertas do SmartScreen:
+  - avaliar a publicação na Microsoft Store como opção preferencial sem custo,
+    empacotando o aplicativo como MSIX; apps distribuídos pela Store recebem
+    assinatura Microsoft;
+  - caso o projeto adote uma licença open source elegível, avaliar o SignPath
+    Foundation para assinatura gratuita;
+  - para computadores administrados pela igreja, considerar uma política interna
+    de confiança como alternativa operacional, sem usá-la como solução pública.
