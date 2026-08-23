@@ -15,6 +15,8 @@ public partial class MainWindow : Window
 {
     private SynchronizationQueue? _synchronizationQueue;
     public ISinaloConfigurationService? ConfigurationService { get; init; }
+    public IContentPathConfigurationService? ContentPathConfigurationService { get; init; }
+    public IContentPathMigrationService? ContentPathMigrationService { get; init; }
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
@@ -42,7 +44,7 @@ public partial class MainWindow : Window
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigurationService is null) return;
-        var window = new SettingsWindow(ConfigurationService) { Owner = this };
+        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService) { Owner = this };
         window.ShowDialog();
         if (window.Saved)
         {

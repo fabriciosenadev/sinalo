@@ -44,6 +44,8 @@ public partial class App : System.Windows.Application
         {
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: GetPlaybackScreens(), selectedPlaybackScreenNumber: playbackConfiguration.FullscreenScreenNumber),
             ConfigurationService = configurationService,
+            ContentPathConfigurationService = pathService,
+            ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
             PlaybackConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,

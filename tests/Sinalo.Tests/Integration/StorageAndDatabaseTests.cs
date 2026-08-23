@@ -28,6 +28,19 @@ public sealed class StorageAndDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void LocalPathService_ShouldPersistTheSelectedContentFolder()
+    {
+        var selectedContentPath = Path.Combine(_rootPath, "videos-em-outro-disco");
+        var service = new LocalSinaloPathService(rootPath: _rootPath);
+
+        service.SaveContentPath(selectedContentPath);
+
+        var reloadedService = new LocalSinaloPathService(rootPath: _rootPath);
+        Assert.Equal(selectedContentPath, reloadedService.GetContentPath());
+        Assert.True(Directory.Exists(selectedContentPath));
+    }
+
+    [Fact]
     public async Task SinaloDatabase_ShouldCreateTheLocalDatabase()
     {
         var pathService = new TestPathService(_rootPath);

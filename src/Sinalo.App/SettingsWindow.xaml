@@ -27,7 +27,12 @@
                 <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Conteúdo local" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                        <TextBlock Text="{Binding ContentPath, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="Ao salvar, os vídeos existentes serão transferidos para a pasta escolhida." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,8" TextWrapping="Wrap" />
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <TextBox x:Name="ContentPathText" IsReadOnly="True" Padding="8" Margin="0,0,8,0" />
+                            <Button Grid.Column="1" Content="Escolher pasta" Click="ChooseContentPath_Click" Padding="12,8" />
+                        </Grid>
                     </StackPanel>
                 </Border>
             </StackPanel>

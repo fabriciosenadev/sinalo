@@ -1,5 +1,6 @@
 using System.Windows;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Storage;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 using CheckBox = System.Windows.Controls.CheckBox;
@@ -9,15 +10,18 @@ namespace Sinalo.App;
 public partial class SettingsWindow : Window
 {
     private readonly ISinaloConfigurationService _service;
+    private readonly IContentPathConfigurationService? _contentPathConfigurationService;
+    private readonly IContentPathMigrationService? _contentPathMigrationService;
     private bool _loading;
 
     public bool Saved { get; private set; }
-    public string ContentPath { get; } = new LocalSinaloPathService().GetPaths().ContentPath;
-
-    public SettingsWindow(ISinaloConfigurationService service)
+    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null)
     {
         _service = service;
+        _contentPathConfigurationService = contentPathConfigurationService;
+        _contentPathMigrationService = contentPathMigrationService;
         InitializeComponent();
+        ContentPathText.Text = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, SystemThemeService.IsWindowsDarkTheme());
         Loaded += LoadConfigurationAsync;
     }
@@ -89,6 +93,17 @@ public partial class SettingsWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            if (_contentPathMigrationService is not null) await _contentPathMigrationService.MoveAsync(ContentPathText.Text);
+            else _contentPathConfigurationService?.SaveContentPath(ContentPathText.Text);
+        }
+        catch (Exception exception)
+        {
+            System.Windows.MessageBox.Show(this, $"Não foi possível usar essa pasta para o conteúdo local.\n\n{exception.Message}", "Configurações", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         var missionsSelection = ReadSelection(MissionsPreviousSaturday, MissionsCurrentSaturday, MissionsNextSaturday);
         var provaiSelection = ReadSelection(ProvaiPreviousSaturday, ProvaiCurrentSaturday, ProvaiNextSaturday);
         var healthSelection = ReadSelection(HealthPreviousSaturday, HealthCurrentSaturday, HealthNextSaturday);
@@ -100,6 +115,18 @@ public partial class SettingsWindow : Window
         ]);
         Saved = true;
         DialogResult = true;
+    }
+
+    private void ChooseContentPath_Click(object sender, RoutedEventArgs e)
+    {
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = "Escolha a pasta onde o Sinalo salvará os próximos vídeos.",
+            UseDescriptionForTitle = true,
+            SelectedPath = ContentPathText.Text
+        };
+
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK) ContentPathText.Text = dialog.SelectedPath;
     }
 
     private static DownloadSelection ReadSelection(CheckBox previous, CheckBox current, CheckBox next) => new(previous.IsChecked == true, current.IsChecked == true, next.IsChecked == true);

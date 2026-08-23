@@ -13,4 +13,6 @@ public interface IContentCatalog
     Task RecordPlaybackAsync(string id, DateTimeOffset playedAtUtc, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     Task DeleteAsync(string id, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    Task RelocateLocalPathsAsync(string previousContentPath, string newContentPath, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

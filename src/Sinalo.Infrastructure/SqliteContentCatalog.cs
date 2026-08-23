@@ -131,6 +131,18 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
         await transaction.CommitAsync(cancellationToken);
     }
 
+    public async Task RelocateLocalPathsAsync(string previousContentPath, string newContentPath, CancellationToken cancellationToken = default)
+    {
+        var previousRoot = Path.GetFullPath(previousContentPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var newRoot = Path.GetFullPath(newContentPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE content_items SET local_path = $newRoot || substr(local_path, length($previousRoot) + 1) WHERE local_path IS NOT NULL AND substr(local_path, 1, length($previousRoot)) = $previousRoot;";
+        command.Parameters.AddWithValue("$previousRoot", previousRoot);
+        command.Parameters.AddWithValue("$newRoot", newRoot);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     private async Task<IReadOnlyList<MediaAsset>> ListAssetsAsync(SqliteConnection connection, string contentItemId, CancellationToken cancellationToken)
     {
         var command = connection.CreateCommand();
