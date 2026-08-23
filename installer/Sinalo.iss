@@ -22,6 +22,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\src\Sinalo.App\Assets\sinalo.ico
 OutputDir=..\\.release\\installer
 OutputBaseFilename=Sinalo-Setup-win-x64
 UninstallDisplayIcon={app}\{#MyAppExeName}
