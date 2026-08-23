@@ -8,6 +8,7 @@ using Sinalo.Application.Synchronization;
 using Sinalo.Infrastructure;
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Playback;
+using Sinalo.Application.Updates;
 
 namespace Sinalo.App;
 
@@ -15,6 +16,9 @@ public partial class MainWindow : Window
 {
     private SynchronizationQueue? _synchronizationQueue;
     public ISinaloConfigurationService? ConfigurationService { get; init; }
+    public IApplicationUpdateService? ApplicationUpdateService { get; init; }
+    public IUpdateInstallerLauncher? UpdateInstallerLauncher { get; init; }
+    private DownloadedUpdate? _downloadedUpdate;
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
@@ -56,6 +60,38 @@ public partial class MainWindow : Window
                 previous?.SelectedPlaybackScreen?.ScreenNumber);
             RestoreFilters(viewModel, previous);
             DataContext = viewModel;
+        }
+    }
+
+    public async Task CheckForUpdateAsync()
+    {
+        if (ApplicationUpdateService is null || DataContext is not HomeViewModel viewModel) return;
+        try
+        {
+            var versionText = GetType().Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+            var update = await ApplicationUpdateService.CheckAsync(Version.Parse(versionText));
+            if (update is null) return;
+            viewModel.ReportUpdateAvailable(update.Version);
+            _downloadedUpdate = await ApplicationUpdateService.DownloadAsync(update, new Progress<UpdateDownloadProgress>(progress => viewModel.ReportUpdateProgress(progress.Percentage)));
+            viewModel.ReportUpdateReady(update.Version);
+        }
+        catch
+        {
+            viewModel.ReportUpdateFailure();
+        }
+    }
+
+    private void InstallUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if (_downloadedUpdate is null || UpdateInstallerLauncher is null) return;
+        try
+        {
+            UpdateInstallerLauncher.Launch(_downloadedUpdate.InstallerPath);
+            System.Windows.Application.Current.Shutdown();
+        }
+        catch (Exception exception)
+        {
+            if (DataContext is HomeViewModel viewModel) viewModel.UpdateMessage = $"Não foi possível iniciar a atualização: {exception.Message}";
         }
     }
 
