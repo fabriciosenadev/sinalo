@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $appProject = Join-Path $projectRoot "src\Sinalo.App\Sinalo.App.csproj"
+$updaterProject = Join-Path $projectRoot "src\Sinalo.Updater\Sinalo.Updater.csproj"
 $coverageScript = Join-Path $projectRoot "eng\test-coverage.ps1"
 $releaseRoot = Join-Path $projectRoot ".release"
 $publishDirectory = Join-Path $releaseRoot "Sinalo-$Runtime"
@@ -118,6 +119,23 @@ if ($LASTEXITCODE -ne 0) {
     throw "Falha ao publicar o Sinalo."
 }
 
+Write-Step "Publicando atualizador"
+$updaterDirectory = Join-Path $publishDirectory "updater"
+& dotnet publish $updaterProject `
+    --configuration $Configuration `
+    --runtime $Runtime `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:DebugType=None `
+    -p:DebugSymbols=false `
+    --output $updaterDirectory `
+    --nologo
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao publicar o atualizador."
+}
+
 $executablePath = Join-Path $publishDirectory "Sinalo.App.exe"
 if (-not (Test-Path -LiteralPath $executablePath)) {
     throw "O executavel publicado nao foi encontrado: $executablePath"
@@ -140,6 +158,9 @@ if (-not (Test-Path -LiteralPath $installerPath)) {
     throw "O instalador nao foi encontrado: $installerPath"
 }
 
+$checksumPath = "$installerPath.sha256"
+"$(Get-FileHash -Algorithm SHA256 -LiteralPath $installerPath | Select-Object -ExpandProperty Hash)  $(Split-Path -Leaf $installerPath)" | Set-Content -LiteralPath $checksumPath -NoNewline
+
 if ($shouldPersistNextPatch) {
     Set-ProjectVersion -Value $Version
 }
@@ -147,3 +168,4 @@ if ($shouldPersistNextPatch) {
 Write-Step "Release finalizada"
 Write-Host "Publish:    $publishDirectory" -ForegroundColor Green
 Write-Host "Instalador: $installerPath" -ForegroundColor Green
+Write-Host "Checksum:   $checksumPath" -ForegroundColor Green

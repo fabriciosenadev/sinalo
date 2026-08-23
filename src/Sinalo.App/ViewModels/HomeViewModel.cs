@@ -69,6 +69,11 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private string syncProgressLabel = string.Empty;
     [ObservableProperty] private PlaybackScreenOption? selectedPlaybackScreen;
     [ObservableProperty] private bool isQueueActive;
+    [ObservableProperty] private bool isUpdateAvailable;
+    [ObservableProperty] private bool isUpdateDownloading;
+    [ObservableProperty] private bool isUpdateReady;
+    [ObservableProperty] private string updateMessage = string.Empty;
+    [ObservableProperty] private double updateProgressPercent;
 
     public IReadOnlyList<SourceCard> Sources { get; }
     public ObservableCollection<CatalogCard> CatalogItems { get; } = [];
@@ -194,6 +199,34 @@ public sealed partial class HomeViewModel : ObservableObject
         for (var index = ScheduleItems.Count - 1; index >= 0; index--)
             if (ScheduleItems[index].Id == id) ScheduleItems.RemoveAt(index);
         ApplyFilters();
+    }
+
+    public void ReportUpdateAvailable(Version version)
+    {
+        IsUpdateAvailable = true;
+        IsUpdateDownloading = true;
+        UpdateMessage = $"Nova versão {version} encontrada. Baixando atualização...";
+    }
+
+    public void ReportUpdateProgress(double percentage)
+    {
+        if (IsUpdateReady) return;
+        UpdateProgressPercent = percentage;
+        UpdateMessage = $"Nova versão disponível. Baixando {percentage:0}%...";
+    }
+
+    public void ReportUpdateReady(Version version)
+    {
+        IsUpdateDownloading = false;
+        IsUpdateReady = true;
+        UpdateProgressPercent = 100;
+        UpdateMessage = $"Versão {version} pronta para instalar.";
+    }
+
+    public void ReportUpdateFailure()
+    {
+        IsUpdateDownloading = false;
+        UpdateMessage = "Há uma nova versão, mas o download não foi concluído.";
     }
 
     private void ApplyFilters()

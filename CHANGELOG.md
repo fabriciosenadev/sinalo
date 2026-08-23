@@ -4,9 +4,29 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
-## Não publicado
+## 0.1.6 - 22/08/2026
 
-Nenhuma mudança registrada ainda.
+### Novo
+
+- A tela de **Configurações** permite escolher a pasta onde os vídeos do
+  Sinalo serão armazenados.
+- Ao mudar essa pasta, os vídeos existentes são transferidos para o novo local
+  automaticamente.
+- O aplicativo agora usa o ícone oficial do Sinalo, com variação adequada para
+  os temas claro e escuro do Windows.
+
+### Ajustado
+
+- O caminho do conteúdo local foi levado da tela principal para as
+  configurações, deixando a biblioteca mais limpa.
+
+## 0.1.5 - 22/08/2026
+
+### Novo
+
+- O Sinalo verifica automaticamente se há uma versão mais recente publicada.
+- Quando há atualização, ela pode ser baixada dentro do aplicativo e instalada
+  pelo botão **Atualizar e reiniciar**.
 
 ## 0.1.4 - 15/08/2026
 

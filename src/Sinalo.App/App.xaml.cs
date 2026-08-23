@@ -46,6 +46,8 @@ public partial class App : System.Windows.Application
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
+            ApplicationUpdateService = new GitHubApplicationUpdateService(_httpClient, pathService),
+            UpdateInstallerLauncher = new WindowsUpdateInstallerLauncher(pathService),
             PlaybackConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
@@ -59,6 +61,7 @@ public partial class App : System.Windows.Application
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
 
         mainWindow.Show();
+        _ = mainWindow.CheckForUpdateAsync();
         _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
     }
 

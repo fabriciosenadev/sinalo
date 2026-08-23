@@ -10,11 +10,15 @@ O MVP funcional possui descoberta, sincronização, reprodução local e exclus�
 
 O Minuto de Saúde está implementado, validado manualmente e coberto por testes. A descoberta da coleção trimestral, a leitura de datas e títulos e o download para `content\AAAA-TN\health` foram confirmados.
 
+A distribuição inicial também está concluída: o projeto gera instalador self-contained para `win-x64` com Inno Setup, preserva os dados do operador e publica releases pelo GitHub Actions.
+
 ## Próxima etapa aprovada
 
-### Distribuição e instalação
+### Atualização automática
 
-Preparar uma distribuição para os operadores baixarem e instalarem o Sinalo no Windows 11. A primeira entrega usa publicação Release self-contained para `win-x64` e Inno Setup, com instalação em `Program Files`, desinstalação que preserva os dados graváveis e geração local documentada. O GitHub Actions executa CI em pushes e Pull Requests e publica o instalador em uma GitHub Release quando uma tag `vMAJOR.MINOR.PATCH` é enviada. Assinatura de código e atualização automática permanecem fora deste primeiro escopo.
+O Sinalo verificará periodicamente a GitHub Release mais recente em segundo plano, sem atrasar a abertura da biblioteca. Quando houver uma versão mais nova, exibirá a versão e as notas em português, fará o download do instalador para `%LocalAppData%\Sinalo\updates` e mostrará o progresso.
+
+Após o download e a validação de integridade, o operador terá o botão **Atualizar e reiniciar**. Um atualizador auxiliar encerrará o Sinalo, executará o instalador Inno Setup em modo silencioso com a interface de progresso do Windows e abrirá a nova versão ao final. A confirmação do operador continua obrigatória para instalar; a elevação do UAC do Windows não será contornada. Os dados em `%LocalAppData%\Sinalo`, incluindo vídeos, configurações e catálogo, serão preservados.
 
 ## Melhorias mapeadas para depois
 
@@ -27,6 +31,7 @@ Estas melhorias são válidas, mas estão fora do escopo atual e não devem bloq
 - Miniaturas reais geradas com FFmpeg.
 - Logs e diagnósticos mais detalhados para rede, URLs alteradas, disco cheio e arquivos corrompidos.
 - Empacotamento e atualização das dependências VLC e FFmpeg/ffprobe.
+- Integração do instalador com assinatura de código, quando houver uma alternativa sustentável.
 - Distribuição confiável no Windows e redução de alertas do SmartScreen:
   - avaliar a publicação na Microsoft Store como opção preferencial sem custo,
     empacotando o aplicativo como MSIX; apps distribuídos pela Store recebem

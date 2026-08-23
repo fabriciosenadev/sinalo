@@ -25,7 +25,16 @@
                     <TextBlock Text="Sinalo" FontSize="30" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                     <TextBlock Text="Conteúdos prontos para a programação da igreja" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0" />
                 </StackPanel>
-                <Button Grid.Column="1" Content="Configurações" Padding="14,8" Click="ConfigureSources_Click" Style="{DynamicResource Button.Busy}" />
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                    <Button Content="Configurações" Padding="14,8" Click="ConfigureSources_Click" Style="{DynamicResource Button.Busy}" HorizontalAlignment="Right" />
+                    <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,8,0,0" Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Width="250">
+                            <TextBlock Text="{Binding UpdateMessage}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" />
+                            <ProgressBar Height="6" Margin="0,6,0,0" Minimum="0" Maximum="100" Value="{Binding UpdateProgressPercent}" Visibility="{Binding IsUpdateDownloading, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <Button Content="Atualizar e reiniciar" Click="InstallUpdate_Click" Padding="10,6" Margin="0,7,0,0" Style="{DynamicResource Button.Primary}" IsEnabled="{Binding IsUpdateReady}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
 

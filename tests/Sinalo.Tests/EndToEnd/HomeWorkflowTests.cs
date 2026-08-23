@@ -5,11 +5,13 @@ using Sinalo.Application.Storage;
 using Sinalo.Infrastructure;
 using System.Reflection;
 using System.Threading;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Sinalo.Application.Playback;
 using Sinalo.Application.Synchronization;
+using Sinalo.Application.Updates;
 using System.IO;
 
 namespace Sinalo.Tests.EndToEnd;
@@ -248,6 +250,45 @@ public sealed class HomeWorkflowTests
 
         Assert.Null(exception);
         Assert.True(service.WasSaved);
+    }
+
+    [Fact]
+    public void UpdateWorkflow_ShouldDownloadTheAvailableReleaseWithoutBlockingTheLibrary()
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources);
+                var window = new Sinalo.App.MainWindow { DataContext = viewModel, ApplicationUpdateService = new SuccessfulUpdateService() };
+                window.CheckForUpdateAsync().GetAwaiter().GetResult();
+                Assert.True(viewModel.IsUpdateReady);
+                Assert.Contains("0.1.5", viewModel.UpdateMessage);
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA); thread.Start(); thread.Join();
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void UpdateWorkflow_ShouldKeepTheLibraryUsableWhenTheCheckFails()
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources);
+                var window = new Sinalo.App.MainWindow { DataContext = viewModel, ApplicationUpdateService = new FailedUpdateService() };
+                window.CheckForUpdateAsync().GetAwaiter().GetResult();
+                Assert.Contains("download não foi concluído", viewModel.UpdateMessage);
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA); thread.Start(); thread.Join();
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -586,6 +627,23 @@ public sealed class HomeWorkflowTests
     private sealed class NoOpDownloader : IContentDownloadService
     {
         public Task<Sinalo.Domain.ContentItem> DownloadAsync(Sinalo.Domain.ContentItem item, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default) => Task.FromResult(item);
+    }
+
+    private sealed class SuccessfulUpdateService : IApplicationUpdateService
+    {
+        private static readonly AvailableUpdate Update = new(new Version(0, 1, 5), "Notas", new Uri("https://example.test/setup.exe"), null, "sha256:00");
+        public Task<AvailableUpdate?> CheckAsync(Version currentVersion, CancellationToken cancellationToken = default) => Task.FromResult<AvailableUpdate?>(Update);
+        public Task<DownloadedUpdate> DownloadAsync(AvailableUpdate update, IProgress<UpdateDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        {
+            progress?.Report(new UpdateDownloadProgress(50, 100));
+            return Task.FromResult(new DownloadedUpdate(update, "C:\\temp\\Sinalo-Setup.exe"));
+        }
+    }
+
+    private sealed class FailedUpdateService : IApplicationUpdateService
+    {
+        public Task<AvailableUpdate?> CheckAsync(Version currentVersion, CancellationToken cancellationToken = default) => throw new HttpRequestException();
+        public Task<DownloadedUpdate> DownloadAsync(AvailableUpdate update, IProgress<UpdateDownloadProgress>? progress = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 
 }

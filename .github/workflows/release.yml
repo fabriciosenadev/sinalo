@@ -48,6 +48,14 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Upload installer checksum
+        uses: actions/upload-artifact@v7
+        with:
+          name: Sinalo-Setup-win-x64-${{ steps.version.outputs.value }}-sha256
+          path: .release/installer/Sinalo-Setup-win-x64.exe.sha256
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Publish GitHub Release
         shell: pwsh
         env:
@@ -56,10 +64,17 @@ jobs:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
           $installer = ".release\installer\Sinalo-Setup-win-x64.exe"
+          $checksum = "$installer.sha256"
+          $changelog = Get-Content .\CHANGELOG.md -Raw
+          $notes = [regex]::Match($changelog, "(?ms)^## $([regex]::Escape($env:VERSION))\b.*?(?=^## |\z)").Value.Trim()
+          if ([string]::IsNullOrWhiteSpace($notes)) { $notes = "Sinalo $env:VERSION" }
+          $notesPath = ".release\release-notes.md"
+          Set-Content -LiteralPath $notesPath -Value $notes -NoNewline
           gh release view $env:TAG 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:TAG $installer --title "Sinalo $env:VERSION" --generate-notes
+            gh release create $env:TAG $installer $checksum --title "Sinalo $env:VERSION" --notes-file $notesPath
           }
           else {
-            gh release upload $env:TAG $installer --clobber
+            gh release upload $env:TAG $installer $checksum --clobber
+            gh release edit $env:TAG --notes-file $notesPath
           }
