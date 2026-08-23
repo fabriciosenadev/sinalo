@@ -1,7 +1,7 @@
 <Window x:Class="Sinalo.App.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Configurar fontes"
+        Title="Configurações"
         Width="660"
         Height="800"
         MinHeight="560"
@@ -16,12 +16,18 @@
             </Grid.RowDefinitions>
 
             <StackPanel>
-                <TextBlock Text="Fontes de conteúdo" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock Text="Configurações" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="Informe a página oficial e a regra de download de cada fonte." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,16" />
                 <Border Background="{DynamicResource Brush.ButtonHover}" BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Importante" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                         <TextBlock Text="A configuração define quais vídeos serão procurados. O download só acontece quando a fonte encontrar um vídeo publicado com arquivo oficial disponível." Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,3,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Conteúdo local" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                        <TextBlock Text="{Binding ContentPath, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </StackPanel>

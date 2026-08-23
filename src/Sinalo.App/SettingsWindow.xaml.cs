@@ -1,6 +1,7 @@
 using System.Windows;
 using Sinalo.Application.Configuration;
 using Sinalo.Domain;
+using Sinalo.Infrastructure;
 using CheckBox = System.Windows.Controls.CheckBox;
 
 namespace Sinalo.App;
@@ -11,6 +12,7 @@ public partial class SettingsWindow : Window
     private bool _loading;
 
     public bool Saved { get; private set; }
+    public string ContentPath { get; } = new LocalSinaloPathService().GetPaths().ContentPath;
 
     public SettingsWindow(ISinaloConfigurationService service)
     {
