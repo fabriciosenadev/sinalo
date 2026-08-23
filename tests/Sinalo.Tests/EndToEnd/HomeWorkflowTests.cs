@@ -50,7 +50,7 @@ public sealed class HomeWorkflowTests
     [Fact]
     public void HomeWorkflow_ShouldExposeOperationalDatesSourcesAndContentLocation()
     {
-        var pathService = new LocalSinaloPathService();
+        var pathService = new LocalSinaloPathService(rootPath: Path.Combine(Path.GetTempPath(), "Sinalo.Tests", Guid.NewGuid().ToString("N")));
         var viewModel = new HomeViewModel(new SaturdayWindowService(), pathService,
         [new(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", "https://missions.example/", Sinalo.Domain.AvailabilityPolicy.MonthlyFull), new(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull), new(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull)],
         [
@@ -69,7 +69,7 @@ public sealed class HomeWorkflowTests
         Assert.False(string.IsNullOrWhiteSpace(viewModel.PreviousSaturday));
         Assert.False(string.IsNullOrWhiteSpace(viewModel.CurrentSaturday));
         Assert.False(string.IsNullOrWhiteSpace(viewModel.NextSaturday));
-        Assert.EndsWith("Sinalo\\content", viewModel.ContentPath, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("content", viewModel.ContentPath, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -1,6 +1,8 @@
 using Microsoft.Win32;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
 
@@ -48,6 +50,7 @@ public sealed class SystemThemeService(System.Windows.Application application) :
 
     public static void ApplyTitleBar(Window window, bool isDark)
     {
+        ApplyWindowIcon(window, isDark);
         if (!OperatingSystem.IsWindows()) return;
         var handle = new WindowInteropHelper(window).Handle;
         if (handle == IntPtr.Zero) return;
@@ -55,6 +58,22 @@ public sealed class SystemThemeService(System.Windows.Application application) :
         // 20 is the current Windows 11 attribute; 19 keeps compatibility with early Windows 10 builds.
         if (DwmSetWindowAttribute(handle, 20, ref value, sizeof(int)) != 0)
             _ = DwmSetWindowAttribute(handle, 19, ref value, sizeof(int));
+    }
+
+    private static void ApplyWindowIcon(Window window, bool isDark)
+    {
+        var iconName = isDark ? "sinalo-dark.ico" : "sinalo.ico";
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", iconName);
+        if (!File.Exists(iconPath)) return;
+
+        try
+        {
+            window.Icon = BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+        }
+        catch (IOException)
+        {
+            // A janela continua usando o ícone padrão caso o arquivo não possa ser lido.
+        }
     }
 
     public static bool IsWindowsDarkTheme()
