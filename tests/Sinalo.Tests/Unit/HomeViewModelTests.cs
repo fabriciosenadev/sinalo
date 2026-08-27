@@ -8,6 +8,14 @@ namespace Sinalo.Tests.Unit;
 public sealed class HomeViewModelTests
 {
     [Fact]
+    public void ApplicationVersion_ShouldExposeTheCurrentAppVersion()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []);
+
+        Assert.Matches("^Versão \\d+\\.\\d+\\.\\d+$", viewModel.ApplicationVersion);
+    }
+
+    [Fact]
     public void Constructor_ShouldSelectPersistedPlaybackScreen()
     {
         var screens = new[] { new PlaybackScreenOption("Tela 1 · Principal", 1), new PlaybackScreenOption("Tela 2", 2) };

@@ -80,6 +80,7 @@ public sealed partial class HomeViewModel : ObservableObject
     public ObservableCollection<ScheduleCard> ScheduleItems { get; } = [];
     public ObservableCollection<SynchronizationQueueCard> SynchronizationQueueItems { get; } = [];
     public IReadOnlyList<PlaybackScreenOption> PlaybackScreens { get; }
+    public string ApplicationVersion => $"Versão {typeof(HomeViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
 
     public string SelectedItemTitle => SelectedCatalogItem?.Title ?? "Selecione um vídeo";
     public string SelectedItemDetails => SelectedCatalogItem is null

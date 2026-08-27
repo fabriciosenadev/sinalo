@@ -2,6 +2,7 @@ using System.Windows;
 using System.Net.Http;
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Catalog;
+using Sinalo.Application.Appearance;
 using Sinalo.Application.Synchronization;
 using Sinalo.Application.Playback;
 using Sinalo.Infrastructure;
@@ -17,13 +18,12 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        _themeService = new SystemThemeService(this);
-        _themeService.Start();
-
         var pathService = new LocalSinaloPathService();
         var database = new SinaloDatabase(pathService);
         await database.InitializeAsync();
         var configurationService = new SqliteConfigurationService(pathService);
+        _themeService = new SystemThemeService(this);
+        _themeService.Start(await ((IThemePreferenceService)configurationService).LoadAsync());
         var configurations = await configurationService.LoadSourcesAsync();
         var playbackConfiguration = await configurationService.LoadAsync();
         var playbackScreens = GetPlaybackScreens();
@@ -49,6 +49,8 @@ public partial class App : System.Windows.Application
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
             ApplicationUpdateService = new GitHubApplicationUpdateService(_httpClient, pathService),
             UpdateInstallerLauncher = new WindowsUpdateInstallerLauncher(pathService),
+            ThemePreferenceService = configurationService,
+            ThemeService = _themeService,
             PlaybackConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
@@ -62,6 +64,7 @@ public partial class App : System.Windows.Application
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
 
         mainWindow.Show();
+        _themeService.ApplyCurrentTheme();
         _ = mainWindow.CheckForUpdateAsync();
         _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
     }

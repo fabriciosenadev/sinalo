@@ -39,6 +39,7 @@ Os conectores identificam os itens publicados nas URLs configuradas e montam um 
 
 - **.NET 10 / C#**: runtime e logica do aplicativo.
 - **WPF / XAML**: interface nativa Windows, adequada a computadores modestos e multiplos monitores.
+- **Tema visual**: o operador pode escolher claro, escuro ou acompanhar o Windows; a preferencia fica salva no SQLite e e aplicada a todas as janelas.
 - **MVVM com CommunityToolkit.Mvvm**: separa interface, estado e comandos.
 - **SQLite**: banco local de catalogo, estado de sincronizacao, configuracoes e historico basico.
 - **MPV**: processo externo embutido, pré-aquecido e controlado por IPC para reprodução ágil de arquivos locais. Se não estiver disponível, o Sinalo usa VLC e, por fim, o player padrão do Windows.

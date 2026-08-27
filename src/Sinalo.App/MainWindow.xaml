@@ -22,7 +22,12 @@
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Sinalo" FontSize="30" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Sinalo" FontSize="30" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                        <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ApplicationVersion}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
                     <TextBlock Text="Conteúdos prontos para a programação da igreja" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" HorizontalAlignment="Right">

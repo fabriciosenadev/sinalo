@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
+using Sinalo.Application.Appearance;
 
 namespace Sinalo.Tests.Unit;
 
@@ -34,5 +35,15 @@ public sealed class SystemThemeServiceTests
     public void PreferenceCategory_ShouldRefreshOnlyForThemeRelevantChanges(UserPreferenceCategory category, bool expected)
     {
         Assert.Equal(expected, Sinalo.App.SystemThemeService.ShouldRefreshFor(category));
+    }
+
+    [Theory]
+    [InlineData(ThemePreference.System, false, false)]
+    [InlineData(ThemePreference.System, true, true)]
+    [InlineData(ThemePreference.Light, true, false)]
+    [InlineData(ThemePreference.Dark, false, true)]
+    public void ResolveIsDark_ShouldRespectTheConfiguredPreference(ThemePreference preference, bool windowsIsDark, bool expected)
+    {
+        Assert.Equal(expected, Sinalo.App.SystemThemeService.ResolveIsDark(preference, windowsIsDark));
     }
 }

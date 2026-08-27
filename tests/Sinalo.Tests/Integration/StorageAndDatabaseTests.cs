@@ -1,6 +1,7 @@
 using System.IO;
 using Microsoft.Data.Sqlite;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Appearance;
 using Sinalo.Application.Storage;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
@@ -148,6 +149,19 @@ public sealed class StorageAndDatabaseTests : IDisposable
         await service.SaveAsync(new Sinalo.Application.Playback.PlaybackConfiguration(2));
 
         Assert.Equal(2, (await service.LoadAsync()).FullscreenScreenNumber);
+    }
+
+    [Fact]
+    public async Task ThemePreference_ShouldDefaultToWindowsAndPersistTheSelectedTheme()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+
+        Assert.Equal(ThemePreference.System, await ((IThemePreferenceService)service).LoadAsync());
+        await ((IThemePreferenceService)service).SaveAsync(ThemePreference.Dark);
+
+        Assert.Equal(ThemePreference.Dark, await ((IThemePreferenceService)service).LoadAsync());
     }
 
     public void Dispose()

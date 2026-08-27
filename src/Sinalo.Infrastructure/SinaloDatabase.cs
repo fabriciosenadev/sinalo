@@ -43,6 +43,11 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 fullscreen_screen_number INTEGER NULL
             );
 
+            CREATE TABLE IF NOT EXISTS application_preferences (
+                id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+                theme_preference INTEGER NOT NULL DEFAULT 0
+            );
+
             CREATE TABLE IF NOT EXISTS content_assets (
                 id TEXT NOT NULL PRIMARY KEY,
                 content_item_id TEXT NOT NULL,

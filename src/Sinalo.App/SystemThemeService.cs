@@ -5,23 +5,35 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Interop;
 using System.Runtime.InteropServices;
+using Sinalo.Application.Appearance;
 
 namespace Sinalo.App;
 
 public sealed class SystemThemeService(System.Windows.Application application) : IDisposable
 {
     private readonly System.Windows.Application _application = application;
+    private ThemePreference _preference = ThemePreference.System;
 
-    public void Start()
+    public bool IsDark { get; private set; }
+
+    public void Start(ThemePreference preference = ThemePreference.System)
     {
+        _preference = preference;
         ApplyCurrentTheme();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
-    public void ApplyCurrentTheme() => ApplyTheme(IsWindowsDarkTheme());
+    public void SetPreference(ThemePreference preference)
+    {
+        _preference = preference;
+        ApplyCurrentTheme();
+    }
+
+    public void ApplyCurrentTheme() => ApplyTheme(ResolveIsDark(_preference, IsWindowsDarkTheme()));
 
     public void ApplyTheme(bool isDark)
     {
+        IsDark = isDark;
         ApplyToResources(_application.Resources, isDark);
         foreach (Window window in _application.Windows) ApplyTitleBar(window, isDark);
     }
@@ -41,9 +53,16 @@ public sealed class SystemThemeService(System.Windows.Application application) :
 
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
     {
-        if (!ShouldRefreshFor(e.Category)) return;
+        if (_preference != ThemePreference.System || !ShouldRefreshFor(e.Category)) return;
         _application.Dispatcher.Invoke(ApplyCurrentTheme);
     }
+
+    public static bool ResolveIsDark(ThemePreference preference, bool windowsIsDark) => preference switch
+    {
+        ThemePreference.Light => false,
+        ThemePreference.Dark => true,
+        _ => windowsIsDark
+    };
 
     public static bool ShouldRefreshFor(UserPreferenceCategory category) =>
         category is UserPreferenceCategory.General or UserPreferenceCategory.Color;

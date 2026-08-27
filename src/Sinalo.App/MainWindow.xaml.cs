@@ -2,6 +2,7 @@ using System.Windows;
 using System.Net.Http;
 using System.IO;
 using Sinalo.Application.Catalog;
+using Sinalo.Application.Appearance;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Storage;
 using Sinalo.Application.Synchronization;
@@ -20,6 +21,8 @@ public partial class MainWindow : Window
     public IContentPathMigrationService? ContentPathMigrationService { get; init; }
     public IApplicationUpdateService? ApplicationUpdateService { get; init; }
     public IUpdateInstallerLauncher? UpdateInstallerLauncher { get; init; }
+    public IThemePreferenceService? ThemePreferenceService { get; init; }
+    public SystemThemeService? ThemeService { get; init; }
     private DownloadedUpdate? _downloadedUpdate;
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
@@ -48,7 +51,7 @@ public partial class MainWindow : Window
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigurationService is null) return;
-        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService) { Owner = this };
+        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService) { Owner = this };
         window.ShowDialog();
         if (window.Saved)
         {

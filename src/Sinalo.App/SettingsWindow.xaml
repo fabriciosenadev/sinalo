@@ -26,6 +26,17 @@
                 </Border>
                 <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
                     <StackPanel>
+                        <TextBlock Text="Tema do aplicativo" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                        <TextBlock Text="Escolha uma aparência fixa ou acompanhe a preferência do Windows." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,8" TextWrapping="Wrap" />
+                        <ComboBox x:Name="ThemePreferenceCombo" SelectedIndex="0" Padding="8">
+                            <ComboBoxItem Content="Mesmo tema do Windows" />
+                            <ComboBoxItem Content="Tema claro" />
+                            <ComboBoxItem Content="Tema escuro" />
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+                <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
+                    <StackPanel>
                         <TextBlock Text="Conteúdo local" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                         <TextBlock Text="Ao salvar, os vídeos existentes serão transferidos para a pasta escolhida." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,8" TextWrapping="Wrap" />
                         <Grid>

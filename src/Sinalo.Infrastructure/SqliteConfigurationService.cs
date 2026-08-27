@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using Sinalo.Application.Appearance;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Playback;
 using Sinalo.Application.Storage;
@@ -6,7 +7,7 @@ using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService
+public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService
 {
     private readonly ISinaloPathService _pathService = pathService;
 
@@ -67,6 +68,24 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO playback_configuration (id, fullscreen_screen_number) VALUES (1, $screen) ON CONFLICT(id) DO UPDATE SET fullscreen_screen_number = excluded.fullscreen_screen_number;";
         command.Parameters.AddWithValue("$screen", configuration.FullscreenScreenNumber is int screen ? screen : DBNull.Value);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    async Task<ThemePreference> IThemePreferenceService.LoadAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT theme_preference FROM application_preferences WHERE id = 1;";
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return value is null or DBNull ? ThemePreference.System : Enum.IsDefined((ThemePreference)Convert.ToInt32(value)) ? (ThemePreference)Convert.ToInt32(value) : ThemePreference.System;
+    }
+
+    async Task IThemePreferenceService.SaveAsync(ThemePreference preference, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO application_preferences (id, theme_preference) VALUES (1, $preference) ON CONFLICT(id) DO UPDATE SET theme_preference = excluded.theme_preference;";
+        command.Parameters.AddWithValue("$preference", (int)preference);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

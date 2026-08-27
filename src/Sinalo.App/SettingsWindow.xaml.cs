@@ -1,4 +1,5 @@
 using System.Windows;
+using Sinalo.Application.Appearance;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Storage;
 using Sinalo.Domain;
@@ -12,17 +13,21 @@ public partial class SettingsWindow : Window
     private readonly ISinaloConfigurationService _service;
     private readonly IContentPathConfigurationService? _contentPathConfigurationService;
     private readonly IContentPathMigrationService? _contentPathMigrationService;
+    private readonly IThemePreferenceService? _themePreferenceService;
+    private readonly SystemThemeService? _themeService;
     private bool _loading;
 
     public bool Saved { get; private set; }
-    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null)
+    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null, IThemePreferenceService? themePreferenceService = null, SystemThemeService? themeService = null)
     {
         _service = service;
         _contentPathConfigurationService = contentPathConfigurationService;
         _contentPathMigrationService = contentPathMigrationService;
+        _themePreferenceService = themePreferenceService;
+        _themeService = themeService;
         InitializeComponent();
         ContentPathText.Text = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
-        SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, SystemThemeService.IsWindowsDarkTheme());
+        SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, _themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
         Loaded += LoadConfigurationAsync;
     }
 
@@ -31,6 +36,7 @@ public partial class SettingsWindow : Window
         _loading = true;
         try
         {
+            if (_themePreferenceService is not null) ThemePreferenceCombo.SelectedIndex = (int)await _themePreferenceService.LoadAsync();
             var items = await _service.LoadSourcesAsync();
             var missions = items.Single(x => x.Source == ContentSource.Missions);
             MissionsUrl.Text = missions.PageUrl;
@@ -113,6 +119,12 @@ public partial class SettingsWindow : Window
             new(ContentSource.ProvaiEVede, "Provai e Vede", ProvaiUrl.Text, PolicyFrom(provaiSelection), provaiSelection),
             new(ContentSource.Health, "Minuto de Saúde", HealthUrl.Text, PolicyFrom(healthSelection), healthSelection)
         ]);
+        if (_themePreferenceService is not null)
+        {
+            var preference = (ThemePreference)Math.Clamp(ThemePreferenceCombo.SelectedIndex, (int)ThemePreference.System, (int)ThemePreference.Dark);
+            await _themePreferenceService.SaveAsync(preference);
+            _themeService?.SetPreference(preference);
+        }
         Saved = true;
         DialogResult = true;
     }
