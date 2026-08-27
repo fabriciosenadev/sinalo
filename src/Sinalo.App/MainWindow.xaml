@@ -27,6 +27,7 @@
                         <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="10,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ApplicationVersion}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" FontWeight="SemiBold" />
                         </Border>
+                        <Button Content="Novidades" Click="OpenReleaseNotes_Click" Padding="8,3" Margin="8,0,0,0" Style="{DynamicResource Button.Navigation}" ToolTip="Ver as novidades de cada versão" />
                     </StackPanel>
                     <TextBlock Text="Conteúdos prontos para a programação da igreja" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0" />
                 </StackPanel>

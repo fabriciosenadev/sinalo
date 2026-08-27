@@ -19,6 +19,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <EmbeddedResource Include="..\..\CHANGELOG.md">
+      <LogicalName>Sinalo.App.CHANGELOG.md</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <PropertyGroup>

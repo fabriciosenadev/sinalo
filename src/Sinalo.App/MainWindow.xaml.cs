@@ -82,6 +82,9 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OpenReleaseNotes_Click(object sender, RoutedEventArgs e) =>
+        new ReleaseNotesWindow(ThemeService) { Owner = this }.ShowDialog();
+
     public async Task CheckForUpdateAsync()
     {
         if (ApplicationUpdateService is null || DataContext is not HomeViewModel viewModel) return;
