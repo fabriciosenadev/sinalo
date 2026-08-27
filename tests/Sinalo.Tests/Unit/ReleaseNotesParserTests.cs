@@ -9,7 +9,7 @@ public sealed class ReleaseNotesParserTests
     {
         var document = ReleaseNotesLoader.Load();
 
-        Assert.Contains(document.Versions, version => version.Version == "0.1.6");
+        Assert.Contains(document.Versions, version => version.Version == "0.1.7");
     }
 
     [Fact]

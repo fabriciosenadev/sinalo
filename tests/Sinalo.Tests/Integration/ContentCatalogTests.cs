@@ -7,6 +7,7 @@ using Sinalo.Infrastructure;
 
 namespace Sinalo.Tests.Integration;
 
+[Collection(SqliteIntegrationCollection.Name)]
 public sealed class ContentCatalogTests : IDisposable
 {
     private readonly string _rootPath = Path.Combine(Path.GetTempPath(), "Sinalo.Tests", Guid.NewGuid().ToString("N"));

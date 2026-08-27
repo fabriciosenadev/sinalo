@@ -46,10 +46,11 @@ function Set-ProjectVersion {
     param([string]$Value)
 
     $content = [System.IO.File]::ReadAllText($appProject)
-    $updated = [regex]::Replace($content, '(?<=<Version>)[^<]+(?=</Version>)', $Value, 1)
-    if ($updated -eq $content) {
+    if (-not [regex]::IsMatch($content, '<Version>[^<]+</Version>')) {
         throw "A propriedade <Version> nao foi encontrada em $appProject."
     }
+    $updated = [regex]::Replace($content, '(?<=<Version>)[^<]+(?=</Version>)', $Value, 1)
+    if ($updated -eq $content) { return }
     [System.IO.File]::WriteAllText($appProject, $updated)
 }
 

@@ -4,6 +4,31 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.7 - 27/08/2026
+
+### Novo
+
+- Foram adicionadas as ferramentas de apresentação **Cronômetro** e **Sorteio**.
+  Elas podem ser abertas na tela escolhida para a apresentação da igreja.
+- O cronômetro permite contar o tempo para cima ou para baixo, definir duração
+  e escolher o formato exibido.
+- O sorteio permite cadastrar nomes ou intervalos numéricos, escolher vencedores
+  sem repetição, reiniciar o sorteio e limpar a lista.
+- A tela principal agora mostra a versão instalada e oferece o botão
+  **Novidades**, com o histórico de mudanças dividido por versão.
+- As configurações permitem escolher entre tema claro, escuro ou acompanhar o
+  tema do Windows.
+
+### Ajustado
+
+- A navegação passou a organizar os vídeos como **Programas de vídeo**, com
+  ações e configurações descritas de forma mais clara.
+- A lateral direita exibe apenas informações relevantes ao momento, como fila
+  ativa ou detalhes do vídeo selecionado, deixando a biblioteca mais limpa.
+- As barras de rolagem agora acompanham o tema do aplicativo.
+- A reprodução de vídeos exige uma tela de saída selecionada, evitando que uma
+  apresentação seja aberta na tela errada por engano.
+
 ## 0.1.6 - 22/08/2026
 
 ### Novo
