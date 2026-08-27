@@ -4,11 +4,12 @@ using Sinalo.Application.Configuration;
 using Sinalo.Application.Playback;
 using Sinalo.Application.Storage;
 using Sinalo.Application.Timer;
+using Sinalo.Application.Raffle;
 using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService
+public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService, IRaffleConfigurationService
 {
     private readonly ISinaloPathService _pathService = pathService;
 
@@ -115,6 +116,21 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         command.Parameters.AddWithValue("$direction", (int)configuration.Direction);
         command.Parameters.AddWithValue("$duration", (long)configuration.CountdownDuration.TotalSeconds);
         command.Parameters.AddWithValue("$format", configuration.DisplayFormat);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    async Task<RaffleConfiguration> IRaffleConfigurationService.LoadAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken); var command = connection.CreateCommand();
+        command.CommandText = "SELECT animation_duration_seconds FROM raffle_configuration WHERE id = 1;";
+        var value = await command.ExecuteScalarAsync(cancellationToken);
+        return new(TimeSpan.FromSeconds(value is null or DBNull ? 5 : Math.Max(1, Convert.ToInt64(value))));
+    }
+    async Task IRaffleConfigurationService.SaveAsync(RaffleConfiguration configuration, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken); var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO raffle_configuration (id, animation_duration_seconds) VALUES (1, $duration) ON CONFLICT(id) DO UPDATE SET animation_duration_seconds = excluded.animation_duration_seconds;";
+        command.Parameters.AddWithValue("$duration", (long)configuration.AnimationDuration.TotalSeconds);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

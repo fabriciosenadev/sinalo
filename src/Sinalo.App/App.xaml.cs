@@ -8,6 +8,7 @@ using Sinalo.Application.Playback;
 using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
 using Sinalo.Application.Timer;
+using Sinalo.Application.Raffle;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -32,6 +33,7 @@ public partial class App : System.Windows.Application
         var playbackConfiguration = await configurationService.LoadAsync();
         var timerConfiguration = await ((ITimerConfigurationService)configurationService).LoadAsync();
         var timerViewModel = new TimerViewModel(new TimerSession(), timerConfiguration);
+        var raffleViewModel = new RaffleViewModel(new RaffleSession(), await ((IRaffleConfigurationService)configurationService).LoadAsync());
         var monitorService = new MonitorService();
         var outputs = await monitorService.GetOutputsAsync();
         var selectedOutput = OutputSelectionResolver.Resolve(playbackConfiguration, outputs);
@@ -56,7 +58,7 @@ public partial class App : System.Windows.Application
         _presentationOutputService = presentationOutputService;
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel),
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
@@ -68,6 +70,7 @@ public partial class App : System.Windows.Application
             MonitorService = monitorService,
             PresentationOutputService = presentationOutputService,
             TimerConfigurationService = configurationService,
+            RaffleConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
             ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),

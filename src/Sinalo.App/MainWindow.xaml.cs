@@ -13,6 +13,7 @@ using Sinalo.Application.Updates;
 using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
 using Sinalo.Application.Timer;
+using Sinalo.Application.Raffle;
 using System.Windows.Threading;
 
 namespace Sinalo.App;
@@ -33,6 +34,7 @@ public partial class MainWindow : Window
     public IMonitorService? MonitorService { get; init; }
     public IPresentationOutputService? PresentationOutputService { get; init; }
     public ITimerConfigurationService? TimerConfigurationService { get; init; }
+    public IRaffleConfigurationService? RaffleConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public IContentDeletionService? ContentDeletionService { get; init; }
@@ -268,6 +270,24 @@ public partial class MainWindow : Window
     }
 
     private void TimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectTimerWorkspace();
+    private void RaffleWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectRaffleWorkspace();
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void RaffleAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: string action }) return;
+        try
+        {
+            if (action == "name") viewModel.Raffle.AddName();
+            else if (action == "range") viewModel.Raffle.AddRange();
+            else if (action == "start") { viewModel.Raffle.Start(); if (RaffleConfigurationService is not null) await RaffleConfigurationService.SaveAsync(viewModel.Raffle.Configuration); }
+            else if (action == "display") viewModel.Raffle.ResetDisplay();
+            else if (action == "restart") viewModel.Raffle.Restart();
+            else if (action == "clear") viewModel.Raffle.Clear();
+            viewModel.OperationMessage = viewModel.Raffle.StatusLabel;
+        }
+        catch (Exception exception) when (exception is FormatException or InvalidOperationException) { viewModel.OperationMessage = exception.Message; }
+    }
 
     private void AvailabilityFilter_Click(object sender, RoutedEventArgs e)
     {
@@ -340,8 +360,15 @@ public partial class MainWindow : Window
     {
         if (DataContext is not HomeViewModel viewModel) return;
         viewModel.Timer.Refresh();
+        if (viewModel.Raffle.IsAnimating)
+        {
+            viewModel.Raffle.Tick();
+            viewModel.OperationMessage = viewModel.Raffle.StatusLabel;
+        }
         if (PresentationOutputService?.IsOpen == true)
-            await PresentationOutputService.UpdateAsync(CreateTimerScene(viewModel.Timer));
+            await PresentationOutputService.UpdateAsync(viewModel.IsRaffleWorkspace
+                ? new PresentationScene("Sorteio", viewModel.Raffle.CurrentWinner, viewModel.Raffle.StatusLabel)
+                : CreateTimerScene(viewModel.Timer));
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]

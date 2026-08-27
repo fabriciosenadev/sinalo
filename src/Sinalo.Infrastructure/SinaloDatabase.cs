@@ -54,6 +54,10 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 countdown_duration_seconds INTEGER NOT NULL DEFAULT 60,
                 display_format TEXT NOT NULL DEFAULT 'hh:mm:ss'
             );
+            CREATE TABLE IF NOT EXISTS raffle_configuration (
+                id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+                animation_duration_seconds INTEGER NOT NULL DEFAULT 5
+            );
 
             CREATE TABLE IF NOT EXISTS content_assets (
                 id TEXT NOT NULL PRIMARY KEY,
