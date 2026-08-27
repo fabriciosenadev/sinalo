@@ -70,6 +70,7 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
         await AddColumnIfMissingAsync(connection, "source_configurations", "download_previous_saturday", "INTEGER NULL", cancellationToken);
         await AddColumnIfMissingAsync(connection, "source_configurations", "download_current_saturday", "INTEGER NULL", cancellationToken);
         await AddColumnIfMissingAsync(connection, "source_configurations", "download_next_saturday", "INTEGER NULL", cancellationToken);
+        await AddColumnIfMissingAsync(connection, "playback_configuration", "fullscreen_monitor_key", "TEXT NULL", cancellationToken);
     }
 
     private static async Task AddColumnIfMissingAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken)

@@ -146,9 +146,11 @@ public sealed class StorageAndDatabaseTests : IDisposable
         var service = new SqliteConfigurationService(pathService);
 
         Assert.Null((await service.LoadAsync()).FullscreenScreenNumber);
-        await service.SaveAsync(new Sinalo.Application.Playback.PlaybackConfiguration(2));
+        await service.SaveAsync(new Sinalo.Application.Playback.PlaybackConfiguration(2, @"\\.\DISPLAY2"));
 
-        Assert.Equal(2, (await service.LoadAsync()).FullscreenScreenNumber);
+        var configuration = await service.LoadAsync();
+        Assert.Equal(2, configuration.FullscreenScreenNumber);
+        Assert.Equal(@"\\.\DISPLAY2", configuration.FullscreenMonitorKey);
     }
 
     [Fact]

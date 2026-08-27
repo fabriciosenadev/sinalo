@@ -5,6 +5,8 @@ using Sinalo.Application.Catalog;
 using Sinalo.Application.Appearance;
 using Sinalo.Application.Synchronization;
 using Sinalo.Application.Playback;
+using Sinalo.Application.Monitors;
+using Sinalo.Application.Presentation;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -14,6 +16,7 @@ public partial class App : System.Windows.Application
     private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
     private SystemThemeService? _themeService;
     private MpvPlaybackLauncher? _mpvPlaybackLauncher;
+    private IPresentationOutputService? _presentationOutputService;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -26,7 +29,12 @@ public partial class App : System.Windows.Application
         _themeService.Start(await ((IThemePreferenceService)configurationService).LoadAsync());
         var configurations = await configurationService.LoadSourcesAsync();
         var playbackConfiguration = await configurationService.LoadAsync();
-        var playbackScreens = GetPlaybackScreens();
+        var monitorService = new MonitorService();
+        var outputs = await monitorService.GetOutputsAsync();
+        var selectedOutput = OutputSelectionResolver.Resolve(playbackConfiguration, outputs);
+        var playbackScreens = outputs
+            .Select(output => new PlaybackScreenOption(output.DisplayName, output.ScreenNumber, output.IsPrimary, output.MonitorKey))
+            .ToArray();
         var contentCatalog = new SqliteContentCatalog(pathService);
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36");
         var discoveryService = new ContentDiscoveryService(
@@ -41,9 +49,11 @@ public partial class App : System.Windows.Application
 
         var mpvPlaybackLauncher = new MpvPlaybackLauncher();
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
+        var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory());
+        _presentationOutputService = presentationOutputService;
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: ResolvePlaybackScreenNumber(playbackConfiguration, playbackScreens)),
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
@@ -52,6 +62,8 @@ public partial class App : System.Windows.Application
             ThemePreferenceService = configurationService,
             ThemeService = _themeService,
             PlaybackConfigurationService = configurationService,
+            MonitorService = monitorService,
+            PresentationOutputService = presentationOutputService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
             ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),
@@ -69,22 +81,10 @@ public partial class App : System.Windows.Application
         _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
     }
 
-    private static IReadOnlyList<PlaybackScreenOption> GetPlaybackScreens()
-    {
-        return System.Windows.Forms.Screen.AllScreens
-            .Select((screen, index) => new PlaybackScreenOption($"Tela {index + 1}{(screen.Primary ? " · Principal" : string.Empty)}", index + 1, screen.Primary))
-            .OrderByDescending(screen => screen.IsPrimary)
-            .ToArray();
-    }
-
-    private static int ResolvePlaybackScreenNumber(PlaybackConfiguration configuration, IReadOnlyList<PlaybackScreenOption> screens)
-    {
-        if (configuration.FullscreenScreenNumber is int configured && screens.Any(screen => screen.ScreenNumber == configured)) return configured;
-        return screens.First().ScreenNumber;
-    }
-
     protected override void OnExit(ExitEventArgs e)
     {
+        try { _presentationOutputService?.CloseAsync().GetAwaiter().GetResult(); }
+        catch { }
         _themeService?.Dispose();
         _mpvPlaybackLauncher?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         _httpClient.Dispose();

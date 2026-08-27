@@ -184,6 +184,14 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
   existente e preservada; instalacoes legadas sem tela definida usam a tela
   principal informada pelo Windows. O operador pode escolher outra tela a
   qualquer momento.
+- A identificacao da tela combina uma chave estavel do monitor com o numero
+  legado da tela. Assim, uma configuracao existente continua funcional e a
+  escolha permanece mais confiavel quando a ordem dos monitores muda.
+- `PresentationOutputService` e `PresentationWindow` formam a saida visual
+  generica em tela cheia. Eles serao reutilizados por cronometro e sorteio,
+  sem transportar a complexidade de thumbnails ou da reproducao de videos.
+  A apresentacao e a reproducao de video nao usam a mesma saida ao mesmo tempo;
+  a desconexao do monitor e verificada antes de abrir a apresentacao.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
 ## Fora do MVP

@@ -301,7 +301,7 @@ public sealed class HomeWorkflowTests
             try
             {
                 var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result,
-                    playbackScreens: [new PlaybackScreenOption("Tela 1 · Principal", 1), new PlaybackScreenOption("Tela 2", 2)],
+                    playbackScreens: [new PlaybackScreenOption("Tela 1 · Principal", 1), new PlaybackScreenOption("Tela 2", 2, false, @"\\.\DISPLAY2")],
                     selectedPlaybackScreenNumber: 2);
                 var window = new Sinalo.App.MainWindow
                 {
@@ -318,6 +318,7 @@ public sealed class HomeWorkflowTests
                     .Invoke(window, [window, args]);
 
                 Assert.Equal(2, configuration.Saved?.FullscreenScreenNumber);
+                Assert.Equal(@"\\.\DISPLAY2", configuration.Saved?.FullscreenMonitorKey);
                 window.Close();
             }
             catch (Exception caught)

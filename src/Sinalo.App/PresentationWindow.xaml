@@ -1,0 +1,26 @@
+<Window x:Class="Sinalo.App.PresentationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sinalo — Apresentação"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        PreviewKeyDown="PresentationWindow_PreviewKeyDown"
+        Background="{DynamicResource Brush.Window}">
+    <Border Background="{DynamicResource Brush.Window}" Padding="80">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="28" HorizontalAlignment="Center" />
+            <TextBlock Grid.Row="1" Text="{Binding MainText}" Foreground="{DynamicResource Brush.TextPrimary}" FontSize="72" FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="2" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding SecondaryText}" Foreground="{DynamicResource Brush.Accent}" FontSize="24" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock Text="Pressione Esc para fechar esta apresentação" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="16" HorizontalAlignment="Center" Margin="0,28,0,0" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

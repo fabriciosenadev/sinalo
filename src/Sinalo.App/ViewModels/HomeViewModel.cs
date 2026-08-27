@@ -286,5 +286,5 @@ public sealed record CatalogCard(string Id, string Title, string SourceName, str
     public string Source => SourceName;
 }
 public sealed record ScheduleCard(string Id, string Title, string SourceName, string Status);
-public sealed record PlaybackScreenOption(string Label, int ScreenNumber, bool IsPrimary = false);
+public sealed record PlaybackScreenOption(string Label, int ScreenNumber, bool IsPrimary = false, string MonitorKey = "");
 public sealed record SynchronizationQueueCard(string SourceName, string State, string Details, bool IsPending);

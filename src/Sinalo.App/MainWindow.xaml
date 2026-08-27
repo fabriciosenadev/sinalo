@@ -95,6 +95,11 @@
                 </ItemsControl>
                 <Button Content="Cancelar fila" Click="CancelSynchronizationQueue_Click" IsEnabled="{Binding IsQueueActive}" Padding="8" Style="{DynamicResource Button.Busy}" />
                 <Separator Margin="0,18,0,14" />
+                <TextBlock Text="Apresentação" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock Text="Use a tela selecionada para testar a saída que será compartilhada pelo cronômetro e pelo sorteio." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,10,0,8" />
+                <Button Content="Testar tela de apresentação" Click="TestPresentation_Click" Padding="8" Style="{DynamicResource Button.Primary}" />
+                <Button Content="Fechar tela de apresentação" Click="ClosePresentation_Click" Padding="8" Margin="0,7,0,0" Style="{DynamicResource Button.Busy}" />
+                <Separator Margin="0,18,0,14" />
                 <TextBlock Text="Reprodução" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBlock Text="Tela de saída do vídeo" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,14,0,4" />
                 <ComboBox ItemsSource="{Binding PlaybackScreens}" SelectedItem="{Binding SelectedPlaybackScreen}" SelectionChanged="PlaybackScreen_SelectionChanged" Padding="8">

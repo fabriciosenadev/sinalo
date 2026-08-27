@@ -57,17 +57,22 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
     {
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT fullscreen_screen_number FROM playback_configuration WHERE id = 1;";
-        var value = await command.ExecuteScalarAsync(cancellationToken);
-        return value is null or DBNull ? new PlaybackConfiguration(null) : new PlaybackConfiguration(Convert.ToInt32(value));
+        command.CommandText = "SELECT fullscreen_screen_number, fullscreen_monitor_key FROM playback_configuration WHERE id = 1;";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return new PlaybackConfiguration(null);
+
+        return new PlaybackConfiguration(
+            reader.IsDBNull(0) ? null : reader.GetInt32(0),
+            reader.IsDBNull(1) ? null : reader.GetString(1));
     }
 
     public async Task SaveAsync(PlaybackConfiguration configuration, CancellationToken cancellationToken = default)
     {
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO playback_configuration (id, fullscreen_screen_number) VALUES (1, $screen) ON CONFLICT(id) DO UPDATE SET fullscreen_screen_number = excluded.fullscreen_screen_number;";
+        command.CommandText = "INSERT INTO playback_configuration (id, fullscreen_screen_number, fullscreen_monitor_key) VALUES (1, $screen, $monitorKey) ON CONFLICT(id) DO UPDATE SET fullscreen_screen_number = excluded.fullscreen_screen_number, fullscreen_monitor_key = excluded.fullscreen_monitor_key;";
         command.Parameters.AddWithValue("$screen", configuration.FullscreenScreenNumber is int screen ? screen : DBNull.Value);
+        command.Parameters.AddWithValue("$monitorKey", string.IsNullOrWhiteSpace(configuration.FullscreenMonitorKey) ? DBNull.Value : configuration.FullscreenMonitorKey);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

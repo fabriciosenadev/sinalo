@@ -10,6 +10,8 @@ using Sinalo.Infrastructure;
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Playback;
 using Sinalo.Application.Updates;
+using Sinalo.Application.Monitors;
+using Sinalo.Application.Presentation;
 
 namespace Sinalo.App;
 
@@ -25,6 +27,8 @@ public partial class MainWindow : Window
     public SystemThemeService? ThemeService { get; init; }
     private DownloadedUpdate? _downloadedUpdate;
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
+    public IMonitorService? MonitorService { get; init; }
+    public IPresentationOutputService? PresentationOutputService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public IContentDeletionService? ContentDeletionService { get; init; }
@@ -268,7 +272,7 @@ public partial class MainWindow : Window
     private async void PlaybackScreen_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (PlaybackConfigurationService is null || DataContext is not HomeViewModel viewModel || viewModel.SelectedPlaybackScreen is null) return;
-        await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber));
+        await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey));
     }
 
     private async void CatalogItem_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -279,10 +283,46 @@ public partial class MainWindow : Window
             viewModel.OperationMessage = "Nenhuma tela de saída foi encontrada. Conecte ou habilite uma tela no Windows.";
             return;
         }
+        if (PresentationOutputService?.IsOpen == true)
+        {
+            viewModel.OperationMessage = "Feche a tela de apresentação antes de reproduzir um vídeo nesta saída.";
+            return;
+        }
 
         var result = await PlaybackService.PlayAsync(item.Id, new PlaybackLaunchOptions(viewModel.SelectedPlaybackScreen.ScreenNumber));
         viewModel.OperationMessage = result.Message;
         if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
+    }
+
+    private async void TestPresentation_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || MonitorService is null || PresentationOutputService is null) return;
+        if (viewModel.SelectedPlaybackScreen is null)
+        {
+            viewModel.OperationMessage = "Nenhuma tela de saída foi encontrada. Conecte ou habilite uma tela no Windows.";
+            return;
+        }
+
+        var output = OutputSelectionResolver.Resolve(
+            new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey),
+            await MonitorService.GetOutputsAsync());
+        if (output is null)
+        {
+            viewModel.OperationMessage = "A tela selecionada não está disponível. Verifique a conexão do monitor.";
+            return;
+        }
+
+        var result = await PresentationOutputService.ShowAsync(
+            new PresentationScene("Sinalo", "Tela de apresentação pronta", "Cronômetro e sorteio usarão esta saída."),
+            output);
+        viewModel.OperationMessage = result.Message;
+    }
+
+    private async void ClosePresentation_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || PresentationOutputService is null) return;
+        await PresentationOutputService.CloseAsync();
+        viewModel.OperationMessage = "Tela de apresentação fechada.";
     }
 
     private void AddToSchedule_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.AddSelectedToSchedule();
