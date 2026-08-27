@@ -12,12 +12,15 @@ using Sinalo.Application.Playback;
 using Sinalo.Application.Updates;
 using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
+using Sinalo.Application.Timer;
+using System.Windows.Threading;
 
 namespace Sinalo.App;
 
 public partial class MainWindow : Window
 {
     private SynchronizationQueue? _synchronizationQueue;
+    private readonly DispatcherTimer _timerRefresh = new() { Interval = TimeSpan.FromMilliseconds(100) };
     public ISinaloConfigurationService? ConfigurationService { get; init; }
     public IContentPathConfigurationService? ContentPathConfigurationService { get; init; }
     public IContentPathMigrationService? ContentPathMigrationService { get; init; }
@@ -29,6 +32,7 @@ public partial class MainWindow : Window
     public IPlaybackConfigurationService? PlaybackConfigurationService { get; init; }
     public IMonitorService? MonitorService { get; init; }
     public IPresentationOutputService? PresentationOutputService { get; init; }
+    public ITimerConfigurationService? TimerConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public IContentDeletionService? ContentDeletionService { get; init; }
@@ -50,6 +54,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, SystemThemeService.IsWindowsDarkTheme());
+        _timerRefresh.Tick += TimerRefresh_Tick;
+        Loaded += (_, _) => _timerRefresh.Start();
+        Closed += (_, _) => _timerRefresh.Stop();
     }
 
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
@@ -66,7 +73,8 @@ public partial class MainWindow : Window
                 await ConfigurationService.LoadSourcesAsync(),
                 await LoadCatalogAsync(),
                 previous?.PlaybackScreens,
-                previous?.SelectedPlaybackScreen?.ScreenNumber);
+                previous?.SelectedPlaybackScreen?.ScreenNumber,
+                previous?.Timer);
             RestoreFilters(viewModel, previous);
             DataContext = viewModel;
         }
@@ -259,6 +267,8 @@ public partial class MainWindow : Window
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: string filter }) viewModel.SelectedSource = filter;
     }
 
+    private void TimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectTimerWorkspace();
+
     private void AvailabilityFilter_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: string filter }) viewModel.SelectedAvailability = filter;
@@ -325,6 +335,89 @@ public partial class MainWindow : Window
         viewModel.OperationMessage = "Tela de apresentação fechada.";
     }
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void TimerRefresh_Tick(object? sender, EventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        viewModel.Timer.Refresh();
+        if (PresentationOutputService?.IsOpen == true)
+            await PresentationOutputService.UpdateAsync(CreateTimerScene(viewModel.Timer));
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void TimerStartPause_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        viewModel.Timer.StartOrPause();
+        await SaveTimerConfigurationAsync(viewModel.Timer);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void TimerReset_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is HomeViewModel viewModel) viewModel.Timer.Reset();
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void TimerConfiguration_Changed(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        try
+        {
+            viewModel.Timer.ApplyConfiguration();
+            await SaveTimerConfigurationAsync(viewModel.Timer);
+        }
+        catch (FormatException exception)
+        {
+            viewModel.OperationMessage = exception.Message;
+        }
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void TimerConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => TimerConfiguration_Changed(sender, e);
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void OpenTimerPresentation_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || MonitorService is null || PresentationOutputService is null) return;
+        if (viewModel.SelectedPlaybackScreen is null)
+        {
+            viewModel.OperationMessage = "Nenhuma tela de saída foi encontrada. Conecte ou habilite uma tela no Windows.";
+            return;
+        }
+        var output = OutputSelectionResolver.Resolve(
+            new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey),
+            await MonitorService.GetOutputsAsync());
+        if (output is null)
+        {
+            viewModel.OperationMessage = "A tela selecionada não está disponível. Verifique a conexão do monitor.";
+            return;
+        }
+        var result = await PresentationOutputService.ShowAsync(CreateTimerScene(viewModel.Timer), output);
+        viewModel.OperationMessage = result.Message;
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void CloseTimerPresentation_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || PresentationOutputService is null) return;
+        await PresentationOutputService.CloseAsync();
+        viewModel.OperationMessage = "Tela do cronômetro fechada.";
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async Task SaveTimerConfigurationAsync(TimerViewModel timer)
+    {
+        if (TimerConfigurationService is not null) await TimerConfigurationService.SaveAsync(timer.Configuration);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private static PresentationScene CreateTimerScene(TimerViewModel timer)
+    {
+        var data = timer.GetPresentationData();
+        return new PresentationScene("Cronômetro", data.DisplayTime, data.Status);
+    }
+
     private void AddToSchedule_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.AddSelectedToSchedule();
     private async void DeleteSelectedVideo_Click(object sender, RoutedEventArgs e)
     {
@@ -386,7 +479,7 @@ public partial class MainWindow : Window
     private void ReplaceHomeViewModel(IReadOnlyList<Sinalo.Application.Configuration.SourceConfiguration> configurations, IReadOnlyList<Sinalo.Domain.ContentItem> items, string message)
     {
         var previous = DataContext as HomeViewModel;
-        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items, previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber) { OperationMessage = message };
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items, previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber, previous?.Timer) { OperationMessage = message };
         RestoreFilters(viewModel, previous);
         DataContext = viewModel;
     }

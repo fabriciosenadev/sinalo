@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Appearance;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Timer;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 
@@ -164,6 +165,19 @@ public sealed class StorageAndDatabaseTests : IDisposable
         await ((IThemePreferenceService)service).SaveAsync(ThemePreference.Dark);
 
         Assert.Equal(ThemePreference.Dark, await ((IThemePreferenceService)service).LoadAsync());
+    }
+
+    [Fact]
+    public async Task TimerConfiguration_ShouldPersistDirectionDurationAndFormat()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+        var expected = new TimerConfiguration(TimerDirection.CountDown, TimeSpan.FromMinutes(7), "nn:ss");
+
+        await ((ITimerConfigurationService)service).SaveAsync(expected);
+
+        Assert.Equal(expected, await ((ITimerConfigurationService)service).LoadAsync());
     }
 
     public void Dispose()

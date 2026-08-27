@@ -3,11 +3,12 @@ using Sinalo.Application.Appearance;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Playback;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Timer;
 using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService
+public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService
 {
     private readonly ISinaloPathService _pathService = pathService;
 
@@ -91,6 +92,29 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO application_preferences (id, theme_preference) VALUES (1, $preference) ON CONFLICT(id) DO UPDATE SET theme_preference = excluded.theme_preference;";
         command.Parameters.AddWithValue("$preference", (int)preference);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    async Task<TimerConfiguration> ITimerConfigurationService.LoadAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT direction, countdown_duration_seconds, display_format FROM timer_configuration WHERE id = 1;";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return new(TimerDirection.CountUp, TimeSpan.FromMinutes(1), "hh:mm:ss");
+        var direction = Enum.IsDefined((TimerDirection)reader.GetInt32(0)) ? (TimerDirection)reader.GetInt32(0) : TimerDirection.CountUp;
+        var duration = TimeSpan.FromSeconds(Math.Max(0, reader.GetInt64(1)));
+        return new TimerConfiguration(direction, duration, reader.GetString(2));
+    }
+
+    async Task ITimerConfigurationService.SaveAsync(TimerConfiguration configuration, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO timer_configuration (id, direction, countdown_duration_seconds, display_format) VALUES (1, $direction, $duration, $format) ON CONFLICT(id) DO UPDATE SET direction = excluded.direction, countdown_duration_seconds = excluded.countdown_duration_seconds, display_format = excluded.display_format;";
+        command.Parameters.AddWithValue("$direction", (int)configuration.Direction);
+        command.Parameters.AddWithValue("$duration", (long)configuration.CountdownDuration.TotalSeconds);
+        command.Parameters.AddWithValue("$format", configuration.DisplayFormat);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

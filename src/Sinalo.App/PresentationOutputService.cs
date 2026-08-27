@@ -9,6 +9,7 @@ public sealed class PresentationOutputService(IMonitorService monitorService, IP
     private readonly IMonitorService _monitorService = monitorService;
     private readonly IPresentationWindowFactory _windowFactory = windowFactory;
     private IPresentationWindowHost? _window;
+    private OutputProfile? _output;
 
     public bool IsOpen => _window?.IsVisible == true;
 
@@ -20,7 +21,15 @@ public sealed class PresentationOutputService(IMonitorService monitorService, IP
 
         if (_window is null || !_window.IsVisible) _window = _windowFactory.Create();
         _window.Display(scene, output);
+        _output = output;
         return new(true, $"Apresentação aberta em {output.DisplayName}.");
+    }
+
+    public Task UpdateAsync(PresentationScene scene, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_window?.IsVisible == true && _output is not null) _window.Display(scene, _output);
+        return Task.CompletedTask;
     }
 
     public Task CloseAsync(CancellationToken cancellationToken = default)
@@ -28,6 +37,7 @@ public sealed class PresentationOutputService(IMonitorService monitorService, IP
         cancellationToken.ThrowIfCancellationRequested();
         if (_window?.IsVisible == true) _window.Close();
         _window = null;
+        _output = null;
         return Task.CompletedTask;
     }
 }

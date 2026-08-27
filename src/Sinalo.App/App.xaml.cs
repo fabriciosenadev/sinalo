@@ -7,6 +7,7 @@ using Sinalo.Application.Synchronization;
 using Sinalo.Application.Playback;
 using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
+using Sinalo.Application.Timer;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -29,6 +30,8 @@ public partial class App : System.Windows.Application
         _themeService.Start(await ((IThemePreferenceService)configurationService).LoadAsync());
         var configurations = await configurationService.LoadSourcesAsync();
         var playbackConfiguration = await configurationService.LoadAsync();
+        var timerConfiguration = await ((ITimerConfigurationService)configurationService).LoadAsync();
+        var timerViewModel = new TimerViewModel(new TimerSession(), timerConfiguration);
         var monitorService = new MonitorService();
         var outputs = await monitorService.GetOutputsAsync();
         var selectedOutput = OutputSelectionResolver.Resolve(playbackConfiguration, outputs);
@@ -53,7 +56,7 @@ public partial class App : System.Windows.Application
         _presentationOutputService = presentationOutputService;
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber),
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
@@ -64,6 +67,7 @@ public partial class App : System.Windows.Application
             PlaybackConfigurationService = configurationService,
             MonitorService = monitorService,
             PresentationOutputService = presentationOutputService,
+            TimerConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
             ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),

@@ -48,6 +48,13 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 theme_preference INTEGER NOT NULL DEFAULT 0
             );
 
+            CREATE TABLE IF NOT EXISTS timer_configuration (
+                id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+                direction INTEGER NOT NULL DEFAULT 0,
+                countdown_duration_seconds INTEGER NOT NULL DEFAULT 60,
+                display_format TEXT NOT NULL DEFAULT 'hh:mm:ss'
+            );
+
             CREATE TABLE IF NOT EXISTS content_assets (
                 id TEXT NOT NULL PRIMARY KEY,
                 content_item_id TEXT NOT NULL,

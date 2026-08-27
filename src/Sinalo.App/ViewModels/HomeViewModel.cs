@@ -16,7 +16,7 @@ public sealed partial class HomeViewModel : ObservableObject
         ISaturdayWindowService saturdayWindowService,
         ISinaloPathService pathService,
         IReadOnlyList<SourceConfiguration> configurations,
-        IReadOnlyList<ContentItem>? catalogItems = null, IReadOnlyList<PlaybackScreenOption>? playbackScreens = null, int? selectedPlaybackScreenNumber = null)
+        IReadOnlyList<ContentItem>? catalogItems = null, IReadOnlyList<PlaybackScreenOption>? playbackScreens = null, int? selectedPlaybackScreenNumber = null, TimerViewModel? timer = null)
     {
         var window = saturdayWindowService.GetWindow(DateOnly.FromDateTime(DateTime.Today));
         PreviousSaturday = FormatDate(window.Previous);
@@ -36,6 +36,7 @@ public sealed partial class HomeViewModel : ObservableObject
             .ToList();
         PlaybackScreens = playbackScreens ?? [new PlaybackScreenOption("Tela 1 · Principal", 1, true)];
         SelectedPlaybackScreen = PlaybackScreens.FirstOrDefault(screen => screen.ScreenNumber == selectedPlaybackScreenNumber) ?? PlaybackScreens.FirstOrDefault();
+        Timer = timer ?? new TimerViewModel(new Sinalo.Application.Timer.TimerSession(), new Sinalo.Application.Timer.TimerConfiguration(Sinalo.Application.Timer.TimerDirection.CountUp, TimeSpan.FromMinutes(1), "hh:mm:ss"));
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
             ? "Nenhum vídeo offline disponível. Escolha uma fonte e use Buscar e baixar."
@@ -60,6 +61,7 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private string nextSaturday = string.Empty;
     [ObservableProperty] private string contentPath = string.Empty;
     [ObservableProperty] private string selectedSource = "Todos";
+    [ObservableProperty] private bool isTimerWorkspace;
     [ObservableProperty] private string selectedAvailability = "Todos";
     [ObservableProperty] private string searchQuery = string.Empty;
     [ObservableProperty] private CatalogCard? selectedCatalogItem;
@@ -80,7 +82,9 @@ public sealed partial class HomeViewModel : ObservableObject
     public ObservableCollection<ScheduleCard> ScheduleItems { get; } = [];
     public ObservableCollection<SynchronizationQueueCard> SynchronizationQueueItems { get; } = [];
     public IReadOnlyList<PlaybackScreenOption> PlaybackScreens { get; }
+    public TimerViewModel Timer { get; }
     public string ApplicationVersion => $"Versão {typeof(HomeViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
+    public bool IsLibraryWorkspace => !IsTimerWorkspace;
 
     public string SelectedItemTitle => SelectedCatalogItem?.Title ?? "Selecione um vídeo";
     public string SelectedItemDetails => SelectedCatalogItem is null
@@ -97,6 +101,7 @@ public sealed partial class HomeViewModel : ObservableObject
 
     partial void OnSelectedSourceChanged(string value)
     {
+        IsTimerWorkspace = false;
         ApplyFilters();
         OnPropertyChanged(nameof(SelectedSourceActionLabel));
         OnPropertyChanged(nameof(UpdateAndSynchronizeSelectedSourceLabel));
@@ -104,6 +109,8 @@ public sealed partial class HomeViewModel : ObservableObject
         OnPropertyChanged(nameof(CanQueueSelectedSource));
         OnPropertyChanged(nameof(IsHealthSelected));
     }
+    partial void OnIsTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
+    public void SelectTimerWorkspace() => IsTimerWorkspace = true;
     partial void OnSelectedAvailabilityChanged(string value) => ApplyFilters();
     partial void OnSearchQueryChanged(string value) => ApplyFilters();
     partial void OnSelectedCatalogItemChanged(CatalogCard? value)

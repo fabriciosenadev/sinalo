@@ -78,6 +78,20 @@ public sealed class PresentationOutputServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_RefreshesTheOpenPresentationWithoutCreatingAnotherWindow()
+    {
+        var host = new RecordingPresentationWindowHost();
+        var factory = new RecordingPresentationWindowFactory(host);
+        var service = new PresentationOutputService(new RecordingMonitorService([Output]), factory);
+        await service.ShowAsync(new PresentationScene("Sinalo", "Inicial"), Output);
+
+        await service.UpdateAsync(new PresentationScene("Cronômetro", "00:01:00", "Em execução", true, 60000, 120000, ["01 - 00:30:00"]));
+
+        Assert.Equal(1, factory.CreateCount);
+        Assert.Equal("00:01:00", host.Scene?.MainText);
+    }
+
+    [Fact]
     public void PresentationWindow_DisplaysAndReusesTheFullscreenWindow()
     {
         RunInSta(() =>
