@@ -27,7 +27,7 @@ public sealed partial class HomeViewModel : ObservableObject
             item.Source,
             item.DisplayName,
             GetSyncPolicyDescription(item),
-            string.IsNullOrWhiteSpace(item.PageUrl) ? "Configuração da fonte pendente" : "Fonte configurada"))
+            string.IsNullOrWhiteSpace(item.PageUrl) ? "Configuração do programa pendente" : "Programa configurado"))
             .ToArray();
         _allCatalogItems = (catalogItems ?? [])
             .Where(item => item.IsReadyOffline)
@@ -40,7 +40,7 @@ public sealed partial class HomeViewModel : ObservableObject
         Raffle = raffle ?? new RaffleViewModel(new Sinalo.Application.Raffle.RaffleSession(), new Sinalo.Application.Raffle.RaffleConfiguration(TimeSpan.FromSeconds(5)));
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
-            ? "Nenhum vídeo offline disponível. Escolha uma fonte e use Buscar e baixar."
+            ? "Nenhum vídeo offline disponível. Escolha um programa e use Buscar e baixar."
             : $"{_allCatalogItems.Count} vídeo(s) offline no catálogo local.";
     }
 
@@ -96,10 +96,11 @@ public sealed partial class HomeViewModel : ObservableObject
     public string SelectedItemPath => SelectedCatalogItem?.LocalPath ?? "Arquivo local ainda não disponível.";
     public bool HasSelectedItem => SelectedCatalogItem is not null;
 
-    public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione uma fonte" : SelectedSource;
+    public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione um programa" : SelectedSource;
     public string UpdateAndSynchronizeSelectedSourceLabel => $"Buscar e baixar {SelectedSourceActionLabel}";
     public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede or ContentSource.Health;
     public bool CanQueueSelectedSource => CanOperateSelectedSource && !SynchronizationQueueItems.Any(item => item.SourceName == SelectedSource && item.IsPending);
+    public bool HasSynchronizationQueueItems => SynchronizationQueueItems.Count > 0;
     public bool IsHealthSelected => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source == ContentSource.Health;
 
     partial void OnSelectedSourceChanged(string value)
@@ -169,6 +170,8 @@ public sealed partial class HomeViewModel : ObservableObject
             var pending = entry.State is SynchronizationQueueState.Waiting or SynchronizationQueueState.Running;
             SynchronizationQueueItems.Add(new SynchronizationQueueCard(entry.SourceName, GetQueueStateLabel(entry.State), entry.Message, pending));
         }
+
+        OnPropertyChanged(nameof(HasSynchronizationQueueItems));
 
         var active = snapshot.Entries.FirstOrDefault(entry => entry.State == SynchronizationQueueState.Running);
         if (active is not null)

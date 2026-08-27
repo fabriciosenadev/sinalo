@@ -64,8 +64,8 @@ public sealed class HomeWorkflowTests
 
         Assert.Equal(3, viewModel.Sources.Count);
         Assert.Contains("Informativo", viewModel.Sources[0].Name);
-        Assert.Equal("Fonte configurada", viewModel.Sources[0].Status);
-        Assert.Equal("Configuração da fonte pendente", viewModel.Sources[1].Status);
+        Assert.Equal("Programa configurado", viewModel.Sources[0].Status);
+        Assert.Equal("Configuração do programa pendente", viewModel.Sources[1].Status);
         Assert.Equal("Pronto offline", viewModel.CatalogItems.Single(item => item.Title == "ready").Status);
         Assert.Single(viewModel.CatalogItems);
         Assert.False(string.IsNullOrWhiteSpace(viewModel.PreviousSaturday));
@@ -235,7 +235,7 @@ public sealed class HomeWorkflowTests
 
                 var refreshedViewModel = Assert.IsType<HomeViewModel>(window.DataContext);
                 Assert.NotSame(initialViewModel, refreshedViewModel);
-                Assert.Equal("Fonte configurada", refreshedViewModel.Sources.Single(source => source.Source == Sinalo.Domain.ContentSource.Missions).Status);
+                Assert.Equal("Programa configurado", refreshedViewModel.Sources.Single(source => source.Source == Sinalo.Domain.ContentSource.Missions).Status);
                 window.Close();
             }
             catch (Exception caught)

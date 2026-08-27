@@ -73,7 +73,7 @@ public sealed class HomeViewModelTests
         var viewModel = CreateViewModel([]);
 
         Assert.False(viewModel.CanOperateSelectedSource);
-        Assert.Equal("Selecione uma fonte", viewModel.SelectedSourceActionLabel);
+        Assert.Equal("Selecione um programa", viewModel.SelectedSourceActionLabel);
 
         viewModel.SelectedSource = "Informativo das Missões";
         Assert.True(viewModel.CanOperateSelectedSource);

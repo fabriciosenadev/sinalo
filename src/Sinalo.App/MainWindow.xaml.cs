@@ -154,7 +154,7 @@ public partial class MainWindow : Window
         CancellationToken cancellationToken)
     {
         if (DiscoveryService is null || ContentCatalog is null) throw new InvalidOperationException("Os serviços de sincronização não estão disponíveis.");
-        queueProgress.Report(new SynchronizationQueueProgress("Consultando a fonte oficial..."));
+        queueProgress.Report(new SynchronizationQueueProgress("Consultando o site oficial..."));
         await DiscoveryService.RefreshAsync(request.Configuration, cancellationToken);
         queueProgress.Report(new SynchronizationQueueProgress("Catálogo atualizado. Preparando downloads..."));
         var downloadProgress = new Progress<DownloadProgress>(progress =>
@@ -177,7 +177,7 @@ public partial class MainWindow : Window
                 : await MissionsSynchronizationService.SynchronizeAsync(downloadProgress, cancellationToken),
             Sinalo.Domain.ContentSource.ProvaiEVede when ProvaiEVedeSynchronizationService is not null => await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(downloadProgress, request.Configuration.ResolvedDownloadSelection, cancellationToken),
             Sinalo.Domain.ContentSource.Health when HealthSynchronizationService is not null => await HealthSynchronizationService.SynchronizeAsync(request.Configuration.ResolvedDownloadSelection, downloadProgress, cancellationToken),
-            _ => throw new InvalidOperationException("A fonte selecionada não está disponível para sincronização.")
+            _ => throw new InvalidOperationException("O programa selecionado não está disponível para sincronização.")
         };
 
         if (ConfigurationService is not null)
@@ -209,7 +209,7 @@ public partial class MainWindow : Window
     {
         if (ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return false;
         var sourceName = GetSourceName(source);
-        SetBusy($"Consultando a fonte oficial {sourceName}...");
+        SetBusy($"Consultando o site oficial de {sourceName}...");
         try
         {
             var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);

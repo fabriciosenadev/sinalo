@@ -17,11 +17,11 @@
 
             <StackPanel>
                 <TextBlock Text="Configurações" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                <TextBlock Text="Informe a página oficial e a regra de download de cada fonte." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,16" />
+                <TextBlock Text="Informe o site oficial e a regra de download de cada programa." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,16" />
                 <Border Background="{DynamicResource Brush.ButtonHover}" BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="Importante" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                        <TextBlock Text="A configuração define quais vídeos serão procurados. O download só acontece quando a fonte encontrar um vídeo publicado com arquivo oficial disponível." Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,3,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="A configuração define quais vídeos serão procurados. O download só acontece quando o programa disponibilizar um vídeo publicado com arquivo oficial disponível." Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,3,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
@@ -53,7 +53,7 @@
                     <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Informativo das Missões" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Página oficial da fonte" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
+                            <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
                             <TextBox x:Name="MissionsUrl" Padding="8" />
                             <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
                             <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
@@ -68,7 +68,7 @@
                     <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Provai e Vede" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Página oficial da fonte" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
+                            <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
                             <TextBox x:Name="ProvaiUrl" Padding="8" />
                             <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
                             <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
@@ -83,7 +83,7 @@
                     <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16">
                         <StackPanel>
                             <TextBlock Text="Minuto de Saúde" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Página oficial da fonte" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
+                            <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
                             <TextBox x:Name="HealthUrl" Padding="8" />
                             <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
                             <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
