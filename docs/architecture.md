@@ -179,7 +179,10 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 - A tela principal e uma biblioteca de uso rapido: `Hoje`, `Proximo Sabado`, fontes e busca.
 - Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; na falha dele, o Sinalo usa VLC e depois o player padrao do Windows.
 - O MPV permanece ocioso entre vídeos e recebe a troca de arquivo por IPC, reduzindo a espera em computadores com HD. Ele pode abrir em tela cheia no monitor selecionado pelo operador.
-- A UI mantem a escolha da tela de saida e registra que a abertura foi iniciada.
+- A UI exige uma tela de saida para a reproducao. Uma configuracao de tela
+  existente e preservada; instalacoes legadas sem tela definida usam a tela
+  principal informada pelo Windows. O operador pode escolher outra tela a
+  qualquer momento.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
 ## Fora do MVP

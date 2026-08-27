@@ -26,6 +26,7 @@ public partial class App : System.Windows.Application
         var configurationService = new SqliteConfigurationService(pathService);
         var configurations = await configurationService.LoadSourcesAsync();
         var playbackConfiguration = await configurationService.LoadAsync();
+        var playbackScreens = GetPlaybackScreens();
         var contentCatalog = new SqliteContentCatalog(pathService);
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36");
         var discoveryService = new ContentDiscoveryService(
@@ -42,7 +43,7 @@ public partial class App : System.Windows.Application
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: GetPlaybackScreens(), selectedPlaybackScreenNumber: playbackConfiguration.FullscreenScreenNumber),
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: ResolvePlaybackScreenNumber(playbackConfiguration, playbackScreens)),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
@@ -67,9 +68,16 @@ public partial class App : System.Windows.Application
 
     private static IReadOnlyList<PlaybackScreenOption> GetPlaybackScreens()
     {
-        var screens = new List<PlaybackScreenOption> { new("Abrir normalmente", null) };
-        screens.AddRange(System.Windows.Forms.Screen.AllScreens.Select((screen, index) => new PlaybackScreenOption($"Tela {index + 1}{(screen.Primary ? " · Principal" : string.Empty)}", index + 1)));
-        return screens;
+        return System.Windows.Forms.Screen.AllScreens
+            .Select((screen, index) => new PlaybackScreenOption($"Tela {index + 1}{(screen.Primary ? " · Principal" : string.Empty)}", index + 1, screen.Primary))
+            .OrderByDescending(screen => screen.IsPrimary)
+            .ToArray();
+    }
+
+    private static int ResolvePlaybackScreenNumber(PlaybackConfiguration configuration, IReadOnlyList<PlaybackScreenOption> screens)
+    {
+        if (configuration.FullscreenScreenNumber is int configured && screens.Any(screen => screen.ScreenNumber == configured)) return configured;
+        return screens.First().ScreenNumber;
     }
 
     protected override void OnExit(ExitEventArgs e)

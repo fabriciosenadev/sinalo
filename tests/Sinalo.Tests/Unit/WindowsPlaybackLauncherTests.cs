@@ -34,7 +34,7 @@ public sealed class WindowsPlaybackLauncherTests : IDisposable
     [Fact]
     public async Task LaunchAsync_ShouldRespectCancellationBeforeOpeningAnything()
     {
-        await Assert.ThrowsAsync<OperationCanceledException>(() => new WindowsPlaybackLauncher().LaunchAsync("C:\\video.mp4", cancellationToken: new CancellationToken(true)));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => new WindowsPlaybackLauncher().LaunchAsync("C:\\video.mp4", new PlaybackLaunchOptions(1), cancellationToken: new CancellationToken(true)));
     }
 
     [Fact]

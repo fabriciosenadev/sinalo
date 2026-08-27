@@ -5,7 +5,7 @@ namespace Sinalo.Infrastructure;
 
 public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
 {
-    public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default)
+    public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -26,10 +26,8 @@ public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
         string.IsNullOrWhiteSpace(vlcPath) ? new PlaybackLaunchResult(true, "Aplicativo padrão", "VLC não encontrado; vídeo aberto no aplicativo padrão do Windows.") :
         new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC.");
 
-    public static string BuildVlcArguments(string filePath, PlaybackLaunchOptions? options) =>
-        options?.FullscreenScreenNumber is > 0
-            ? $"\"{filePath}\" --fullscreen --qt-fullscreen-screennumber={options.FullscreenScreenNumber}"
-            : $"\"{filePath}\"";
+    public static string BuildVlcArguments(string filePath, PlaybackLaunchOptions options) =>
+        $"\"{filePath}\" --fullscreen --qt-fullscreen-screennumber={options.FullscreenScreenNumber}";
 
     public static string? FindVlcPath()
     {

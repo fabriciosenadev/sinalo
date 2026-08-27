@@ -10,8 +10,18 @@ public sealed class HomeViewModelTests
     [Fact]
     public void Constructor_ShouldSelectPersistedPlaybackScreen()
     {
-        var screens = new[] { new PlaybackScreenOption("Abrir normalmente", null), new PlaybackScreenOption("Tela 2", 2) };
+        var screens = new[] { new PlaybackScreenOption("Tela 1 · Principal", 1), new PlaybackScreenOption("Tela 2", 2) };
         var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), [], playbackScreens: screens, selectedPlaybackScreenNumber: 2);
+
+        Assert.Equal(2, viewModel.SelectedPlaybackScreen!.ScreenNumber);
+        Assert.DoesNotContain(viewModel.PlaybackScreens, screen => string.Equals(screen.Label, "Abrir normalmente", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Constructor_ShouldUseTheFirstAvailableScreenWhenNoScreenIsPersisted()
+    {
+        var screens = new[] { new PlaybackScreenOption("Tela 2 · Principal", 2), new PlaybackScreenOption("Tela 1", 1) };
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), [], playbackScreens: screens);
 
         Assert.Equal(2, viewModel.SelectedPlaybackScreen!.ScreenNumber);
     }

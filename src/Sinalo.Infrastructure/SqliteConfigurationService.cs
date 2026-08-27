@@ -58,7 +58,7 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         var command = connection.CreateCommand();
         command.CommandText = "SELECT fullscreen_screen_number FROM playback_configuration WHERE id = 1;";
         var value = await command.ExecuteScalarAsync(cancellationToken);
-        return value is null || value is DBNull ? new PlaybackConfiguration(null) : new PlaybackConfiguration(Convert.ToInt32(value));
+        return value is null or DBNull ? new PlaybackConfiguration(null) : new PlaybackConfiguration(Convert.ToInt32(value));
     }
 
     public async Task SaveAsync(PlaybackConfiguration configuration, CancellationToken cancellationToken = default)

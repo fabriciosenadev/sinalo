@@ -7,7 +7,7 @@ public sealed record PlaybackResult(bool Started, string Message, ContentItem? I
 
 public sealed class PlaybackService(IContentCatalog catalog, IPlaybackLauncher launcher)
 {
-    public async Task<PlaybackResult> PlayAsync(string contentItemId, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<PlaybackResult> PlayAsync(string contentItemId, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
     {
         var item = await catalog.FindByIdAsync(contentItemId, cancellationToken);
         if (item is null) return new(false, "O conteúdo não foi encontrado no catálogo local.");

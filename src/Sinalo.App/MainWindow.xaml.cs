@@ -271,7 +271,13 @@ public partial class MainWindow : Window
     private async void CatalogItem_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (PlaybackService is null || DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: CatalogCard item }) return;
-        var result = await PlaybackService.PlayAsync(item.Id, new PlaybackLaunchOptions(viewModel.SelectedPlaybackScreen?.ScreenNumber));
+        if (viewModel.SelectedPlaybackScreen is null)
+        {
+            viewModel.OperationMessage = "Nenhuma tela de saída foi encontrada. Conecte ou habilite uma tela no Windows.";
+            return;
+        }
+
+        var result = await PlaybackService.PlayAsync(item.Id, new PlaybackLaunchOptions(viewModel.SelectedPlaybackScreen.ScreenNumber));
         viewModel.OperationMessage = result.Message;
         if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
     }

@@ -34,7 +34,7 @@ public sealed partial class HomeViewModel : ObservableObject
             .OrderBy(item => item.ScheduledDate)
             .Select(MapItem)
             .ToList();
-        PlaybackScreens = playbackScreens ?? [new PlaybackScreenOption("Abrir normalmente", null)];
+        PlaybackScreens = playbackScreens ?? [new PlaybackScreenOption("Tela 1 · Principal", 1, true)];
         SelectedPlaybackScreen = PlaybackScreens.FirstOrDefault(screen => screen.ScreenNumber == selectedPlaybackScreenNumber) ?? PlaybackScreens.FirstOrDefault();
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
@@ -285,5 +285,5 @@ public sealed record CatalogCard(string Id, string Title, string SourceName, str
     public string Source => SourceName;
 }
 public sealed record ScheduleCard(string Id, string Title, string SourceName, string Status);
-public sealed record PlaybackScreenOption(string Label, int? ScreenNumber);
+public sealed record PlaybackScreenOption(string Label, int ScreenNumber, bool IsPrimary = false);
 public sealed record SynchronizationQueueCard(string SourceName, string State, string Details, bool IsPending);

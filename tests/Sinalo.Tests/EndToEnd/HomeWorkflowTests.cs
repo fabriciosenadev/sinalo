@@ -301,7 +301,7 @@ public sealed class HomeWorkflowTests
             try
             {
                 var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), new FakeConfigurationService().LoadSourcesAsync().Result,
-                    playbackScreens: [new PlaybackScreenOption("Abrir normalmente", null), new PlaybackScreenOption("Tela 2", 2)],
+                    playbackScreens: [new PlaybackScreenOption("Tela 1 · Principal", 1), new PlaybackScreenOption("Tela 2", 2)],
                     selectedPlaybackScreenNumber: 2);
                 var window = new Sinalo.App.MainWindow
                 {
@@ -610,13 +610,13 @@ public sealed class HomeWorkflowTests
 
     private sealed class SuccessfulLauncher : IPlaybackLauncher
     {
-        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
+        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
     }
 
     private sealed class RecordingPlaybackConfigurationService : IPlaybackConfigurationService
     {
         public PlaybackConfiguration? Saved { get; private set; }
-        public Task<PlaybackConfiguration> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackConfiguration(null));
+        public Task<PlaybackConfiguration> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult(new PlaybackConfiguration(1));
         public Task SaveAsync(PlaybackConfiguration configuration, CancellationToken cancellationToken = default)
         {
             Saved = configuration;

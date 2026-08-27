@@ -30,7 +30,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
         finally { _gate.Release(); }
     }
 
-    public async Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default)
+    public async Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -39,16 +39,10 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
             {
                 await EnsureStartedAsync(cancellationToken);
                 await SendCommandAsync(["set_property", "fullscreen", false], cancellationToken);
-                if (options?.FullscreenScreenNumber is > 0)
-                {
-                    await SendCommandAsync(["set_property", "fs-screen", options.FullscreenScreenNumber], cancellationToken);
-                }
+                await SendCommandAsync(["set_property", "fs-screen", options.FullscreenScreenNumber], cancellationToken);
 
                 await SendCommandAsync(["loadfile", filePath, "replace"], cancellationToken);
-                if (options?.FullscreenScreenNumber is > 0)
-                {
-                    await SendCommandAsync(["set_property", "fullscreen", true], cancellationToken);
-                }
+                await SendCommandAsync(["set_property", "fullscreen", true], cancellationToken);
 
                 return new PlaybackLaunchResult(true, "MPV", "Vídeo aberto no player rápido do Sinalo.");
             }

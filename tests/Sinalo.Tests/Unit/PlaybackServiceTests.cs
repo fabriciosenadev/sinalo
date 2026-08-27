@@ -15,7 +15,7 @@ public sealed class PlaybackServiceTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
         await File.WriteAllBytesAsync(_filePath, [1, 2, 3]);
         var catalog = new Catalog(Item(SyncState.Ready, _filePath));
-        var result = await new PlaybackService(catalog, new Launcher(true)).PlayAsync("item");
+        var result = await new PlaybackService(catalog, new Launcher(true)).PlayAsync("item", new PlaybackLaunchOptions(2));
 
         Assert.True(result.Started);
         Assert.Equal("VLC", result.Message);
@@ -33,7 +33,7 @@ public sealed class PlaybackServiceTests : IDisposable
         var path = hasPath ? Path.Combine(Path.GetTempPath(), "Sinalo.Tests", "missing.mp4") : null;
         var catalog = new Catalog(Item(state, path));
         var launcher = new Launcher(true);
-        var result = await new PlaybackService(catalog, launcher).PlayAsync("item");
+        var result = await new PlaybackService(catalog, launcher).PlayAsync("item", new PlaybackLaunchOptions(2));
 
         Assert.False(result.Started);
         Assert.Contains(messagePart, result.Message, StringComparison.OrdinalIgnoreCase);
@@ -48,8 +48,8 @@ public sealed class PlaybackServiceTests : IDisposable
         await File.WriteAllBytesAsync(_filePath, [1]);
         var catalog = new Catalog(Item(SyncState.Ready, _filePath));
 
-        var failed = await new PlaybackService(catalog, new Launcher(false)).PlayAsync("item");
-        var missing = await new PlaybackService(catalog, new Launcher(true)).PlayAsync("unknown");
+        var failed = await new PlaybackService(catalog, new Launcher(false)).PlayAsync("item", new PlaybackLaunchOptions(2));
+        var missing = await new PlaybackService(catalog, new Launcher(true)).PlayAsync("unknown", new PlaybackLaunchOptions(2));
 
         Assert.False(failed.Started);
         Assert.False(missing.Started);
@@ -76,6 +76,6 @@ public sealed class PlaybackServiceTests : IDisposable
     private sealed class Launcher(bool starts) : IPlaybackLauncher
     {
         public bool WasCalled { get; private set; }
-        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default) { WasCalled = true; return Task.FromResult(starts ? new PlaybackLaunchResult(true, "VLC", "VLC") : new PlaybackLaunchResult(false, string.Empty, "Falha")); }
+        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default) { WasCalled = true; return Task.FromResult(starts ? new PlaybackLaunchResult(true, "VLC", "VLC") : new PlaybackLaunchResult(false, string.Empty, "Falha")); }
     }
 }

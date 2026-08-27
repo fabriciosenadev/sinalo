@@ -21,7 +21,7 @@ public sealed class MpvPlaybackLauncherTests
     {
         await using var launcher = new MpvPlaybackLauncher(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "mpv.exe"));
 
-        var result = await launcher.LaunchAsync("C:\\video.mp4");
+        var result = await launcher.LaunchAsync("C:\\video.mp4", new PlaybackLaunchOptions(1));
 
         Assert.False(result.Started);
         Assert.Contains("player rápido", result.Message);
@@ -38,8 +38,8 @@ public sealed class MpvPlaybackLauncherTests
 
             await launcher.WarmAsync();
             await launcher.WarmAsync();
-            var firstResult = await launcher.LaunchAsync(videoPath);
-            var secondResult = await launcher.LaunchAsync(videoPath);
+            var firstResult = await launcher.LaunchAsync(videoPath, new PlaybackLaunchOptions(1));
+            var secondResult = await launcher.LaunchAsync(videoPath, new PlaybackLaunchOptions(1));
 
             Assert.True(firstResult.Started);
             Assert.Equal("MPV", firstResult.PlayerName);
@@ -58,7 +58,7 @@ public sealed class MpvPlaybackLauncherTests
         var fallback = new RecordingLauncher(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
         var launcher = new FallbackPlaybackLauncher(new RecordingLauncher(new PlaybackLaunchResult(false, string.Empty, "MPV indisponível.")), fallback);
 
-        var result = await launcher.LaunchAsync("C:\\video.mp4");
+        var result = await launcher.LaunchAsync("C:\\video.mp4", new PlaybackLaunchOptions(1));
 
         Assert.True(result.Started);
         Assert.True(fallback.WasCalled);
@@ -70,7 +70,7 @@ public sealed class MpvPlaybackLauncherTests
         var fallback = new RecordingLauncher(new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC."));
         var launcher = new FallbackPlaybackLauncher(new RecordingLauncher(new PlaybackLaunchResult(true, "MPV", "Vídeo aberto no MPV.")), fallback);
 
-        var result = await launcher.LaunchAsync("C:\\video.mp4");
+        var result = await launcher.LaunchAsync("C:\\video.mp4", new PlaybackLaunchOptions(1));
 
         Assert.Equal("MPV", result.PlayerName);
         Assert.False(fallback.WasCalled);
@@ -79,7 +79,7 @@ public sealed class MpvPlaybackLauncherTests
     private sealed class RecordingLauncher(PlaybackLaunchResult result) : IPlaybackLauncher
     {
         public bool WasCalled { get; private set; }
-        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions? options = null, CancellationToken cancellationToken = default)
+        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
         {
             WasCalled = true;
             return Task.FromResult(result);
