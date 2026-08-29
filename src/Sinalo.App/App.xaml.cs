@@ -9,6 +9,7 @@ using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
 using Sinalo.Application.Timer;
 using Sinalo.Application.Raffle;
+using Sinalo.Application.Storage;
 using Sinalo.Infrastructure;
 
 namespace Sinalo.App;
@@ -48,9 +49,10 @@ public partial class App : System.Windows.Application
             new MissionsDiscoveryConnector(_httpClient),
             new HealthDiscoveryConnector(_httpClient)
         ], contentCatalog);
-        var downloader = new OfficialMediaDownloadService(_httpClient, pathService);
-        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
-        var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService());
+        var storageSpaceService = new ContentStorageSpaceService(_httpClient, pathService);
+        var downloader = new OfficialMediaDownloadService(_httpClient, pathService, storageSpaceService);
+        var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService);
+        var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService);
 
         var mpvPlaybackLauncher = new MpvPlaybackLauncher();
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
@@ -74,9 +76,10 @@ public partial class App : System.Windows.Application
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
             ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),
+            ContentStorageSpaceService = storageSpaceService,
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
-            HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService()),
+            HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
             PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, new WindowsPlaybackLauncher()))
         };
 

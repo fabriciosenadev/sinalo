@@ -4,8 +4,9 @@ using Sinalo.Application.Storage;
 using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 namespace Sinalo.Infrastructure;
-public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloPathService paths) : IContentDownloadService
+public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloPathService paths, IContentStorageSpaceService? storageSpaceService = null) : IContentDownloadService
 {
+    private const long MinimumFreeBytesDuringDownload = 32L * 1024 * 1024;
     public async Task<ContentItem> DownloadAsync(ContentItem item, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         var asset = item.Assets.SingleOrDefault() ?? throw new InvalidOperationException("O item não possui arquivo oficial.");
@@ -28,6 +29,10 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
                 int count;
                 while ((count = await input.ReadAsync(buffer, cancellationToken)) > 0)
                 {
+                    if (storageSpaceService is not null && !await storageSpaceService.HasMinimumFreeSpaceAsync(p.TempDownloadsPath, MinimumFreeBytesDuringDownload, cancellationToken))
+                    {
+                        throw new StorageSpaceCriticalException();
+                    }
                     await output.WriteAsync(buffer.AsMemory(0, count), cancellationToken);
                     received += count;
                     // Atualiza a tela em blocos: progresso útil sem inundar a thread da interface.

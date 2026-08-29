@@ -39,6 +39,15 @@ public sealed class OfficialMediaDownloadServiceTests : IDisposable
         Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.part")));
         Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.extracted.part")));
     }
+    [Fact] public async Task DownloadAsync_ShouldRemoveTheTemporaryFileWhenSpaceBecomesCritical()
+    {
+        var paths = new TestPaths(_root);
+        var service = new OfficialMediaDownloadService(new HttpClient(new Bytes([1, 2, 3])), paths, new CriticalSpace());
+
+        await Assert.ThrowsAsync<StorageSpaceCriticalException>(() => service.DownloadAsync(Item()));
+
+        Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.part")));
+    }
     private static ContentItem Item() => new("item", ContentSource.ProvaiEVede, "Vídeo", new DateOnly(2026,8,8), new Uri("https://example.test/page"), [new MediaAsset("asset",new Uri("https://example.test/video.mp4"),"video.mp4",null,null)]);
     public void Dispose(){ if(Directory.Exists(_root)) Directory.Delete(_root,true); }
     private static byte[] CreateZip(byte[] video)
@@ -50,4 +59,9 @@ public sealed class OfficialMediaDownloadServiceTests : IDisposable
     }
     private sealed class Bytes(byte[] data, string? mediaType = null):HttpMessageHandler { protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken c){ var content = new ByteArrayContent(data); if (mediaType is not null) content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType); return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=content}); } }
     private sealed class TestPaths(string root):ISinaloPathService { private readonly SinaloPaths _p=new(root,Path.Combine(root,"data"),Path.Combine(root,"content"),Path.Combine(root,"cache"),Path.Combine(root,"logs"),Path.Combine(root,"temp","downloads"),Path.Combine(root,"data","db")); public SinaloPaths GetPaths()=>_p; public void EnsureFolders(){Directory.CreateDirectory(_p.ContentPath);Directory.CreateDirectory(_p.TempDownloadsPath);} }
+    private sealed class CriticalSpace : IContentStorageSpaceService
+    {
+        public Task<ContentStorageSpaceAssessment> AssessAsync(IReadOnlyList<ContentItem> items, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<bool> HasMinimumFreeSpaceAsync(string path, long minimumFreeBytes, CancellationToken cancellationToken = default) => Task.FromResult(false);
+    }
 }

@@ -1,5 +1,6 @@
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Services;
+using Sinalo.Application.Storage;
 using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
@@ -44,7 +45,7 @@ public sealed class MissionsSynchronizationServiceTests
     [Fact]
     public async Task SynchronizeAsync_ShouldSkipReadyAndOnlineOnlyItems()
     {
-        var ready = Item(1) with { SyncState = SyncState.Ready };
+        var ready = Item(1) with { SyncState = SyncState.Ready, LocalPath = typeof(MissionsSynchronizationService).Assembly.Location };
         var onlineOnly = Item(8) with { Assets = [], SyncState = SyncState.OnlineOnly };
         var downloader = new Downloader();
         var service = new MissionsSynchronizationService(new Catalog([ready, onlineOnly]), downloader, new SaturdayWindowService(), () => new DateOnly(2026, 8, 3));
@@ -66,6 +67,19 @@ public sealed class MissionsSynchronizationServiceTests
         Assert.Equal([new DateOnly(2026, 8, 8)], downloader.Items.Select(item => item.ScheduledDate));
     }
 
+    [Fact]
+    public async Task SynchronizeAsync_ShouldContinueWhenTheSizeIsUnknownButSpaceIsAvailable()
+    {
+        var downloader = new Downloader();
+        var service = new MissionsSynchronizationService(new Catalog([Item(8)]), downloader, new SaturdayWindowService(), () => new DateOnly(2026, 8, 8), new SpaceService(true, 1));
+        var updates = new List<DownloadProgress>();
+
+        await service.SynchronizeAsync(new DownloadSelection(false, true, false), new InlineProgress(updates));
+
+        Assert.Single(downloader.Items);
+        Assert.Contains(updates, update => update.Stage.Contains("Tamanho não informado"));
+    }
+
     private static ContentItem Item(int day) => new($"missions-2026-08-{day:00}", ContentSource.Missions, "Informativo", new DateOnly(2026, 8, day), new Uri("https://example.test/post"), [new MediaAsset($"asset-{day}", new Uri($"https://example.test/{day}.mp4"), $"{day}.mp4", null, null)]);
 
     private sealed class Catalog(IReadOnlyList<ContentItem> items) : IContentCatalog
@@ -83,5 +97,11 @@ public sealed class MissionsSynchronizationServiceTests
             Items.Add(item);
             return Task.FromResult(item with { SyncState = SyncState.Ready, LocalPath = "C:\\video.mp4" });
         }
+    }
+    private sealed class InlineProgress(List<DownloadProgress> updates) : IProgress<DownloadProgress> { public void Report(DownloadProgress value) => updates.Add(value); }
+    private sealed class SpaceService(bool sufficient, int unknown) : IContentStorageSpaceService
+    {
+        public Task<ContentStorageSpaceAssessment> AssessAsync(IReadOnlyList<ContentItem> items, CancellationToken cancellationToken = default) => Task.FromResult(new ContentStorageSpaceAssessment("C:\\", sufficient ? 2 : 1, 1, 2, unknown));
+        public Task<bool> HasMinimumFreeSpaceAsync(string path, long minimumFreeBytes, CancellationToken cancellationToken = default) => Task.FromResult(sufficient);
     }
 }

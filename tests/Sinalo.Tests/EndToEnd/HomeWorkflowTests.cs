@@ -532,6 +532,7 @@ public sealed class HomeWorkflowTests
                     ConfigurationService = configurations,
                     ContentCatalog = catalog,
                     DiscoveryService = new ContentDiscoveryService([], catalog),
+                    ContentStorageSpaceService = new FixedSpaceService(true, hasUnknownSizes: true),
                     MissionsSynchronizationService = new MissionsSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService()),
                     ProvaiEVedeSynchronizationService = new ProvaiEVedeSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService()),
                     HealthSynchronizationService = new HealthSynchronizationService(catalog, new NoOpDownloader(), new SaturdayWindowService())
@@ -551,6 +552,43 @@ public sealed class HomeWorkflowTests
                     [Sinalo.Domain.ContentSource.Missions, Sinalo.Domain.ContentSource.ProvaiEVede, Sinalo.Domain.ContentSource.Health],
                     catalog.RequestedSources.Distinct());
                 Assert.False(viewModel.IsQueueActive);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void SourceActionWorkflow_ShouldRefuseQueueWhenTheDiskDoesNotHaveEnoughSpace()
+    {
+        Exception? exception = null;
+        var configurations = new FakeConfigurationService();
+        var item = new Sinalo.Domain.ContentItem("space", Sinalo.Domain.ContentSource.ProvaiEVede, "Vídeo", new DateOnly(2026, 8, 8), new Uri("https://example.test/page"), [new Sinalo.Domain.MediaAsset("asset", new Uri("https://example.test/video.mp4"), "video.mp4", 1024, null)]);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var catalog = new StaticCatalog(item);
+                var window = new Sinalo.App.MainWindow
+                {
+                    DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations.LoadSourcesAsync().Result),
+                    ConfigurationService = configurations,
+                    ContentCatalog = catalog,
+                    DiscoveryService = new ContentDiscoveryService([], catalog),
+                    ContentStorageSpaceService = new FixedSpaceService(false)
+                };
+                window.SynchronizationQueue = window.CreateSynchronizationQueue();
+
+                ((Task)typeof(Sinalo.App.MainWindow).GetMethod("EnqueueSynchronizationAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(window, [Sinalo.Domain.ContentSource.ProvaiEVede])!).GetAwaiter().GetResult();
+
+                Assert.Empty(window.SynchronizationQueue.GetSnapshot().Entries);
+                Assert.Contains("Espaço insuficiente", ((HomeViewModel)window.DataContext).OperationMessage);
                 window.Close();
             }
             catch (Exception caught) { exception = caught; }
@@ -600,6 +638,12 @@ public sealed class HomeWorkflowTests
         }
     }
 
+    private sealed class StaticCatalog(Sinalo.Domain.ContentItem item) : IContentCatalog
+    {
+        public Task UpsertAsync(IReadOnlyList<Sinalo.Domain.ContentItem> items, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyList<Sinalo.Domain.ContentItem>> ListBySourceAsync(Sinalo.Domain.ContentSource source, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Sinalo.Domain.ContentItem>>([item]);
+    }
+
     private sealed class PlaybackCatalog(Sinalo.Domain.ContentItem item) : IContentCatalog
     {
         public List<string> Played { get; } = [];
@@ -628,6 +672,14 @@ public sealed class HomeWorkflowTests
     private sealed class NoOpDownloader : IContentDownloadService
     {
         public Task<Sinalo.Domain.ContentItem> DownloadAsync(Sinalo.Domain.ContentItem item, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default) => Task.FromResult(item);
+    }
+
+    private sealed class FixedSpaceService(bool sufficient, bool hasUnknownSizes = false) : IContentStorageSpaceService
+    {
+        public Task<ContentStorageSpaceAssessment> AssessAsync(IReadOnlyList<Sinalo.Domain.ContentItem> items, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ContentStorageSpaceAssessment("C:\\", sufficient ? 2 : 1, 0, 2, hasUnknownSizes ? 1 : 0));
+
+        public Task<bool> HasMinimumFreeSpaceAsync(string path, long minimumFreeBytes, CancellationToken cancellationToken = default) => Task.FromResult(sufficient);
     }
 
     private sealed class SuccessfulUpdateService : IApplicationUpdateService

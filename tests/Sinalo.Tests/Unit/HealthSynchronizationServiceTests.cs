@@ -1,4 +1,5 @@
 using Sinalo.Application.Catalog;
+using Sinalo.Application.Storage;
 using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
@@ -7,6 +8,18 @@ namespace Sinalo.Tests.Unit;
 
 public sealed class HealthSynchronizationServiceTests
 {
+    [Fact]
+    public async Task SynchronizeAsync_ShouldStopWhenTheSpaceCheckFails()
+    {
+        var catalog = new Catalog([Item("pending", new DateOnly(2026, 8, 8))]);
+        var downloader = new Downloader();
+        var service = new HealthSynchronizationService(catalog, downloader, new SaturdayWindowService(), () => new DateOnly(2026, 8, 8), new SpaceService());
+
+        await Assert.ThrowsAsync<InsufficientStorageSpaceException>(() => service.SynchronizeAsync(new DownloadSelection(false, true, false)));
+
+        Assert.Empty(downloader.Downloaded);
+    }
+
     [Fact]
     public async Task SynchronizeAsync_ShouldUseOnlyTheSaturdayWindowWhenConfigured()
     {
@@ -32,4 +45,9 @@ public sealed class HealthSynchronizationServiceTests
     private static ContentItem Item(string id, DateOnly date) => new(id, ContentSource.Health, id, date, new Uri("https://example.test/" + id), [new MediaAsset(id, new Uri("https://files.example/" + id + ".mp4"), id + ".mp4", null, null)]);
     private sealed class Catalog(IReadOnlyList<ContentItem> items) : IContentCatalog { public Task<IReadOnlyList<ContentItem>> ListBySourceAsync(ContentSource source, CancellationToken cancellationToken = default) => Task.FromResult(items); public Task UpsertAsync(IReadOnlyList<ContentItem> items, CancellationToken cancellationToken = default) => Task.CompletedTask; }
     private sealed class Downloader : IContentDownloadService { public List<ContentItem> Downloaded { get; } = []; public Task<ContentItem> DownloadAsync(ContentItem item, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default) { Downloaded.Add(item); return Task.FromResult(item with { SyncState = SyncState.Ready, LocalPath = "C:\\health.mp4" }); } }
+    private sealed class SpaceService : IContentStorageSpaceService
+    {
+        public Task<ContentStorageSpaceAssessment> AssessAsync(IReadOnlyList<ContentItem> items, CancellationToken cancellationToken = default) => Task.FromResult(new ContentStorageSpaceAssessment("C:\\", 1, 1, 2, 0));
+        public Task<bool> HasMinimumFreeSpaceAsync(string path, long minimumFreeBytes, CancellationToken cancellationToken = default) => Task.FromResult(false);
+    }
 }

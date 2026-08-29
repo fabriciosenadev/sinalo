@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public IContentDeletionService? ContentDeletionService { get; init; }
+    public IContentStorageSpaceService? ContentStorageSpaceService { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
@@ -145,10 +146,33 @@ public partial class MainWindow : Window
 
     private async Task EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource source)
     {
-        if (SynchronizationQueue is null || ConfigurationService is null || DataContext is not HomeViewModel viewModel) return;
+        if (SynchronizationQueue is null || ConfigurationService is null || DiscoveryService is null || ContentCatalog is null || DataContext is not HomeViewModel viewModel) return;
         var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
+        try
+        {
+            viewModel.OperationMessage = $"Consultando o site oficial de {configuration.DisplayName}...";
+            await DiscoveryService.RefreshAsync(configuration);
+            var candidates = SynchronizationCandidateSelector.Select(source, await ContentCatalog.ListBySourceAsync(source), configuration.ResolvedDownloadSelection, new SaturdayWindowService(), DateOnly.FromDateTime(DateTime.Today));
+            if (ContentStorageSpaceService is not null)
+            {
+                var assessment = await ContentStorageSpaceService.AssessAsync(candidates);
+                if (!assessment.HasSufficientSpace)
+                {
+                    viewModel.OperationMessage = new InsufficientStorageSpaceException(assessment).Message;
+                    return;
+                }
+                if (assessment.HasUnknownSizes) viewModel.OperationMessage = "O tamanho de alguns vídeos não foi informado. O espaço será acompanhado durante o download.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            viewModel.OperationMessage = $"Não foi possível consultar {configuration.DisplayName}. Verifique a conexão e tente novamente.";
+            return;
+        }
         var result = SynchronizationQueue.Enqueue(new SynchronizationQueueRequest(configuration));
-        viewModel.OperationMessage = result.Message;
+        viewModel.OperationMessage = result.Added && ContentStorageSpaceService is not null
+            ? $"{result.Message} O espaço em disco foi verificado."
+            : result.Message;
     }
 
     private async Task<SynchronizationQueueCompletion> ExecuteQueuedSynchronizationAsync(
