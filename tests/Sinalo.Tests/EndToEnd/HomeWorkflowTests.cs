@@ -292,6 +292,31 @@ public sealed class HomeWorkflowTests
     }
 
     [Fact]
+    public void UpdateWorkflow_ShouldNotDownloadTheSameVersionAgainWhileTheAppIsOpen()
+    {
+        Exception? exception = null;
+        var service = new CountingUpdateService();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources);
+                var window = new Sinalo.App.MainWindow { DataContext = viewModel, ApplicationUpdateService = service };
+
+                window.CheckForUpdateAsync().GetAwaiter().GetResult();
+                window.CheckForUpdateAsync().GetAwaiter().GetResult();
+
+                Assert.Equal(2, service.CheckCalls);
+                Assert.Equal(1, service.DownloadCalls);
+                Assert.True(viewModel.IsUpdateReady);
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA); thread.Start(); thread.Join();
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public void PlaybackScreenWorkflow_ShouldPersistTheSelectedOutputScreen()
     {
         Exception? exception = null;
@@ -697,6 +722,26 @@ public sealed class HomeWorkflowTests
     {
         public Task<AvailableUpdate?> CheckAsync(Version currentVersion, CancellationToken cancellationToken = default) => throw new HttpRequestException();
         public Task<DownloadedUpdate> DownloadAsync(AvailableUpdate update, IProgress<UpdateDownloadProgress>? progress = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    }
+
+    private sealed class CountingUpdateService : IApplicationUpdateService
+    {
+        private static readonly AvailableUpdate Update = new(new Version(0, 1, 9), "Notas", new Uri("https://example.test/setup.exe"), null, "sha256:00");
+        public int CheckCalls { get; private set; }
+        public int DownloadCalls { get; private set; }
+
+        public Task<AvailableUpdate?> CheckAsync(Version currentVersion, CancellationToken cancellationToken = default)
+        {
+            CheckCalls++;
+            return Task.FromResult<AvailableUpdate?>(Update);
+        }
+
+        public Task<DownloadedUpdate> DownloadAsync(AvailableUpdate update, IProgress<UpdateDownloadProgress>? progress = null, CancellationToken cancellationToken = default)
+        {
+            DownloadCalls++;
+            progress?.Report(new UpdateDownloadProgress(100, 100));
+            return Task.FromResult(new DownloadedUpdate(update, "C:\\temp\\Sinalo-Setup.exe"));
+        }
     }
 
 }

@@ -22,6 +22,9 @@ public partial class MainWindow : Window
 {
     private SynchronizationQueue? _synchronizationQueue;
     private readonly DispatcherTimer _timerRefresh = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private readonly DispatcherTimer _updateCheckTimer = new() { Interval = TimeSpan.FromHours(6) };
+    private readonly SemaphoreSlim _updateCheckGate = new(1, 1);
+    private readonly CancellationTokenSource _updateCheckCancellation = new();
     public ISinaloConfigurationService? ConfigurationService { get; init; }
     public IContentPathConfigurationService? ContentPathConfigurationService { get; init; }
     public IContentPathMigrationService? ContentPathMigrationService { get; init; }
@@ -58,8 +61,14 @@ public partial class MainWindow : Window
         InitializeComponent();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, SystemThemeService.IsWindowsDarkTheme());
         _timerRefresh.Tick += TimerRefresh_Tick;
+        _updateCheckTimer.Tick += PeriodicUpdateCheck_Tick;
         Loaded += (_, _) => _timerRefresh.Start();
-        Closed += (_, _) => _timerRefresh.Stop();
+        Closed += (_, _) =>
+        {
+            _timerRefresh.Stop();
+            _updateCheckTimer.Stop();
+            _updateCheckCancellation.Cancel();
+        };
     }
 
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
@@ -86,23 +95,39 @@ public partial class MainWindow : Window
     private void OpenReleaseNotes_Click(object sender, RoutedEventArgs e) =>
         new ReleaseNotesWindow(ThemeService) { Owner = this }.ShowDialog();
 
-    public async Task CheckForUpdateAsync()
+    public void StartPeriodicUpdateChecks() => _updateCheckTimer.Start();
+
+    public async Task CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
         if (ApplicationUpdateService is null || DataContext is not HomeViewModel viewModel) return;
+        if (!_updateCheckGate.Wait(0)) return;
         try
         {
             var versionText = GetType().Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-            var update = await ApplicationUpdateService.CheckAsync(Version.Parse(versionText));
+            var update = await ApplicationUpdateService.CheckAsync(Version.Parse(versionText), cancellationToken);
             if (update is null) return;
+            if (_downloadedUpdate is { } downloaded && downloaded.Update.Version >= update.Version)
+            {
+                viewModel.ReportUpdateReady(downloaded.Update.Version);
+                return;
+            }
             viewModel.ReportUpdateAvailable(update.Version);
-            _downloadedUpdate = await ApplicationUpdateService.DownloadAsync(update, new Progress<Sinalo.Application.Updates.UpdateDownloadProgress>(progress => viewModel.ReportUpdateProgress(progress.Percentage)));
+            _downloadedUpdate = await ApplicationUpdateService.DownloadAsync(update, new Progress<Sinalo.Application.Updates.UpdateDownloadProgress>(progress => viewModel.ReportUpdateProgress(progress.Percentage)), cancellationToken);
             viewModel.ReportUpdateReady(update.Version);
         }
+        catch (OperationCanceledException) { }
         catch
         {
             viewModel.ReportUpdateFailure();
         }
+        finally
+        {
+            _updateCheckGate.Release();
+        }
     }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void PeriodicUpdateCheck_Tick(object? sender, EventArgs e) => await CheckForUpdateAsync(_updateCheckCancellation.Token);
 
     private void InstallUpdate_Click(object sender, RoutedEventArgs e)
     {

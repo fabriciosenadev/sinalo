@@ -4,6 +4,20 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.9 - 29/08/2026
+
+### Novo
+
+- Enquanto o Sinalo estiver aberto, ele procura uma nova versão a cada seis
+  horas, sem interromper a programação. Quando encontrar uma atualização, o
+  download é preparado em segundo plano para o botão **Atualizar e reiniciar**.
+
+### Corrigido
+
+- A reprodução no MPV passa a usar a tela realmente escolhida pelo operador,
+  inclusive quando a disposição dos monitores no Windows muda. O VLC também
+  recebe a numeração de tela compatível quando for usado como alternativa.
+
 ## 0.1.8 - 29/08/2026
 
 ### Novo

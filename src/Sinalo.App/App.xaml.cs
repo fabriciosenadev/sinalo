@@ -88,6 +88,7 @@ public partial class App : System.Windows.Application
         mainWindow.Show();
         _themeService.ApplyCurrentTheme();
         _ = mainWindow.CheckForUpdateAsync();
+        mainWindow.StartPeriodicUpdateChecks();
         _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
     }
 
