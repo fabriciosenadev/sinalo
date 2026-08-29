@@ -346,7 +346,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        var result = await PlaybackService.PlayAsync(item.Id, new PlaybackLaunchOptions(viewModel.SelectedPlaybackScreen.ScreenNumber));
+        PlaybackLaunchOptions launchOptions;
+        if (MonitorService is null)
+        {
+            // Mantém os testes e instalações antigas funcionais, embora o aplicativo normal sempre forneça o monitor completo.
+            launchOptions = new PlaybackLaunchOptions(viewModel.SelectedPlaybackScreen.ScreenNumber);
+        }
+        else
+        {
+            var output = OutputSelectionResolver.Resolve(
+                new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey),
+                await MonitorService.GetOutputsAsync());
+            if (output is null)
+            {
+                viewModel.OperationMessage = "A tela selecionada não está disponível. Verifique a conexão do monitor.";
+                return;
+            }
+
+            launchOptions = new PlaybackLaunchOptions(output);
+        }
+
+        var result = await PlaybackService.PlayAsync(item.Id, launchOptions);
         viewModel.OperationMessage = result.Message;
         if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
     }

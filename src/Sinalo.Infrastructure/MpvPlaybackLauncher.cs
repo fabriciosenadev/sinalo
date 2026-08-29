@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
+using System.Runtime.InteropServices;
 using Sinalo.Application.Playback;
 
 namespace Sinalo.Infrastructure;
@@ -39,12 +40,13 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
             {
                 await EnsureStartedAsync(cancellationToken);
                 await SendCommandAsync(["set_property", "fullscreen", false], cancellationToken);
-                await SendCommandAsync(["set_property", "fs-screen", options.FullscreenScreenNumber], cancellationToken);
+                await SendCommandAsync(["set_property", "fs-screen", options.PlayerScreenIndex], cancellationToken);
 
                 await SendCommandAsync(["loadfile", filePath, "replace"], cancellationToken);
+                await PositionWindowOnOutputAsync(options, cancellationToken);
                 await SendCommandAsync(["set_property", "fullscreen", true], cancellationToken);
 
-                return new PlaybackLaunchResult(true, "MPV", "Vídeo aberto no player rápido do Sinalo.");
+                return new PlaybackLaunchResult(true, "MPV", $"Vídeo aberto no player rápido do Sinalo em {options.OutputLabel}.");
             }
             finally { _gate.Release(); }
         }
@@ -95,6 +97,34 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
         await _writer.WriteLineAsync(JsonSerializer.Serialize(new { command }));
     }
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async Task PositionWindowOnOutputAsync(PlaybackLaunchOptions options, CancellationToken cancellationToken)
+    {
+        if (!options.HasOutputBounds || _process is null) return;
+
+        var timeoutAt = DateTime.UtcNow.AddSeconds(2);
+        while (DateTime.UtcNow < timeoutAt)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _process.Refresh();
+            var windowHandle = _process.MainWindowHandle;
+            if (windowHandle != IntPtr.Zero)
+            {
+                SetWindowPos(
+                    windowHandle,
+                    IntPtr.Zero,
+                    options.BoundsX!.Value,
+                    options.BoundsY!.Value,
+                    options.BoundsWidth!.Value,
+                    options.BoundsHeight!.Value,
+                    NoZOrder | NoActivate | ShowWindow);
+                return;
+            }
+
+            await Task.Delay(25, cancellationToken);
+        }
+    }
+
     private static async Task DrainResponsesAsync(Stream stream, CancellationToken cancellationToken)
     {
         try
@@ -138,4 +168,11 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
         _process?.Dispose();
         _process = null;
     }
+
+    private const uint NoZOrder = 0x0004;
+    private const uint NoActivate = 0x0010;
+    private const uint ShowWindow = 0x0040;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
 }

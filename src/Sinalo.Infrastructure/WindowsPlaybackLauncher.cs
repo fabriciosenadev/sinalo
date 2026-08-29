@@ -15,7 +15,13 @@ public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
                 ? Process.Start(new ProcessStartInfo { FileName = filePath, UseShellExecute = true, Verb = "open" })
                 : Process.Start(new ProcessStartInfo { FileName = vlcPath, Arguments = BuildVlcArguments(filePath, options), UseShellExecute = false });
 
-            return Task.FromResult(CreateLaunchResult(vlcPath, process is not null));
+            var result = CreateLaunchResult(vlcPath, process is not null);
+            return Task.FromResult(result with
+            {
+                Message = result.Started && !string.IsNullOrWhiteSpace(vlcPath)
+                    ? $"Vídeo aberto no VLC em {options.OutputLabel}."
+                    : result.Message
+            });
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception) { return Task.FromResult(new PlaybackLaunchResult(false, string.Empty, "Não foi possível abrir o vídeo no VLC ou no aplicativo padrão do Windows.")); }
@@ -27,7 +33,7 @@ public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
         new PlaybackLaunchResult(true, "VLC", "Vídeo aberto no VLC.");
 
     public static string BuildVlcArguments(string filePath, PlaybackLaunchOptions options) =>
-        $"\"{filePath}\" --fullscreen --qt-fullscreen-screennumber={options.FullscreenScreenNumber}";
+        $"\"{filePath}\" --fullscreen --qt-fullscreen-screennumber={options.PlayerScreenIndex}";
 
     public static string? FindVlcPath()
     {

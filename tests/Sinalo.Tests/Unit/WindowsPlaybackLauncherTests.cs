@@ -43,7 +43,7 @@ public sealed class WindowsPlaybackLauncherTests : IDisposable
         var arguments = WindowsPlaybackLauncher.BuildVlcArguments("C:\\video.mp4", new PlaybackLaunchOptions(2));
 
         Assert.Contains("--fullscreen", arguments);
-        Assert.Contains("--qt-fullscreen-screennumber=2", arguments);
+        Assert.Contains("--qt-fullscreen-screennumber=1", arguments);
     }
 
     public void Dispose()

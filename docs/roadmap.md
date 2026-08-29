@@ -10,22 +10,14 @@ O MVP funcional possui descoberta, sincronização, reprodução local e exclus�
 
 O Minuto de Saúde está implementado, validado manualmente e coberto por testes. A descoberta da coleção trimestral, a leitura de datas e títulos e o download para `content\AAAA-TN\health` foram confirmados.
 
-A distribuição inicial também está concluída: o projeto gera instalador self-contained para `win-x64` com Inno Setup, preserva os dados do operador e publica releases pelo GitHub Actions.
-
-## Próxima etapa aprovada
-
-### Atualização automática
-
-O Sinalo verificará periodicamente a GitHub Release mais recente em segundo plano, sem atrasar a abertura da biblioteca. Quando houver uma versão mais nova, exibirá a versão e as notas em português, fará o download do instalador para `%LocalAppData%\Sinalo\updates` e mostrará o progresso.
-
-Após o download e a validação de integridade, o operador terá o botão **Atualizar e reiniciar**. Um atualizador auxiliar encerrará o Sinalo, executará o instalador Inno Setup em modo silencioso com a interface de progresso do Windows e abrirá a nova versão ao final. A confirmação do operador continua obrigatória para instalar; a elevação do UAC do Windows não será contornada. Os dados em `%LocalAppData%\Sinalo`, incluindo vídeos, configurações e catálogo, serão preservados.
+A distribuição inicial também está concluída: o projeto gera instalador self-contained para `win-x64` com Inno Setup, preserva os dados do operador e publica releases pelo GitHub Actions. O aplicativo também já verifica atualizações na abertura, faz o download do instalador e oferece **Atualizar e reiniciar** após a confirmação do operador.
 
 ## Melhorias mapeadas para depois
 
 Estas melhorias são válidas, mas estão fora do escopo atual e não devem bloquear a distribuição inicial:
 
 - Escolha de outro disco para a pasta de conteúdo.
-- Verificação de espaço antes de sincronizações grandes.
+- Verificação periódica de atualizações enquanto o aplicativo estiver aberto, sem interromper a operação do usuário.
 - Limpeza automática trimestral e mensal, respeitando itens fixados e período de tolerância.
 - Seleção manual de vídeos específicos antes de sincronizar.
 - Miniaturas reais geradas com FFmpeg.
