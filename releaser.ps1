@@ -75,6 +75,45 @@ function Get-InnoCompiler {
     return $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 }
 
+function Sync-MpvRuntime {
+    $mpvSourceDirectory = Join-Path $projectRoot "src\Sinalo.App\binaries\mpv"
+    $mpvPublishDirectory = Join-Path $publishDirectory "binaries\mpv"
+
+    if (-not (Test-Path -LiteralPath $mpvSourceDirectory -PathType Container)) {
+        throw "O runtime do MPV nao foi encontrado em: $mpvSourceDirectory"
+    }
+
+    Write-Step "Incluindo runtime completo do MPV"
+    Remove-Item -LiteralPath $mpvPublishDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force -Path $mpvPublishDirectory | Out-Null
+    Copy-Item -Path (Join-Path $mpvSourceDirectory "*") -Destination $mpvPublishDirectory -Recurse -Force
+
+    $sourceFiles = @(Get-ChildItem -LiteralPath $mpvSourceDirectory -File -Recurse)
+    if ($sourceFiles.Count -eq 0) {
+        throw "O runtime do MPV esta vazio em: $mpvSourceDirectory"
+    }
+
+    foreach ($sourceFile in $sourceFiles) {
+        $relativePath = [System.IO.Path]::GetRelativePath($mpvSourceDirectory, $sourceFile.FullName)
+        $publishedFile = Join-Path $mpvPublishDirectory $relativePath
+        if (-not (Test-Path -LiteralPath $publishedFile -PathType Leaf)) {
+            throw "Arquivo do MPV ausente no publish: $relativePath"
+        }
+
+        if ((Get-Item -LiteralPath $publishedFile).Length -ne $sourceFile.Length) {
+            throw "Arquivo do MPV incompleto no publish: $relativePath"
+        }
+    }
+
+    foreach ($requiredFile in @("mpv.exe", "mpv.com", "NOTICE.txt")) {
+        if (-not (Test-Path -LiteralPath (Join-Path $mpvPublishDirectory $requiredFile) -PathType Leaf)) {
+            throw "Arquivo obrigatorio do MPV ausente no publish: $requiredFile"
+        }
+    }
+
+    Write-Host "Runtime MPV validado: $($sourceFiles.Count) arquivo(s)." -ForegroundColor Green
+}
+
 if ($NextPatch -and -not [string]::IsNullOrWhiteSpace($Version)) {
     throw "Use -NextPatch ou -Version, mas nao os dois juntos."
 }
@@ -119,6 +158,8 @@ New-Item -ItemType Directory -Force -Path $publishDirectory | Out-Null
 if ($LASTEXITCODE -ne 0) {
     throw "Falha ao publicar o Sinalo."
 }
+
+Sync-MpvRuntime
 
 Write-Step "Publicando atualizador"
 $updaterDirectory = Join-Path $publishDirectory "updater"

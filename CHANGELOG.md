@@ -4,6 +4,20 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.8 - 29/08/2026
+
+### Novo
+
+- Antes de iniciar uma sincronização, o Sinalo verifica se há espaço livre
+  suficiente para os downloads. Durante o download, essa verificação continua
+  ativa para evitar arquivos incompletos quando o disco estiver cheio.
+
+### Corrigido
+
+- O instalador agora inclui o runtime completo do MPV, com o executável e todas
+  as bibliotecas necessárias. Assim, a reprodução rápida integrada não depende
+  de o VLC estar instalado no computador.
+
 ## 0.1.7 - 27/08/2026
 
 ### Novo

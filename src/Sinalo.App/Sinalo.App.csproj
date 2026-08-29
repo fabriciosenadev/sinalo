@@ -13,6 +13,7 @@
     <Content Include="binaries\mpv\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <TargetPath>binaries\mpv\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </Content>
     <Content Include="Assets\sinalo.ico;Assets\sinalo-dark.ico">
