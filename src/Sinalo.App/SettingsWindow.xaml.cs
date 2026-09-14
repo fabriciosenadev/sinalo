@@ -5,6 +5,7 @@ using Sinalo.Application.Storage;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 using CheckBox = System.Windows.Controls.CheckBox;
+using Button = System.Windows.Controls.Button;
 
 namespace Sinalo.App;
 
@@ -139,6 +140,26 @@ public partial class SettingsWindow : Window
         };
 
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK) ContentPathText.Text = dialog.SelectedPath;
+    }
+
+    private void RestoreOfficialUrl_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string sourceName } ||
+            !Enum.TryParse<ContentSource>(sourceName, out var source)) return;
+
+        var officialUrl = OfficialContentPrograms.Get(source).PageUrl;
+        switch (source)
+        {
+            case ContentSource.Missions:
+                MissionsUrl.Text = officialUrl;
+                break;
+            case ContentSource.ProvaiEVede:
+                ProvaiUrl.Text = officialUrl;
+                break;
+            case ContentSource.Health:
+                HealthUrl.Text = officialUrl;
+                break;
+        }
     }
 
     private static DownloadSelection ReadSelection(CheckBox previous, CheckBox current, CheckBox next) => new(previous.IsChecked == true, current.IsChecked == true, next.IsChecked == true);

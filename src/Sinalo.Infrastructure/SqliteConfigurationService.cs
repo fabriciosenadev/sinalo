@@ -31,8 +31,9 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         return defaults.Select(item =>
         {
             if (!saved.TryGetValue(item.Source, out var value)) return item;
-            // Migra a configuração inicial do canal do YouTube para a fonte oficial de MP4.
-            if (item.Source == ContentSource.Health && IsLegacyHealthYouTubeUrl(value.PageUrl)) return item;
+            // Migra instalações antigas que não tinham todos os endereços oficiais preenchidos.
+            if (string.IsNullOrWhiteSpace(value.PageUrl) ||
+                (item.Source == ContentSource.Health && IsLegacyHealthYouTubeUrl(value.PageUrl))) return item;
             return item with { PageUrl = value.PageUrl, Policy = value.Policy, DownloadSelection = value.Selection };
         }).ToArray();
     }
@@ -141,8 +142,7 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         await connection.OpenAsync(cancellationToken); return connection;
     }
 
-    private static IReadOnlyList<SourceConfiguration> DefaultSources() =>
-    [new(ContentSource.Missions, "Informativo das Missões", "", AvailabilityPolicy.MonthlyFull), new(ContentSource.ProvaiEVede, "Provai e Vede", "", AvailabilityPolicy.QuarterlyFull), new(ContentSource.Health, "Minuto de Saúde", "https://downloads.adventistas.org/pt/", AvailabilityPolicy.QuarterlyFull)];
+    private static IReadOnlyList<SourceConfiguration> DefaultSources() => OfficialContentPrograms.All;
 
     private static bool IsLegacyHealthYouTubeUrl(string pageUrl) => pageUrl.Contains("youtube.com/@VidaeSaudeUCB", StringComparison.OrdinalIgnoreCase);
 }

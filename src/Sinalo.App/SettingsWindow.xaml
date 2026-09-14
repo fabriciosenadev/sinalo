@@ -54,7 +54,11 @@
                         <StackPanel>
                             <TextBlock Text="Informativo das Missões" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                             <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
-                            <TextBox x:Name="MissionsUrl" Padding="8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBox x:Name="MissionsUrl" Padding="8" Margin="0,0,8,0" />
+                                <Button Grid.Column="1" Content="Restaurar endereço oficial" Click="RestoreOfficialUrl_Click" Tag="Missions" Padding="10,8" ToolTip="Usar novamente o endereço oficial padrão" />
+                            </Grid>
                             <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
                             <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
                             <TextBlock Text="Marque os sábados desejados. Sem seleção, o trimestre inteiro será baixado." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" TextWrapping="Wrap" />
@@ -69,7 +73,11 @@
                         <StackPanel>
                             <TextBlock Text="Provai e Vede" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                             <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
-                            <TextBox x:Name="ProvaiUrl" Padding="8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBox x:Name="ProvaiUrl" Padding="8" Margin="0,0,8,0" />
+                                <Button Grid.Column="1" Content="Restaurar endereço oficial" Click="RestoreOfficialUrl_Click" Tag="ProvaiEVede" Padding="10,8" ToolTip="Usar novamente o endereço oficial padrão" />
+                            </Grid>
                             <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
                             <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
                             <TextBlock Text="Marque os sábados desejados. Sem seleção, o trimestre inteiro será baixado." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" TextWrapping="Wrap" />
@@ -84,7 +92,11 @@
                         <StackPanel>
                             <TextBlock Text="Minuto de Saúde" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                             <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
-                            <TextBox x:Name="HealthUrl" Padding="8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <TextBox x:Name="HealthUrl" Padding="8" Margin="0,0,8,0" />
+                                <Button Grid.Column="1" Content="Restaurar endereço oficial" Click="RestoreOfficialUrl_Click" Tag="Health" Padding="10,8" ToolTip="Usar novamente o endereço oficial padrão" />
+                            </Grid>
                             <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
                             <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
                             <TextBlock Text="Marque os sábados desejados. Sem seleção, o trimestre inteiro será baixado." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" TextWrapping="Wrap" />

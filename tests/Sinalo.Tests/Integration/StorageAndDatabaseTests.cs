@@ -56,7 +56,7 @@ public sealed class StorageAndDatabaseTests : IDisposable
     }
 
     [Fact]
-    public async Task ConfigurationService_ShouldReturnTheThreeUnconfiguredDefaultSources()
+    public async Task ConfigurationService_ShouldReturnTheThreeOfficialDefaultSources()
     {
         var pathService = new TestPathService(_rootPath);
         await new SinaloDatabase(pathService).InitializeAsync();
@@ -65,9 +65,27 @@ public sealed class StorageAndDatabaseTests : IDisposable
         var sources = await service.LoadSourcesAsync();
 
         Assert.Collection(sources,
-            source => { Assert.Equal(ContentSource.Missions, source.Source); Assert.Equal(AvailabilityPolicy.MonthlyFull, source.Policy); Assert.Empty(source.PageUrl); },
-            source => { Assert.Equal(ContentSource.ProvaiEVede, source.Source); Assert.Equal(AvailabilityPolicy.QuarterlyFull, source.Policy); Assert.Empty(source.PageUrl); },
+            source => { Assert.Equal(ContentSource.Missions, source.Source); Assert.Equal(AvailabilityPolicy.MonthlyFull, source.Policy); Assert.Equal("https://www.daniellocutor.com.br/", source.PageUrl); },
+            source => { Assert.Equal(ContentSource.ProvaiEVede, source.Source); Assert.Equal(AvailabilityPolicy.QuarterlyFull, source.Policy); Assert.Equal("https://www.adventistas.org/pt/mordomiacrista/projeto/provai-e-vede/", source.PageUrl); },
             source => { Assert.Equal(ContentSource.Health, source.Source); Assert.Equal(AvailabilityPolicy.QuarterlyFull, source.Policy); Assert.Equal("https://downloads.adventistas.org/pt/", source.PageUrl); });
+    }
+
+    [Fact]
+    public async Task ConfigurationService_ShouldRestoreOfficialUrlForLegacyBlankConfigurations()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+        await service.SaveSourcesAsync(
+        [
+            new(ContentSource.Missions, "Informativo das Missões", "", AvailabilityPolicy.MonthlyFull),
+            new(ContentSource.ProvaiEVede, "Provai e Vede", "", AvailabilityPolicy.QuarterlyFull)
+        ]);
+
+        var sources = await service.LoadSourcesAsync();
+
+        Assert.Equal("https://www.daniellocutor.com.br/", sources.Single(source => source.Source == ContentSource.Missions).PageUrl);
+        Assert.Equal("https://www.adventistas.org/pt/mordomiacrista/projeto/provai-e-vede/", sources.Single(source => source.Source == ContentSource.ProvaiEVede).PageUrl);
     }
 
     [Fact]
