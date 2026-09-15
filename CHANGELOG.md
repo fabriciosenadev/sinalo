@@ -4,6 +4,17 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.10 - 14/09/2026
+
+### Novo
+
+- Foi publicado o guia online de configuração do Sinalo no GitHub Pages, com
+  orientações para instalar o aplicativo, configurar os programas de vídeo e
+  usar a biblioteca local.
+- O projeto passou a incluir os arquivos de licença e avisos de uso de
+  componentes de terceiros, deixando essas informações acessíveis a quem
+  instala ou distribui o Sinalo.
+
 ## 0.1.9 - 29/08/2026
 
 ### Novo
