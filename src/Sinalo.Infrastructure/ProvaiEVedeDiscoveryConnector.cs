@@ -1,5 +1,6 @@
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 using System.Net;
 using System.Security.Cryptography;
@@ -19,11 +20,11 @@ public sealed class ProvaiEVedeDiscoveryConnector(HttpClient httpClient, Func<Da
     {
         if (configuration.Source != ContentSource.ProvaiEVede) throw new InvalidOperationException("Este conector atende somente Provai e Vede.");
         var referenceDate = _operatingDate();
-        var html = await _httpClient.GetStringAsync(new Uri(configuration.PageUrl), cancellationToken);
+        var html = await HttpSynchronizationRetry.GetStringAsync(_httpClient, new Uri(configuration.PageUrl), cancellationToken);
         var target = FindQuarterPage(html, new Uri(configuration.PageUrl), referenceDate);
-        if (target is null) return [];
+        if (target is null) throw new SiteStructureChangedException("A página trimestral não foi encontrada no site oficial.");
 
-        var quarterHtml = await _httpClient.GetStringAsync(target, cancellationToken);
+        var quarterHtml = await HttpSynchronizationRetry.GetStringAsync(_httpClient, target, cancellationToken);
         var videos = ParseVideos(quarterHtml, referenceDate.Year).ToArray();
         if (videos.Length > 0) return videos;
 

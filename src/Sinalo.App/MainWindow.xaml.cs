@@ -42,6 +42,7 @@ public partial class MainWindow : Window
     public IContentCatalog? ContentCatalog { get; init; }
     public IContentDeletionService? ContentDeletionService { get; init; }
     public IContentStorageSpaceService? ContentStorageSpaceService { get; init; }
+    public ISynchronizationDiagnosticStore? SynchronizationDiagnosticStore { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
@@ -167,7 +168,7 @@ public partial class MainWindow : Window
         await Task.CompletedTask;
     }
 
-    public SynchronizationQueue CreateSynchronizationQueue() => new(ExecuteQueuedSynchronizationAsync);
+    public SynchronizationQueue CreateSynchronizationQueue() => new(ExecuteQueuedSynchronizationAsync, SynchronizationDiagnosticStore);
 
     private async Task EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource source)
     {
@@ -206,16 +207,17 @@ public partial class MainWindow : Window
         CancellationToken cancellationToken)
     {
         if (DiscoveryService is null || ContentCatalog is null) throw new InvalidOperationException("Os serviços de sincronização não estão disponíveis.");
-        queueProgress.Report(new SynchronizationQueueProgress("Consultando o site oficial..."));
+        queueProgress.Report(new SynchronizationQueueProgress("Consultando o site oficial...", Stage: SynchronizationStage.Discovery));
         await DiscoveryService.RefreshAsync(request.Configuration, cancellationToken);
-        queueProgress.Report(new SynchronizationQueueProgress("Catálogo atualizado. Preparando downloads..."));
+        queueProgress.Report(new SynchronizationQueueProgress("Catálogo atualizado. Preparando downloads...", Stage: SynchronizationStage.Download));
         var downloadProgress = new Progress<DownloadProgress>(progress =>
         {
             queueProgress.Report(new SynchronizationQueueProgress(
                 progress.Percentage is { } percentage
                     ? $"{progress.Item.Title}: {progress.Stage} ({percentage:0.0}%)"
                     : $"{progress.Item.Title}: {progress.Stage}",
-                progress.Percentage));
+                progress.Percentage,
+                GetSynchronizationStage(progress.Stage)));
             if (progress.Item.SyncState == Sinalo.Domain.SyncState.Ready)
             {
                 _ = Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.MarkItemAsReady(progress.Item));
@@ -250,6 +252,22 @@ public partial class MainWindow : Window
     private void SynchronizationQueue_Changed(SynchronizationQueueSnapshot snapshot)
     {
         Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.UpdateSynchronizationQueue(snapshot));
+    }
+
+    private static SynchronizationStage GetSynchronizationStage(string stage) => stage switch
+    {
+        "Baixando" => SynchronizationStage.Download,
+        "Extraindo vídeo" => SynchronizationStage.Extraction,
+        "Validando arquivo" => SynchronizationStage.Validation,
+        "Disponível offline" => SynchronizationStage.Catalog,
+        _ => SynchronizationStage.Download
+    };
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void ViewSynchronizationDiagnostic_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: SynchronizationDiagnostic diagnostic }) return;
+        new SynchronizationDiagnosticWindow(diagnostic, ThemeService) { Owner = this }.ShowDialog();
     }
 
     private async Task UpdateAndSynchronizeSourceAsync(Sinalo.Domain.ContentSource source)

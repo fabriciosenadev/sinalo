@@ -77,6 +77,7 @@ public partial class App : System.Windows.Application
             ContentCatalog = contentCatalog,
             ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),
             ContentStorageSpaceService = storageSpaceService,
+            SynchronizationDiagnosticStore = new LocalSynchronizationDiagnosticStore(pathService),
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),

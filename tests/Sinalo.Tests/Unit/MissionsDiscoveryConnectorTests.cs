@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 
@@ -59,11 +60,11 @@ public sealed class MissionsDiscoveryConnectorTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_ShouldReturnNoItemsWhenTheCurrentQuarterIsUnavailable()
+    public async Task DiscoverAsync_ShouldDiagnoseWhenTheCurrentQuarterIsUnavailable()
     {
         var connector = new MissionsDiscoveryConnector(new HttpClient(new PagesHandler("<a href='/informativo-mundial/2o-trimestre-2026/'>2º Trimestre 2026</a>", "", "")), () => new DateOnly(2026, 8, 2));
 
-        Assert.Empty(await connector.DiscoverAsync(Configuration()));
+        await Assert.ThrowsAsync<SiteStructureChangedException>(() => connector.DiscoverAsync(Configuration()));
     }
 
     [Fact]

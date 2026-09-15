@@ -96,6 +96,7 @@
                                     <StackPanel>
                                         <DockPanel><TextBlock Text="{Binding SourceName}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="{Binding State}" Foreground="{DynamicResource Brush.Accent}" FontSize="11" HorizontalAlignment="Right" /></DockPanel>
                                         <TextBlock Text="{Binding Details}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                        <Button Content="Ver detalhes" Tag="{Binding Diagnostic}" Click="ViewSynchronizationDiagnostic_Click" Visibility="{Binding HasDiagnostic, Converter={StaticResource BooleanToVisibilityConverter}}" Padding="8,5" Margin="0,8,0,0" />
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>

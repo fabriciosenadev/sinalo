@@ -48,6 +48,32 @@ public sealed class OfficialMediaDownloadServiceTests : IDisposable
 
         Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.part")));
     }
+    [Fact] public async Task DownloadAsync_ShouldRejectHtmlAndCleanTemporaryFiles()
+    {
+        var paths = new TestPaths(_root);
+        var service = new OfficialMediaDownloadService(new HttpClient(new Bytes([1, 2, 3], "text/html")), paths);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => service.DownloadAsync(Item()));
+
+        Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.part")));
+    }
+    [Fact] public async Task DownloadAsync_ShouldRejectInvalidZipAndCleanTemporaryFiles()
+    {
+        var paths = new TestPaths(_root);
+        var service = new OfficialMediaDownloadService(new HttpClient(new Bytes([1, 2, 3], "application/zip")), paths);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => service.DownloadAsync(Item()));
+
+        Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.part")));
+        Assert.False(File.Exists(Path.Combine(paths.GetPaths().TempDownloadsPath, "asset.extracted.part")));
+    }
+    [Fact] public async Task DownloadAsync_ShouldRejectZipWithoutVideo()
+    {
+        var paths = new TestPaths(_root);
+        var service = new OfficialMediaDownloadService(new HttpClient(new Bytes(CreateZipWithoutVideo(), "application/zip")), paths);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => service.DownloadAsync(Item()));
+    }
     private static ContentItem Item() => new("item", ContentSource.ProvaiEVede, "Vídeo", new DateOnly(2026,8,8), new Uri("https://example.test/page"), [new MediaAsset("asset",new Uri("https://example.test/video.mp4"),"video.mp4",null,null)]);
     public void Dispose(){ if(Directory.Exists(_root)) Directory.Delete(_root,true); }
     private static byte[] CreateZip(byte[] video)
@@ -55,6 +81,13 @@ public sealed class OfficialMediaDownloadServiceTests : IDisposable
         using var stream = new MemoryStream();
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
         using (var output = archive.CreateEntry("informativo.mp4").Open()) output.Write(video);
+        return stream.ToArray();
+    }
+    private static byte[] CreateZipWithoutVideo()
+    {
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
+        using (var output = archive.CreateEntry("leia-me.txt").Open()) output.Write([1, 2, 3]);
         return stream.ToArray();
     }
     private sealed class Bytes(byte[] data, string? mediaType = null):HttpMessageHandler { protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken c){ var content = new ByteArrayContent(data); if (mediaType is not null) content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType); return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=content}); } }

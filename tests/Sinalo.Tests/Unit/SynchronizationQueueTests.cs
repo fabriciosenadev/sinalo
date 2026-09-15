@@ -107,9 +107,46 @@ public sealed class SynchronizationQueueTests
 
         var entries = queue.GetSnapshot().Entries;
         Assert.Equal(SynchronizationQueueState.Failed, entries.Single(entry => entry.Source == ContentSource.Missions).State);
+        Assert.Equal(SynchronizationFailureCategory.NoConnection, entries.Single(entry => entry.Source == ContentSource.Missions).Diagnostic?.Category);
         Assert.Equal(SynchronizationQueueState.Completed, entries.Single(entry => entry.Source == ContentSource.Health).State);
         Assert.Equal(2, entries.Single(entry => entry.Source == ContentSource.Health).ReadyItems);
     }
 
+    [Fact]
+    public async Task Queue_ShouldRecordTheFriendlyDiagnosticForFailedRequests()
+    {
+        var store = new RecordingStore();
+        var queue = new SynchronizationQueue((_, _, _) => throw new HttpRequestException("Sem rede"), store);
+
+        queue.Enqueue(Request(ContentSource.Missions));
+        await queue.WhenIdleAsync();
+
+        var diagnostic = Assert.Single(store.Diagnostics);
+        Assert.Equal(SynchronizationFailureCategory.NoConnection, diagnostic.Category);
+        Assert.Equal("https://example.test/", diagnostic.SourceUrl);
+    }
+
+    [Fact]
+    public async Task Queue_ShouldKeepOtherCompletedResultsWhenANewSourceIsQueued()
+    {
+        var queue = new SynchronizationQueue((_, _, _) => Task.FromResult(new SynchronizationQueueCompletion(1)));
+        queue.Enqueue(Request(ContentSource.Missions));
+        await queue.WhenIdleAsync();
+        queue.Enqueue(Request(ContentSource.Health));
+        await queue.WhenIdleAsync();
+
+        Assert.Equal(2, queue.GetSnapshot().Entries.Count);
+    }
+
     private static SynchronizationQueueRequest Request(ContentSource source) => new(new SourceConfiguration(source, source.ToString(), "https://example.test/", AvailabilityPolicy.RollingSaturday));
+
+    private sealed class RecordingStore : ISynchronizationDiagnosticStore
+    {
+        public List<SynchronizationDiagnostic> Diagnostics { get; } = [];
+        public Task RecordAsync(SynchronizationDiagnostic diagnostic, CancellationToken cancellationToken = default)
+        {
+            Diagnostics.Add(diagnostic);
+            return Task.CompletedTask;
+        }
+    }
 }

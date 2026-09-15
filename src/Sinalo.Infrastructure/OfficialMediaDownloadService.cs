@@ -17,7 +17,11 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
         var extractedPart = Path.Combine(p.TempDownloadsPath, asset.Id + ".extracted.part");
         try
         {
-            using var response = await httpClient.GetAsync(asset.DownloadUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken); response.EnsureSuccessStatusCode();
+            using var response = await HttpSynchronizationRetry.GetAsync(httpClient, asset.DownloadUri, cancellationToken);
+            if (response.Content.Headers.ContentType?.MediaType?.Contains("html", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                throw new InvalidDataException("O site devolveu uma página em vez do arquivo de vídeo.");
+            }
             var totalBytes = response.Content.Headers.ContentLength;
             progress?.Report(new DownloadProgress(item, 0, totalBytes, "Baixando"));
             await using (var input = await response.Content.ReadAsStreamAsync(cancellationToken))
@@ -44,6 +48,10 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
                 }
             }
             if (new FileInfo(part).Length == 0) throw new InvalidDataException("O arquivo baixado está vazio.");
+            if (totalBytes is { } expectedBytes && new FileInfo(part).Length != expectedBytes)
+            {
+                throw new InvalidDataException("O tamanho do arquivo baixado não corresponde ao informado pelo site.");
+            }
 
             var localVideo = part;
             if (await IsZipAsync(part, response.Content.Headers.ContentType?.MediaType, cancellationToken))
@@ -62,9 +70,20 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
         }
         finally
         {
-            if (File.Exists(part)) File.Delete(part);
-            if (File.Exists(extractedPart)) File.Delete(extractedPart);
+            TryDelete(part);
+            TryDelete(extractedPart);
         }
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private static void TryDelete(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath)) File.Delete(filePath);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static async Task<bool> IsZipAsync(string filePath, string? mediaType, CancellationToken cancellationToken)

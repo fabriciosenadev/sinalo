@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
@@ -21,11 +22,11 @@ public sealed class MissionsDiscoveryConnector(HttpClient httpClient, Func<DateO
 
         var sourceUri = new Uri(configuration.PageUrl);
         var referenceDate = _operatingDate();
-        var sourceHtml = await _httpClient.GetStringAsync(sourceUri, cancellationToken);
+        var sourceHtml = await HttpSynchronizationRetry.GetStringAsync(_httpClient, sourceUri, cancellationToken);
         var quarterUri = FindQuarterPage(sourceHtml, sourceUri, referenceDate);
-        if (quarterUri is null) return [];
+        if (quarterUri is null) throw new SiteStructureChangedException("A página trimestral não foi encontrada no site oficial.");
 
-        var quarterHtml = await _httpClient.GetStringAsync(quarterUri, cancellationToken);
+        var quarterHtml = await HttpSynchronizationRetry.GetStringAsync(_httpClient, quarterUri, cancellationToken);
         var posts = FindMissionPosts(quarterHtml, quarterUri, referenceDate.Year).ToArray();
         if (posts.Length == 0)
         {
@@ -37,7 +38,7 @@ public sealed class MissionsDiscoveryConnector(HttpClient httpClient, Func<DateO
         var items = new List<ContentItem>();
         foreach (var post in posts)
         {
-            var postHtml = await _httpClient.GetStringAsync(post.Uri, cancellationToken);
+            var postHtml = await HttpSynchronizationRetry.GetStringAsync(_httpClient, post.Uri, cancellationToken);
             var downloadUri = FindVideoDownload(postHtml, post.Uri);
             IReadOnlyList<MediaAsset> assets = downloadUri is null ? [] : [CreateAsset(downloadUri)];
             items.Add(new ContentItem($"missions-{post.Date:yyyy-MM-dd}", ContentSource.Missions, post.Title, post.Date, post.Uri, assets,

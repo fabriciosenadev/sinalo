@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 
@@ -26,13 +27,11 @@ public sealed class ProvaiEVedeDiscoveryConnectorTests
     }
 
     [Fact]
-    public async Task DiscoverAsync_ShouldReturnNoItemWhenTheCurrentQuarterIsNotPublished()
+    public async Task DiscoverAsync_ShouldDiagnoseWhenTheCurrentQuarterIsNotPublished()
     {
         var connector = new ProvaiEVedeDiscoveryConnector(new HttpClient(new HtmlHandler("<a href='/provai-e-vede-2026-2o-trimestre/'>Segundo</a>")), () => new DateOnly(2026, 8, 2));
 
-        var items = await connector.DiscoverAsync(Configuration());
-
-        Assert.Empty(items);
+        await Assert.ThrowsAsync<SiteStructureChangedException>(() => connector.DiscoverAsync(Configuration()));
     }
 
     [Fact]
@@ -40,9 +39,7 @@ public sealed class ProvaiEVedeDiscoveryConnectorTests
     {
         var connector = new ProvaiEVedeDiscoveryConnector(new HttpClient(new HtmlHandler("<a href='http://files.example/provai-e-vede-2026-3o-trimestre/'>Terceiro</a>")), () => new DateOnly(2026, 8, 2));
 
-        var items = await connector.DiscoverAsync(Configuration());
-
-        Assert.Empty(items);
+        await Assert.ThrowsAsync<SiteStructureChangedException>(() => connector.DiscoverAsync(Configuration()));
     }
 
     [Fact]

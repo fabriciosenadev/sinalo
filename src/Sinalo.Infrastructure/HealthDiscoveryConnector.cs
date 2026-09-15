@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
@@ -20,17 +21,17 @@ public sealed class HealthDiscoveryConnector(HttpClient httpClient, Func<DateOnl
         if (configuration.Source != ContentSource.Health) throw new InvalidOperationException("Este conector atende somente Minuto de Saúde.");
         var sourceUri = new Uri(configuration.PageUrl);
         var referenceDate = _operatingDate();
-        var sourceHtml = await _httpClient.GetStringAsync(sourceUri, cancellationToken);
+        var sourceHtml = await HttpSynchronizationRetry.GetStringAsync(_httpClient, sourceUri, cancellationToken);
         var quarterUri = FindQuarterPage(sourceHtml, sourceUri, referenceDate)
             ?? (IsCurrentQuarterPage(sourceUri, referenceDate) ? sourceUri : CreateQuarterPageUri(sourceUri, referenceDate));
         string quarterHtml;
         try
         {
-            quarterHtml = quarterUri == sourceUri ? sourceHtml : await _httpClient.GetStringAsync(quarterUri, cancellationToken);
+            quarterHtml = quarterUri == sourceUri ? sourceHtml : await HttpSynchronizationRetry.GetStringAsync(_httpClient, quarterUri, cancellationToken);
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
-            return [];
+            throw new SiteStructureChangedException("A página trimestral não foi encontrada no site oficial.");
         }
 
         return ParseVideos(quarterHtml, quarterUri, referenceDate.Year).OrderBy(item => item.ScheduledDate).ToArray();

@@ -168,7 +168,7 @@ public sealed partial class HomeViewModel : ObservableObject
         foreach (var entry in snapshot.Entries)
         {
             var pending = entry.State is SynchronizationQueueState.Waiting or SynchronizationQueueState.Running;
-            SynchronizationQueueItems.Add(new SynchronizationQueueCard(entry.SourceName, GetQueueStateLabel(entry.State), entry.Message, pending));
+            SynchronizationQueueItems.Add(new SynchronizationQueueCard(entry.SourceName, GetQueueStateLabel(entry.State), entry.Message, pending, entry.Diagnostic));
         }
 
         OnPropertyChanged(nameof(HasSynchronizationQueueItems));
@@ -303,4 +303,7 @@ public sealed record CatalogCard(string Id, string Title, string SourceName, str
 }
 public sealed record ScheduleCard(string Id, string Title, string SourceName, string Status);
 public sealed record PlaybackScreenOption(string Label, int ScreenNumber, bool IsPrimary = false, string MonitorKey = "");
-public sealed record SynchronizationQueueCard(string SourceName, string State, string Details, bool IsPending);
+public sealed record SynchronizationQueueCard(string SourceName, string State, string Details, bool IsPending, SynchronizationDiagnostic? Diagnostic = null)
+{
+    public bool HasDiagnostic => Diagnostic is not null;
+}
