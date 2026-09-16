@@ -46,6 +46,20 @@ public sealed class LocalContentCleanupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CleanIfDueAsync_ShouldKeepEveryVideoWhenAutomaticCleanupIsDisabled()
+    {
+        var paths = new Paths(_root); paths.EnsureFolders();
+        var old = CreateFile(paths, "old.mp4", new DateOnly(2026, 1, 3));
+        var catalog = new Catalog([old]);
+
+        var result = await new LocalContentCleanupService(catalog, paths, new Configuration(new ContentCleanupConfiguration())).CleanIfDueAsync(new DateOnly(2026, 9, 15));
+
+        Assert.False(result.WasRun);
+        Assert.True(File.Exists(old.LocalPath));
+        Assert.Empty(catalog.Deleted);
+    }
+
+    [Fact]
     public async Task CleanIfDueAsync_ShouldNeverDeleteFileOutsideTheConfiguredContentPath()
     {
         var paths = new Paths(_root); paths.EnsureFolders();

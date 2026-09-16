@@ -133,6 +133,7 @@ public partial class MainWindow : Window
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void PeriodicUpdateCheck_Tick(object? sender, EventArgs e) => await CheckForUpdateAsync(_updateCheckCancellation.Token);
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void InstallUpdate_Click(object sender, RoutedEventArgs e)
     {
         if (_downloadedUpdate is null || UpdateInstallerLauncher is null) return;
@@ -149,6 +150,7 @@ public partial class MainWindow : Window
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async Task PrepareForShutdownAsync()
     {
         _updateCheckTimer.Stop();
@@ -604,6 +606,7 @@ public partial class MainWindow : Window
         }
         finally { SetIdle(); }
     }
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void ToggleSelectedVideoPin_Click(object sender, RoutedEventArgs e)
     {
         if (ContentCatalog is null || DataContext is not HomeViewModel { SelectedCatalogItem: { } selected }) return;

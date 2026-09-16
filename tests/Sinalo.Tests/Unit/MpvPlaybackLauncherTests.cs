@@ -28,6 +28,17 @@ public sealed class MpvPlaybackLauncherTests
     }
 
     [Fact]
+    public async Task DisposeAsync_ShouldBeSafeWhenCalledMoreThanOnce()
+    {
+        var launcher = new MpvPlaybackLauncher(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "mpv.exe"));
+
+        await launcher.DisposeAsync();
+        await launcher.DisposeAsync();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => launcher.WarmAsync());
+    }
+
+    [Fact]
     public async Task WarmAsync_ShouldKeepTheBundledPlayerReadyAndAcceptConsecutiveFileReplacements()
     {
         var videoPath = Path.Combine(Path.GetTempPath(), $"Sinalo-mpv-{Guid.NewGuid():N}.mp4");
