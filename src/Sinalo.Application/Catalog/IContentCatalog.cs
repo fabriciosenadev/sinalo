@@ -14,5 +14,7 @@ public interface IContentCatalog
 
     Task DeleteAsync(string id, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+    Task SetPinnedAsync(string id, bool isPinned, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
     Task RelocateLocalPathsAsync(string previousContentPath, string newContentPath, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

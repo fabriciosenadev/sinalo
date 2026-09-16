@@ -52,6 +52,22 @@
                 <StackPanel>
                     <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                         <StackPanel>
+                            <TextBlock Text="Limpeza automática" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                            <TextBlock Text="Remove apenas vídeos antigos que não estejam fixados. A limpeza acontece uma vez por mês, antes de uma sincronização." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,9" TextWrapping="Wrap" />
+                            <CheckBox x:Name="CleanupEnabled" Content="Ativar limpeza automática de vídeos antigos" />
+                            <TextBlock Text="Manter vídeos dos últimos meses" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,12,0,4" />
+                            <ComboBox x:Name="CleanupRetentionMonths" Padding="8" SelectedIndex="1">
+                                <ComboBoxItem Content="1 mês" Tag="1" />
+                                <ComboBoxItem Content="3 meses" Tag="3" />
+                                <ComboBoxItem Content="6 meses" Tag="6" />
+                                <ComboBoxItem Content="12 meses" Tag="12" />
+                            </ComboBox>
+                            <TextBlock Text="Tolerância após esse período (dias)" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,12,0,4" />
+                            <TextBox x:Name="CleanupGracePeriodDays" Padding="8" />
+                        </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
                             <TextBlock Text="Informativo das Missões" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                             <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
                             <Grid>

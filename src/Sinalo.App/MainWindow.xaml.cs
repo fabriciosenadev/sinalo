@@ -28,6 +28,8 @@ public partial class MainWindow : Window
     public ISinaloConfigurationService? ConfigurationService { get; init; }
     public IContentPathConfigurationService? ContentPathConfigurationService { get; init; }
     public IContentPathMigrationService? ContentPathMigrationService { get; init; }
+    public IContentCleanupConfigurationService? ContentCleanupConfigurationService { get; init; }
+    public IContentCleanupService? ContentCleanupService { get; init; }
     public IApplicationUpdateService? ApplicationUpdateService { get; init; }
     public IUpdateInstallerLauncher? UpdateInstallerLauncher { get; init; }
     public IThemePreferenceService? ThemePreferenceService { get; init; }
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
+    public IAsyncDisposable? PlaybackRuntime { get; init; }
     public SynchronizationQueue? SynchronizationQueue
     {
         get => _synchronizationQueue;
@@ -75,7 +78,7 @@ public partial class MainWindow : Window
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigurationService is null) return;
-        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService) { Owner = this };
+        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService, ContentCleanupConfigurationService) { Owner = this };
         window.ShowDialog();
         if (window.Saved)
         {
@@ -130,17 +133,42 @@ public partial class MainWindow : Window
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void PeriodicUpdateCheck_Tick(object? sender, EventArgs e) => await CheckForUpdateAsync(_updateCheckCancellation.Token);
 
-    private void InstallUpdate_Click(object sender, RoutedEventArgs e)
+    private async void InstallUpdate_Click(object sender, RoutedEventArgs e)
     {
         if (_downloadedUpdate is null || UpdateInstallerLauncher is null) return;
         try
         {
+            if (DataContext is HomeViewModel viewModel) viewModel.UpdateMessage = "Preparando atualização. Encerrando reprodução e sincronizações...";
+            await PrepareForShutdownAsync();
             UpdateInstallerLauncher.Launch(_downloadedUpdate.InstallerPath);
             System.Windows.Application.Current.Shutdown();
         }
         catch (Exception exception)
         {
             if (DataContext is HomeViewModel viewModel) viewModel.UpdateMessage = $"Não foi possível iniciar a atualização: {exception.Message}";
+        }
+    }
+
+    private async Task PrepareForShutdownAsync()
+    {
+        _updateCheckTimer.Stop();
+        _updateCheckCancellation.Cancel();
+        SynchronizationQueue?.CancelAll();
+        if (SynchronizationQueue is not null)
+        {
+            try { await SynchronizationQueue.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10)); }
+            catch (TimeoutException) { }
+        }
+
+        if (PresentationOutputService is not null)
+        {
+            try { await PresentationOutputService.CloseAsync(); }
+            catch { }
+        }
+        if (PlaybackRuntime is not null)
+        {
+            try { await PlaybackRuntime.DisposeAsync(); }
+            catch { }
         }
     }
 
@@ -176,6 +204,16 @@ public partial class MainWindow : Window
         var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
         try
         {
+            if (ContentCleanupService is not null)
+            {
+                var cleanup = await ContentCleanupService.CleanIfDueAsync(DateOnly.FromDateTime(DateTime.Today));
+                if (cleanup.WasRun && cleanup.RemovedCount > 0)
+                {
+                    viewModel.OperationMessage = $"Limpeza automática: {cleanup.RemovedCount} vídeo(s) removido(s), {FormatBytes(cleanup.ReclaimedBytes)} recuperados.";
+                    ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), viewModel.OperationMessage);
+                    viewModel = (HomeViewModel)DataContext;
+                }
+            }
             viewModel.OperationMessage = $"Consultando o site oficial de {configuration.DisplayName}...";
             await DiscoveryService.RefreshAsync(configuration);
             var candidates = SynchronizationCandidateSelector.Select(source, await ContentCatalog.ListBySourceAsync(source), configuration.ResolvedDownloadSelection, new SaturdayWindowService(), DateOnly.FromDateTime(DateTime.Today));
@@ -262,6 +300,10 @@ public partial class MainWindow : Window
         "Disponível offline" => SynchronizationStage.Catalog,
         _ => SynchronizationStage.Download
     };
+
+    private static string FormatBytes(long bytes) => bytes >= 1024L * 1024 * 1024
+        ? $"{bytes / 1024d / 1024 / 1024:0.0} GB"
+        : $"{bytes / 1024d / 1024:0} MB";
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private void ViewSynchronizationDiagnostic_Click(object sender, RoutedEventArgs e)
@@ -561,6 +603,19 @@ public partial class MainWindow : Window
             System.Windows.MessageBox.Show(this, exception.Message, "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { SetIdle(); }
+    }
+    private async void ToggleSelectedVideoPin_Click(object sender, RoutedEventArgs e)
+    {
+        if (ContentCatalog is null || DataContext is not HomeViewModel { SelectedCatalogItem: { } selected }) return;
+        var item = await ContentCatalog.FindByIdAsync(selected.Id);
+        if (item is null) return;
+        var updated = item with { IsPinned = !item.IsPinned };
+        await ContentCatalog.SetPinnedAsync(updated.Id, updated.IsPinned);
+        if (DataContext is HomeViewModel viewModel)
+        {
+            viewModel.MarkItemPinned(updated);
+            viewModel.OperationMessage = updated.IsPinned ? $"{updated.Title} foi fixado e não será removido automaticamente." : $"{updated.Title} poderá ser removido pela limpeza automática quando ficar antigo.";
+        }
     }
     private void RemoveSchedule_Click(object sender, RoutedEventArgs e)
     {

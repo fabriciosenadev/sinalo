@@ -131,6 +131,16 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
         await transaction.CommitAsync(cancellationToken);
     }
 
+    public async Task SetPinnedAsync(string id, bool isPinned, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE content_items SET is_pinned = $isPinned WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$isPinned", isPinned);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public async Task RelocateLocalPathsAsync(string previousContentPath, string newContentPath, CancellationToken cancellationToken = default)
     {
         var previousRoot = Path.GetFullPath(previousContentPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);

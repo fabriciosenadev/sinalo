@@ -9,7 +9,7 @@ using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService, IRaffleConfigurationService
+public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService, IRaffleConfigurationService, IContentCleanupConfigurationService
 {
     private readonly ISinaloPathService _pathService = pathService;
 
@@ -132,6 +132,30 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         await using var connection = await OpenAsync(cancellationToken); var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO raffle_configuration (id, animation_duration_seconds) VALUES (1, $duration) ON CONFLICT(id) DO UPDATE SET animation_duration_seconds = excluded.animation_duration_seconds;";
         command.Parameters.AddWithValue("$duration", (long)configuration.AnimationDuration.TotalSeconds);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    async Task<ContentCleanupConfiguration> IContentCleanupConfigurationService.LoadAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT is_enabled, retention_months, grace_period_days, last_run_date FROM content_cleanup_configuration WHERE id = 1;";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return new ContentCleanupConfiguration();
+        return new ContentCleanupConfiguration(
+            reader.GetBoolean(0), reader.GetInt32(1), reader.GetInt32(2),
+            reader.IsDBNull(3) ? null : DateOnly.Parse(reader.GetString(3)));
+    }
+
+    async Task IContentCleanupConfigurationService.SaveAsync(ContentCleanupConfiguration configuration, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO content_cleanup_configuration (id, is_enabled, retention_months, grace_period_days, last_run_date) VALUES (1, $enabled, $months, $grace, $lastRun) ON CONFLICT(id) DO UPDATE SET is_enabled = excluded.is_enabled, retention_months = excluded.retention_months, grace_period_days = excluded.grace_period_days, last_run_date = excluded.last_run_date;";
+        command.Parameters.AddWithValue("$enabled", configuration.IsEnabled);
+        command.Parameters.AddWithValue("$months", configuration.NormalizedRetentionMonths);
+        command.Parameters.AddWithValue("$grace", configuration.NormalizedGracePeriodDays);
+        command.Parameters.AddWithValue("$lastRun", configuration.LastRunDate is { } date ? date.ToString("yyyy-MM-dd") : DBNull.Value);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

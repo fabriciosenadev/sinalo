@@ -95,6 +95,8 @@ public sealed partial class HomeViewModel : ObservableObject
         : $"{SelectedCatalogItem.SourceName} • {SelectedCatalogItem.ScheduledDate} • {SelectedCatalogItem.Status}";
     public string SelectedItemPath => SelectedCatalogItem?.LocalPath ?? "Arquivo local ainda não disponível.";
     public bool HasSelectedItem => SelectedCatalogItem is not null;
+    public bool IsSelectedItemPinned => SelectedCatalogItem?.IsPinned == true;
+    public string SelectedItemPinActionLabel => IsSelectedItemPinned ? "Remover fixação" : "Fixar vídeo";
 
     public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione um programa" : SelectedSource;
     public string UpdateAndSynchronizeSelectedSourceLabel => $"Buscar e baixar {SelectedSourceActionLabel}";
@@ -126,6 +128,8 @@ public sealed partial class HomeViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedItemDetails));
         OnPropertyChanged(nameof(SelectedItemPath));
         OnPropertyChanged(nameof(HasSelectedItem));
+        OnPropertyChanged(nameof(IsSelectedItemPinned));
+        OnPropertyChanged(nameof(SelectedItemPinActionLabel));
     }
 
     public void AddSelectedToSchedule()
@@ -218,6 +222,16 @@ public sealed partial class HomeViewModel : ObservableObject
         ApplyFilters();
     }
 
+    public void MarkItemPinned(ContentItem item)
+    {
+        var index = _allCatalogItems.FindIndex(card => card.Id == item.Id);
+        if (index < 0) return;
+        var card = MapItem(item);
+        _allCatalogItems[index] = card;
+        ApplyFilters();
+        SelectedCatalogItem = card;
+    }
+
     public void ReportUpdateAvailable(Version version)
     {
         IsUpdateAvailable = true;
@@ -268,7 +282,8 @@ public sealed partial class HomeViewModel : ObservableObject
         GetCatalogStatus(item),
         item.LocalPath,
         item.IsReadyOffline ? "▶" : item.SyncState == SyncState.OnlineOnly ? "◌" : "↓",
-        item.PlayCount == 0 ? string.Empty : $"Reproduzido {item.PlayCount}×");
+        item.PlayCount == 0 ? string.Empty : $"Reproduzido {item.PlayCount}×",
+        item.IsPinned);
 
     private static string FormatDate(DateOnly date) => date.ToString("dd/MM/yyyy");
     private static string GetSourceName(ContentSource source) => source switch
@@ -296,7 +311,7 @@ public sealed partial class HomeViewModel : ObservableObject
 }
 
 public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);
-public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph, string PlaybackLabel = "")
+public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph, string PlaybackLabel = "", bool IsPinned = false)
 {
     // Compatibilidade com consumidores que já exibiam a coluna "Source" da lista anterior.
     public string Source => SourceName;

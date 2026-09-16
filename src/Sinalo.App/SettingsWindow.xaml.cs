@@ -15,17 +15,20 @@ public partial class SettingsWindow : Window
     private readonly IContentPathConfigurationService? _contentPathConfigurationService;
     private readonly IContentPathMigrationService? _contentPathMigrationService;
     private readonly IThemePreferenceService? _themePreferenceService;
+    private readonly IContentCleanupConfigurationService? _cleanupConfigurationService;
     private readonly SystemThemeService? _themeService;
+    private ContentCleanupConfiguration _cleanupConfiguration = new();
     private bool _loading;
 
     public bool Saved { get; private set; }
-    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null, IThemePreferenceService? themePreferenceService = null, SystemThemeService? themeService = null)
+    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null, IThemePreferenceService? themePreferenceService = null, SystemThemeService? themeService = null, IContentCleanupConfigurationService? cleanupConfigurationService = null)
     {
         _service = service;
         _contentPathConfigurationService = contentPathConfigurationService;
         _contentPathMigrationService = contentPathMigrationService;
         _themePreferenceService = themePreferenceService;
         _themeService = themeService;
+        _cleanupConfigurationService = cleanupConfigurationService;
         InitializeComponent();
         ContentPathText.Text = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, _themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
@@ -38,6 +41,13 @@ public partial class SettingsWindow : Window
         try
         {
             if (_themePreferenceService is not null) ThemePreferenceCombo.SelectedIndex = (int)await _themePreferenceService.LoadAsync();
+            if (_cleanupConfigurationService is not null)
+            {
+                var cleanup = _cleanupConfiguration = await _cleanupConfigurationService.LoadAsync();
+                CleanupEnabled.IsChecked = cleanup.IsEnabled;
+                CleanupGracePeriodDays.Text = cleanup.NormalizedGracePeriodDays.ToString();
+                CleanupRetentionMonths.SelectedIndex = cleanup.NormalizedRetentionMonths switch { 1 => 0, 6 => 2, 12 => 3, _ => 1 };
+            }
             var items = await _service.LoadSourcesAsync();
             var missions = items.Single(x => x.Source == ContentSource.Missions);
             MissionsUrl.Text = missions.PageUrl;
@@ -120,6 +130,12 @@ public partial class SettingsWindow : Window
             new(ContentSource.ProvaiEVede, "Provai e Vede", ProvaiUrl.Text, PolicyFrom(provaiSelection), provaiSelection),
             new(ContentSource.Health, "Minuto de Saúde", HealthUrl.Text, PolicyFrom(healthSelection), healthSelection)
         ]);
+        if (_cleanupConfigurationService is not null)
+        {
+            var months = CleanupRetentionMonths.SelectedItem is System.Windows.Controls.ComboBoxItem { Tag: string tag } && int.TryParse(tag, out var selectedMonths) ? selectedMonths : 3;
+            var grace = int.TryParse(CleanupGracePeriodDays.Text, out var selectedGrace) ? selectedGrace : 30;
+            await _cleanupConfigurationService.SaveAsync(new ContentCleanupConfiguration(CleanupEnabled.IsChecked == true, months, grace, _cleanupConfiguration.LastRunDate));
+        }
         if (_themePreferenceService is not null)
         {
             var preference = (ThemePreference)Math.Clamp(ThemePreferenceCombo.SelectedIndex, (int)ThemePreference.System, (int)ThemePreference.Dark);

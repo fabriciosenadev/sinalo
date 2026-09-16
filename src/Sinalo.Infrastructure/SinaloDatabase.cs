@@ -48,6 +48,14 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 theme_preference INTEGER NOT NULL DEFAULT 0
             );
 
+            CREATE TABLE IF NOT EXISTS content_cleanup_configuration (
+                id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+                is_enabled INTEGER NOT NULL DEFAULT 0,
+                retention_months INTEGER NOT NULL DEFAULT 3,
+                grace_period_days INTEGER NOT NULL DEFAULT 30,
+                last_run_date TEXT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS timer_configuration (
                 id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
                 direction INTEGER NOT NULL DEFAULT 0,

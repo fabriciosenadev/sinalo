@@ -42,6 +42,9 @@ public partial class App : System.Windows.Application
             .Select(output => new PlaybackScreenOption(output.DisplayName, output.ScreenNumber, output.IsPrimary, output.MonitorKey))
             .ToArray();
         var contentCatalog = new SqliteContentCatalog(pathService);
+        var contentCleanupService = new LocalContentCleanupService(contentCatalog, pathService, configurationService);
+        try { await contentCleanupService.CleanIfDueAsync(DateOnly.FromDateTime(DateTime.Today)); }
+        catch { /* A limpeza não deve impedir a abertura do Sinalo. */ }
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36");
         var discoveryService = new ContentDiscoveryService(
         [
@@ -67,6 +70,8 @@ public partial class App : System.Windows.Application
             ApplicationUpdateService = new GitHubApplicationUpdateService(_httpClient, pathService),
             UpdateInstallerLauncher = new WindowsUpdateInstallerLauncher(pathService),
             ThemePreferenceService = configurationService,
+            ContentCleanupConfigurationService = configurationService,
+            ContentCleanupService = contentCleanupService,
             ThemeService = _themeService,
             PlaybackConfigurationService = configurationService,
             MonitorService = monitorService,
@@ -81,7 +86,8 @@ public partial class App : System.Windows.Application
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
-            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, new WindowsPlaybackLauncher()))
+            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, new WindowsPlaybackLauncher())),
+            PlaybackRuntime = mpvPlaybackLauncher
         };
 
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
@@ -98,7 +104,8 @@ public partial class App : System.Windows.Application
         try { _presentationOutputService?.CloseAsync().GetAwaiter().GetResult(); }
         catch { }
         _themeService?.Dispose();
-        _mpvPlaybackLauncher?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        try { _mpvPlaybackLauncher?.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
+        catch { }
         _httpClient.Dispose();
         base.OnExit(e);
     }

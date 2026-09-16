@@ -17,6 +17,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
     private NamedPipeClientStream? _pipe;
     private StreamWriter? _writer;
     private CancellationTokenSource? _readerCancellation;
+    private int _isDisposed;
 
     public MpvPlaybackLauncher(string? mpvPath = null, string? pipeName = null)
     {
@@ -26,6 +27,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
 
     public async Task WarmAsync(CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         await _gate.WaitAsync(cancellationToken);
         try { await EnsureStartedAsync(cancellationToken); }
         finally { _gate.Release(); }
@@ -35,6 +37,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
     {
         try
         {
+            ThrowIfDisposed();
             await _gate.WaitAsync(cancellationToken);
             try
             {
@@ -56,8 +59,9 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
 
     public async ValueTask DisposeAsync()
     {
-        await _gate.WaitAsync();
-        try { await StopAsync(); }
+        if (Interlocked.Exchange(ref _isDisposed, 1) != 0) return;
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try { await StopAsync().ConfigureAwait(false); }
         finally { _gate.Release(); _gate.Dispose(); }
     }
 
@@ -94,7 +98,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (_writer is null) throw new InvalidOperationException("Canal do MPV indisponível.");
-        await _writer.WriteLineAsync(JsonSerializer.Serialize(new { command }));
+        await _writer.WriteLineAsync(JsonSerializer.Serialize(new { command })).ConfigureAwait(false);
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -130,7 +134,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
         try
         {
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-            while (await reader.ReadLineAsync(cancellationToken) is not null) { }
+            while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is not null) { }
         }
         catch (OperationCanceledException) { }
         catch (IOException) { }
@@ -143,7 +147,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
         _readerCancellation = null;
         if (_writer is not null)
         {
-            try { await _writer.WriteLineAsync(JsonSerializer.Serialize(new { command = new[] { "quit" } })); }
+            try { await _writer.WriteLineAsync(JsonSerializer.Serialize(new { command = new[] { "quit" } })).WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false); }
             catch (IOException) { }
             catch (ObjectDisposedException) { }
 
@@ -167,6 +171,11 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
 
         _process?.Dispose();
         _process = null;
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (Volatile.Read(ref _isDisposed) != 0) throw new ObjectDisposedException(nameof(MpvPlaybackLauncher));
     }
 
     private const uint NoZOrder = 0x0004;

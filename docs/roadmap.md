@@ -22,13 +22,13 @@ Também já foram concluídos:
 - Reprodução local com MPV incluído no instalador, fallback para VLC e escolha
   persistida da tela de saída.
 - Ferramentas de apresentação: cronômetro simples e sorteio na tela configurada.
+- Limpeza automática mensal de vídeos antigos, configurável por período de
+  retenção e tolerância. Vídeos fixados pelo operador são preservados.
 
 ## Melhorias mapeadas para depois
 
 Estas melhorias são válidas, mas estão fora do escopo atual e não devem bloquear a distribuição inicial:
 
-- Escolha de outro disco para a pasta de conteúdo.
-- Limpeza automática trimestral e mensal, respeitando itens fixados e período de tolerância.
 - Seleção manual de vídeos específicos antes de sincronizar.
 - Miniaturas reais geradas com FFmpeg.
 - Empacotamento e atualização das dependências VLC e FFmpeg/ffprobe.
