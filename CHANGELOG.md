@@ -4,6 +4,23 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.11 - 16/09/2026
+
+### Novo
+
+- A limpeza automática de conteúdo pode ser ativada nas configurações. Ela
+  remove mensalmente vídeos antigos de acordo com o período de retenção e a
+  tolerância escolhidos pelo operador.
+- Vídeos importantes podem ser **fixados** na biblioteca. Itens fixados nunca
+  são removidos pela limpeza automática.
+
+### Corrigido
+
+- O processo de atualização agora encerra com segurança a reprodução, a tela
+  de apresentação e sincronizações em andamento antes de iniciar o instalador.
+- O atualizador não tenta instalar uma nova versão enquanto o processo do
+  Sinalo ainda estiver aberto, evitando atualizações presas por arquivos em uso.
+
 ## 0.1.10 - 14/09/2026
 
 ### Novo
