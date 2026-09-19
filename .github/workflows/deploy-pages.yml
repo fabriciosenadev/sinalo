@@ -26,7 +26,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Obter arquivos do projeto
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v6
