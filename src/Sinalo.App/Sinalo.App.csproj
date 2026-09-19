@@ -20,6 +20,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="Assets\audio\cronometro-culto\*.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>assets\audio\cronometro-culto\%(Filename)%(Extension)</TargetPath>
+    </Content>
     <Content Include="..\..\LICENSE">
       <Link>licenses\LICENSE</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

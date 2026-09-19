@@ -14,6 +14,7 @@ using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
 using Sinalo.Application.Timer;
 using Sinalo.Application.Raffle;
+using Sinalo.Application.WorshipTimer;
 using System.Windows.Threading;
 
 namespace Sinalo.App;
@@ -39,11 +40,13 @@ public partial class MainWindow : Window
     public IMonitorService? MonitorService { get; init; }
     public IPresentationOutputService? PresentationOutputService { get; init; }
     public ITimerConfigurationService? TimerConfigurationService { get; init; }
+    public IWorshipTimerConfigurationService? WorshipTimerConfigurationService { get; init; }
     public IRaffleConfigurationService? RaffleConfigurationService { get; init; }
     public ContentDiscoveryService? DiscoveryService { get; init; }
     public IContentCatalog? ContentCatalog { get; init; }
     public IContentDeletionService? ContentDeletionService { get; init; }
     public IContentStorageSpaceService? ContentStorageSpaceService { get; init; }
+    public IWorshipTimerAudioPlayer? WorshipTimerAudioPlayer { get; init; }
     public ISynchronizationDiagnosticStore? SynchronizationDiagnosticStore { get; init; }
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
@@ -72,6 +75,7 @@ public partial class MainWindow : Window
             _timerRefresh.Stop();
             _updateCheckTimer.Stop();
             _updateCheckCancellation.Cancel();
+            WorshipTimerAudioPlayer?.Stop();
         };
     }
 
@@ -90,7 +94,9 @@ public partial class MainWindow : Window
                 await LoadCatalogAsync(),
                 previous?.PlaybackScreens,
                 previous?.SelectedPlaybackScreen?.ScreenNumber,
-                previous?.Timer);
+                timer: previous?.Timer,
+                raffle: previous?.Raffle,
+                worshipTimer: previous?.WorshipTimer);
             RestoreFilters(viewModel, previous);
             DataContext = viewModel;
         }
@@ -384,6 +390,7 @@ public partial class MainWindow : Window
     }
 
     private void TimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectTimerWorkspace();
+    private void WorshipTimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectWorshipTimerWorkspace();
     private void RaffleWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectRaffleWorkspace();
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -494,6 +501,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is not HomeViewModel viewModel) return;
         viewModel.Timer.Refresh();
+        PlayWorshipTimerCues(viewModel.WorshipTimer.Refresh());
         if (viewModel.Raffle.IsAnimating)
         {
             viewModel.Raffle.Tick();
@@ -502,7 +510,9 @@ public partial class MainWindow : Window
         if (PresentationOutputService?.IsOpen == true)
             await PresentationOutputService.UpdateAsync(viewModel.IsRaffleWorkspace
                 ? new PresentationScene("Sorteio", viewModel.Raffle.CurrentWinner, viewModel.Raffle.StatusLabel)
-                : CreateTimerScene(viewModel.Timer));
+                : viewModel.IsWorshipTimerWorkspace
+                    ? CreateWorshipTimerScene(viewModel.WorshipTimer)
+                    : CreateTimerScene(viewModel.Timer));
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -577,6 +587,138 @@ public partial class MainWindow : Window
     {
         var data = timer.GetPresentationData();
         return new PresentationScene("Cronômetro", data.DisplayTime, data.Status);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void WorshipTimerStartStop_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        try
+        {
+            var wasRunning = viewModel.WorshipTimer.IsRunning;
+            PlayWorshipTimerCues(viewModel.WorshipTimer.StartOrStop());
+            if (wasRunning) WorshipTimerAudioPlayer?.Stop();
+            viewModel.OperationMessage = viewModel.WorshipTimer.StateLabel;
+            _ = SaveWorshipTimerConfigurationAsync(viewModel.WorshipTimer);
+        }
+        catch (FormatException exception)
+        {
+            viewModel.OperationMessage = exception.Message;
+        }
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void WorshipTimerAdjust_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: string tag } || !int.TryParse(tag, out var minutes)) return;
+        PlayWorshipTimerCues(viewModel.WorshipTimer.AdjustMinutes(minutes));
+        viewModel.OperationMessage = $"Cronômetro de Culto ajustado em {minutes:+#;-#;0} minuto(s).";
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void StopWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
+    {
+        (DataContext as HomeViewModel)?.WorshipTimer.StopAudio();
+        if (DataContext is HomeViewModel viewModel) viewModel.OperationMessage = "Alerta sonoro interrompido.";
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void PlayWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        viewModel.WorshipTimer.PlaySelectedAudio();
+        _ = SaveWorshipTimerConfigurationAsync(viewModel.WorshipTimer);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void PauseResumeWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
+    {
+        (DataContext as HomeViewModel)?.WorshipTimer.PauseOrResumeAudio();
+    }
+
+    private void WorshipTimerAudioSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (sender is not System.Windows.Controls.Slider { IsMouseCaptureWithin: true }) return;
+        (DataContext as HomeViewModel)?.WorshipTimer.SeekAudio(e.NewValue);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void WorshipTimerConfiguration_Changed(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        try
+        {
+            if (!viewModel.WorshipTimer.IsConfigurationEditable)
+            {
+                viewModel.OperationMessage = "Desligue o Cronômetro de Culto antes de alterar horário, duração ou alertas.";
+                return;
+            }
+            viewModel.WorshipTimer.ApplyConfiguration();
+            await SaveWorshipTimerConfigurationAsync(viewModel.WorshipTimer);
+        }
+        catch (FormatException exception)
+        {
+            viewModel.OperationMessage = exception.Message;
+        }
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void WorshipTimerConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => WorshipTimerConfiguration_Changed(sender, e);
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void WorshipTimerAudioConfiguration_Changed(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is HomeViewModel viewModel) await SaveWorshipTimerConfigurationAsync(viewModel.WorshipTimer);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void WorshipTimerAudioConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => WorshipTimerAudioConfiguration_Changed(sender, e);
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void OpenWorshipTimerPresentation_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || MonitorService is null || PresentationOutputService is null) return;
+        if (viewModel.SelectedPlaybackScreen is null)
+        {
+            viewModel.OperationMessage = "Nenhuma tela de saída foi encontrada. Conecte ou habilite uma tela no Windows.";
+            return;
+        }
+        var output = OutputSelectionResolver.Resolve(
+            new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey),
+            await MonitorService.GetOutputsAsync());
+        if (output is null)
+        {
+            viewModel.OperationMessage = "A tela selecionada não está disponível. Verifique a conexão do monitor.";
+            return;
+        }
+        var result = await PresentationOutputService.ShowAsync(CreateWorshipTimerScene(viewModel.WorshipTimer), output);
+        viewModel.OperationMessage = result.Message;
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void CloseWorshipTimerPresentation_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || PresentationOutputService is null) return;
+        await PresentationOutputService.CloseAsync();
+        viewModel.OperationMessage = "Tela do Cronômetro de Culto fechada.";
+    }
+
+    private void PlayWorshipTimerCues(IEnumerable<WorshipTimerAudioCue> cues)
+    {
+        if (DataContext is not HomeViewModel viewModel) return;
+        foreach (var cue in cues) viewModel.WorshipTimer.PlayAutomaticCue(cue);
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async Task SaveWorshipTimerConfigurationAsync(WorshipTimerViewModel timer)
+    {
+        if (WorshipTimerConfigurationService is not null) await WorshipTimerConfigurationService.SaveAsync(timer.Configuration);
+    }
+
+    private static PresentationScene CreateWorshipTimerScene(WorshipTimerViewModel timer)
+    {
+        var data = timer.GetPresentationData();
+        return new PresentationScene("Cronômetro de Culto", data.DisplayTime, data.Status);
     }
 
     private void AddToSchedule_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.AddSelectedToSchedule();
@@ -654,7 +796,12 @@ public partial class MainWindow : Window
     private void ReplaceHomeViewModel(IReadOnlyList<Sinalo.Application.Configuration.SourceConfiguration> configurations, IReadOnlyList<Sinalo.Domain.ContentItem> items, string message)
     {
         var previous = DataContext as HomeViewModel;
-        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items, previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber, previous?.Timer) { OperationMessage = message };
+        var viewModel = new HomeViewModel(
+            new SaturdayWindowService(), new LocalSinaloPathService(), configurations, items,
+            previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber,
+            timer: previous?.Timer,
+            raffle: previous?.Raffle,
+            worshipTimer: previous?.WorshipTimer) { OperationMessage = message };
         RestoreFilters(viewModel, previous);
         DataContext = viewModel;
     }

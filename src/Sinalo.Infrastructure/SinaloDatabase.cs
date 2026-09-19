@@ -67,6 +67,19 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 animation_duration_seconds INTEGER NOT NULL DEFAULT 5
             );
 
+            CREATE TABLE IF NOT EXISTS worship_timer_configuration (
+                id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+                mode INTEGER NOT NULL DEFAULT 0,
+                target_time TEXT NOT NULL DEFAULT '10:00',
+                duration_seconds INTEGER NOT NULL DEFAULT 2400,
+                stop_at_zero INTEGER NOT NULL DEFAULT 1,
+                play_opening INTEGER NOT NULL DEFAULT 1,
+                play_five_minutes INTEGER NOT NULL DEFAULT 1,
+                play_one_minute INTEGER NOT NULL DEFAULT 1,
+                selected_audio_cue INTEGER NOT NULL DEFAULT 0,
+                audio_volume REAL NOT NULL DEFAULT 0.8
+            );
+
             CREATE TABLE IF NOT EXISTS content_assets (
                 id TEXT NOT NULL PRIMARY KEY,
                 content_item_id TEXT NOT NULL,
@@ -90,6 +103,8 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
         await AddColumnIfMissingAsync(connection, "source_configurations", "download_current_saturday", "INTEGER NULL", cancellationToken);
         await AddColumnIfMissingAsync(connection, "source_configurations", "download_next_saturday", "INTEGER NULL", cancellationToken);
         await AddColumnIfMissingAsync(connection, "playback_configuration", "fullscreen_monitor_key", "TEXT NULL", cancellationToken);
+        await AddColumnIfMissingAsync(connection, "worship_timer_configuration", "selected_audio_cue", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await AddColumnIfMissingAsync(connection, "worship_timer_configuration", "audio_volume", "REAL NOT NULL DEFAULT 0.8", cancellationToken);
     }
 
     private static async Task AddColumnIfMissingAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken)

@@ -8,6 +8,7 @@ using Sinalo.Application.Playback;
 using Sinalo.Application.Monitors;
 using Sinalo.Application.Presentation;
 using Sinalo.Application.Timer;
+using Sinalo.Application.WorshipTimer;
 using Sinalo.Application.Raffle;
 using Sinalo.Application.Storage;
 using Sinalo.Infrastructure;
@@ -34,6 +35,8 @@ public partial class App : System.Windows.Application
         var playbackConfiguration = await configurationService.LoadAsync();
         var timerConfiguration = await ((ITimerConfigurationService)configurationService).LoadAsync();
         var timerViewModel = new TimerViewModel(new TimerSession(), timerConfiguration);
+        var worshipTimerAudioPlayer = new WorshipTimerAudioPlayer();
+        var worshipTimerViewModel = new WorshipTimerViewModel(new WorshipTimerSession(), worshipTimerAudioPlayer, await ((IWorshipTimerConfigurationService)configurationService).LoadAsync());
         var raffleViewModel = new RaffleViewModel(new RaffleSession(), await ((IRaffleConfigurationService)configurationService).LoadAsync());
         var monitorService = new MonitorService();
         var outputs = await monitorService.GetOutputsAsync();
@@ -63,7 +66,7 @@ public partial class App : System.Windows.Application
         _presentationOutputService = presentationOutputService;
         var mainWindow = new MainWindow
         {
-            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel),
+            DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel, worshipTimer: worshipTimerViewModel),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
             ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
@@ -76,7 +79,9 @@ public partial class App : System.Windows.Application
             PlaybackConfigurationService = configurationService,
             MonitorService = monitorService,
             PresentationOutputService = presentationOutputService,
+            WorshipTimerAudioPlayer = worshipTimerAudioPlayer,
             TimerConfigurationService = configurationService,
+            WorshipTimerConfigurationService = configurationService,
             RaffleConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,

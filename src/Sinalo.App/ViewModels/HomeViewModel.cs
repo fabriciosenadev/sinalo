@@ -16,7 +16,7 @@ public sealed partial class HomeViewModel : ObservableObject
         ISaturdayWindowService saturdayWindowService,
         ISinaloPathService pathService,
         IReadOnlyList<SourceConfiguration> configurations,
-        IReadOnlyList<ContentItem>? catalogItems = null, IReadOnlyList<PlaybackScreenOption>? playbackScreens = null, int? selectedPlaybackScreenNumber = null, TimerViewModel? timer = null, RaffleViewModel? raffle = null)
+        IReadOnlyList<ContentItem>? catalogItems = null, IReadOnlyList<PlaybackScreenOption>? playbackScreens = null, int? selectedPlaybackScreenNumber = null, TimerViewModel? timer = null, RaffleViewModel? raffle = null, WorshipTimerViewModel? worshipTimer = null)
     {
         var window = saturdayWindowService.GetWindow(DateOnly.FromDateTime(DateTime.Today));
         PreviousSaturday = FormatDate(window.Previous);
@@ -38,6 +38,7 @@ public sealed partial class HomeViewModel : ObservableObject
         SelectedPlaybackScreen = PlaybackScreens.FirstOrDefault(screen => screen.ScreenNumber == selectedPlaybackScreenNumber) ?? PlaybackScreens.FirstOrDefault();
         Timer = timer ?? new TimerViewModel(new Sinalo.Application.Timer.TimerSession(), new Sinalo.Application.Timer.TimerConfiguration(Sinalo.Application.Timer.TimerDirection.CountUp, TimeSpan.FromMinutes(1), "hh:mm:ss"));
         Raffle = raffle ?? new RaffleViewModel(new Sinalo.Application.Raffle.RaffleSession(), new Sinalo.Application.Raffle.RaffleConfiguration(TimeSpan.FromSeconds(5)));
+        WorshipTimer = worshipTimer ?? new WorshipTimerViewModel(new Sinalo.Application.WorshipTimer.WorshipTimerSession(), new WorshipTimerAudioPlayer());
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
             ? "Nenhum vídeo offline disponível. Escolha um programa e use Buscar e baixar."
@@ -64,6 +65,7 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private string selectedSource = "Todos";
     [ObservableProperty] private bool isTimerWorkspace;
     [ObservableProperty] private bool isRaffleWorkspace;
+    [ObservableProperty] private bool isWorshipTimerWorkspace;
     [ObservableProperty] private string selectedAvailability = "Todos";
     [ObservableProperty] private string searchQuery = string.Empty;
     [ObservableProperty] private CatalogCard? selectedCatalogItem;
@@ -86,8 +88,9 @@ public sealed partial class HomeViewModel : ObservableObject
     public IReadOnlyList<PlaybackScreenOption> PlaybackScreens { get; }
     public TimerViewModel Timer { get; }
     public RaffleViewModel Raffle { get; }
+    public WorshipTimerViewModel WorshipTimer { get; }
     public string ApplicationVersion => $"Versão {typeof(HomeViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
-    public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace;
+    public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace && !IsWorshipTimerWorkspace;
 
     public string SelectedItemTitle => SelectedCatalogItem?.Title ?? "Selecione um vídeo";
     public string SelectedItemDetails => SelectedCatalogItem is null
@@ -109,6 +112,7 @@ public sealed partial class HomeViewModel : ObservableObject
     {
         IsTimerWorkspace = false;
         IsRaffleWorkspace = false;
+        IsWorshipTimerWorkspace = false;
         ApplyFilters();
         OnPropertyChanged(nameof(SelectedSourceActionLabel));
         OnPropertyChanged(nameof(UpdateAndSynchronizeSelectedSourceLabel));
@@ -118,8 +122,10 @@ public sealed partial class HomeViewModel : ObservableObject
     }
     partial void OnIsTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
     partial void OnIsRaffleWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
-    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; }
-    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; }
+    partial void OnIsWorshipTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
+    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; }
+    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; }
+    public void SelectWorshipTimerWorkspace() { IsWorshipTimerWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; }
     partial void OnSelectedAvailabilityChanged(string value) => ApplyFilters();
     partial void OnSearchQueryChanged(string value) => ApplyFilters();
     partial void OnSelectedCatalogItemChanged(CatalogCard? value)

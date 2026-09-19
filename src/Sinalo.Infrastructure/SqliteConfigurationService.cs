@@ -5,11 +5,12 @@ using Sinalo.Application.Playback;
 using Sinalo.Application.Storage;
 using Sinalo.Application.Timer;
 using Sinalo.Application.Raffle;
+using Sinalo.Application.WorshipTimer;
 using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService, IRaffleConfigurationService, IContentCleanupConfigurationService
+public sealed class SqliteConfigurationService(ISinaloPathService pathService) : ISinaloConfigurationService, IPlaybackConfigurationService, IThemePreferenceService, ITimerConfigurationService, IRaffleConfigurationService, IWorshipTimerConfigurationService, IContentCleanupConfigurationService
 {
     private readonly ISinaloPathService _pathService = pathService;
 
@@ -132,6 +133,38 @@ public sealed class SqliteConfigurationService(ISinaloPathService pathService) :
         await using var connection = await OpenAsync(cancellationToken); var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO raffle_configuration (id, animation_duration_seconds) VALUES (1, $duration) ON CONFLICT(id) DO UPDATE SET animation_duration_seconds = excluded.animation_duration_seconds;";
         command.Parameters.AddWithValue("$duration", (long)configuration.AnimationDuration.TotalSeconds);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    async Task<WorshipTimerConfiguration> IWorshipTimerConfigurationService.LoadAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT mode, target_time, duration_seconds, stop_at_zero, play_opening, play_five_minutes, play_one_minute, selected_audio_cue, audio_volume FROM worship_timer_configuration WHERE id = 1;";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return WorshipTimerConfiguration.Default;
+        var mode = Enum.IsDefined((WorshipTimerMode)reader.GetInt32(0)) ? (WorshipTimerMode)reader.GetInt32(0) : WorshipTimerMode.TargetTime;
+        var target = TimeOnly.TryParse(reader.GetString(1), out var parsedTarget) ? parsedTarget : new TimeOnly(10, 0);
+        var duration = TimeSpan.FromSeconds(Math.Clamp(reader.GetInt64(2), 60, (long)TimeSpan.FromHours(4).TotalSeconds));
+        var selectedCue = Enum.IsDefined((WorshipTimerAudioCue)reader.GetInt32(7)) ? (WorshipTimerAudioCue)reader.GetInt32(7) : WorshipTimerAudioCue.Opening;
+        var volume = Math.Clamp(reader.GetDouble(8), 0d, 1d);
+        return new WorshipTimerConfiguration(mode, target, duration, reader.GetBoolean(3), reader.GetBoolean(4), reader.GetBoolean(5), reader.GetBoolean(6), selectedCue, volume);
+    }
+
+    async Task IWorshipTimerConfigurationService.SaveAsync(WorshipTimerConfiguration configuration, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO worship_timer_configuration (id, mode, target_time, duration_seconds, stop_at_zero, play_opening, play_five_minutes, play_one_minute, selected_audio_cue, audio_volume) VALUES (1, $mode, $target, $duration, $stopAtZero, $opening, $fiveMinutes, $oneMinute, $selectedCue, $volume) ON CONFLICT(id) DO UPDATE SET mode = excluded.mode, target_time = excluded.target_time, duration_seconds = excluded.duration_seconds, stop_at_zero = excluded.stop_at_zero, play_opening = excluded.play_opening, play_five_minutes = excluded.play_five_minutes, play_one_minute = excluded.play_one_minute, selected_audio_cue = excluded.selected_audio_cue, audio_volume = excluded.audio_volume;";
+        command.Parameters.AddWithValue("$mode", (int)configuration.Mode);
+        command.Parameters.AddWithValue("$target", configuration.TargetTime.ToString("HH:mm"));
+        command.Parameters.AddWithValue("$duration", (long)configuration.Duration.TotalSeconds);
+        command.Parameters.AddWithValue("$stopAtZero", configuration.StopAtZero);
+        command.Parameters.AddWithValue("$opening", configuration.PlayOpening);
+        command.Parameters.AddWithValue("$fiveMinutes", configuration.PlayFiveMinutes);
+        command.Parameters.AddWithValue("$oneMinute", configuration.PlayOneMinute);
+        command.Parameters.AddWithValue("$selectedCue", (int)configuration.SelectedAudioCue);
+        command.Parameters.AddWithValue("$volume", Math.Clamp(configuration.AudioVolume, 0d, 1d));
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
