@@ -39,4 +39,40 @@ public sealed class WorshipTimerSessionTests
         Assert.True(ended.IsExpired);
         Assert.Equal(TimeSpan.Zero, ended.Remaining);
     }
+
+    [Fact]
+    public void Configure_WithInvalidDuration_ShouldRejectTheConfiguration()
+    {
+        var session = new WorshipTimerSession();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => session.Configure(
+            new(WorshipTimerMode.Duration, new TimeOnly(10, 0), TimeSpan.Zero, true, true, true, true)));
+    }
+
+    [Fact]
+    public void GetSnapshot_WhenStopAtZeroIsDisabled_ShouldKeepNegativeTimeRunning()
+    {
+        var now = new DateTime(2026, 9, 18, 10, 0, 0);
+        var session = new WorshipTimerSession(() => now);
+        session.Configure(new(WorshipTimerMode.Duration, new TimeOnly(10, 0), TimeSpan.FromMinutes(1), false, false, false, false));
+        session.Start();
+
+        now = now.AddMinutes(2);
+        var snapshot = session.GetSnapshot();
+
+        Assert.True(snapshot.IsRunning);
+        Assert.True(snapshot.IsExpired);
+        Assert.Equal(TimeSpan.FromMinutes(-1), snapshot.Remaining);
+    }
+
+    [Fact]
+    public void AdjustMinutes_WhenStopped_ShouldKeepTheTimerStopped()
+    {
+        var session = new WorshipTimerSession();
+
+        var snapshot = session.AdjustMinutes(5);
+
+        Assert.False(snapshot.IsRunning);
+        Assert.Equal(TimeSpan.Zero, snapshot.Remaining);
+    }
 }

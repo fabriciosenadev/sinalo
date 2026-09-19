@@ -4,6 +4,7 @@ using Sinalo.Application.Configuration;
 using Sinalo.Application.Appearance;
 using Sinalo.Application.Storage;
 using Sinalo.Application.Timer;
+using Sinalo.Application.WorshipTimer;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 
@@ -197,6 +198,30 @@ public sealed class StorageAndDatabaseTests : IDisposable
         await ((ITimerConfigurationService)service).SaveAsync(expected);
 
         Assert.Equal(expected, await ((ITimerConfigurationService)service).LoadAsync());
+    }
+
+    [Fact]
+    public async Task WorshipTimerConfiguration_ShouldPersistAlertsSelectedAudioAndVolume()
+    {
+        var pathService = new TestPathService(_rootPath);
+        await new SinaloDatabase(pathService).InitializeAsync();
+        var service = new SqliteConfigurationService(pathService);
+        var configurationService = (IWorshipTimerConfigurationService)service;
+        var expected = new WorshipTimerConfiguration(
+            WorshipTimerMode.Duration,
+            new TimeOnly(19, 45),
+            TimeSpan.FromMinutes(75),
+            false,
+            true,
+            false,
+            true,
+            WorshipTimerAudioCue.OneMinute,
+            0.45);
+
+        Assert.Equal(WorshipTimerConfiguration.Default, await configurationService.LoadAsync());
+        await configurationService.SaveAsync(expected);
+
+        Assert.Equal(expected, await configurationService.LoadAsync());
     }
 
     public void Dispose()

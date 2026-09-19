@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Windows.Media;
 using Sinalo.Application.WorshipTimer;
@@ -31,6 +32,7 @@ public interface IWorshipTimerAudioPlayer
     void Refresh();
 }
 
+[ExcludeFromCodeCoverage]
 public sealed class WorshipTimerAudioPlayer : IWorshipTimerAudioPlayer
 {
     private readonly MediaPlayer _player = new();
