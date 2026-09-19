@@ -4,6 +4,26 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.12 - 19/09/2026
+
+### Novo
+
+- Foi adicionado o **Cronômetro de Culto**, uma ferramenta independente para
+  acompanhar a programação por horário de término ou por duração.
+- O cronômetro oferece ajustes rápidos de -10 a +10 minutos, opção para parar
+  em zero e uma tela de apresentação compartilhada.
+- Os avisos de abertura, 5 minutos e 1 minuto agora vêm incluídos no Sinalo.
+  Cada um pode ser ativado ou desativado nas configurações do cronômetro.
+- O painel de áudio permite escolher um aviso para teste, tocar, pausar,
+  continuar, parar, avançar na faixa e ajustar o volume.
+
+### Ajustado
+
+- Enquanto o Cronômetro de Culto estiver em execução, suas configurações de
+  horário, duração e alertas ficam protegidas contra alterações acidentais.
+- Um aviso automático interrompe um áudio de teste que esteja tocando, para que
+  os alertas de 5 e 1 minuto não sejam atrasados.
+
 ## 0.1.11 - 16/09/2026
 
 ### Novo
