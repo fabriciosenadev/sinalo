@@ -122,7 +122,10 @@ public partial class MainWindow : Window
                 return;
             }
             viewModel.ReportUpdateAvailable(update.Version);
-            _downloadedUpdate = await ApplicationUpdateService.DownloadAsync(update, new Progress<Sinalo.Application.Updates.UpdateDownloadProgress>(progress => viewModel.ReportUpdateProgress(progress.Percentage)), cancellationToken);
+            _downloadedUpdate = await ApplicationUpdateService.DownloadAsync(
+                update,
+                new ImmediateProgress<UpdateDownloadProgress>(progress => viewModel.ReportUpdateProgress(progress.Percentage)),
+                cancellationToken);
             viewModel.ReportUpdateReady(update.Version);
         }
         catch (OperationCanceledException) { }
@@ -821,4 +824,9 @@ public partial class MainWindow : Window
         Sinalo.Domain.ContentSource.Health => "Minuto de Saúde",
         _ => source.ToString()
     };
+
+    private sealed class ImmediateProgress<T>(Action<T> report) : IProgress<T>
+    {
+        public void Report(T value) => report(value);
+    }
 }

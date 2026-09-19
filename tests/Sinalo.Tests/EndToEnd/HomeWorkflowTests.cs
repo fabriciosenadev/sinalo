@@ -264,7 +264,7 @@ public sealed class HomeWorkflowTests
                 var window = new Sinalo.App.MainWindow { DataContext = viewModel, ApplicationUpdateService = new SuccessfulUpdateService() };
                 window.CheckForUpdateAsync().GetAwaiter().GetResult();
                 Assert.True(viewModel.IsUpdateReady);
-                Assert.Contains("0.1.5", viewModel.UpdateMessage);
+                Assert.Equal("Versão 0.1.5 pronta para instalar.", viewModel.UpdateMessage);
             }
             catch (Exception caught) { exception = caught; }
         });
