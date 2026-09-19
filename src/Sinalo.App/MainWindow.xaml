@@ -93,8 +93,8 @@
             <DockPanel Margin="0,0,0,12" Visibility="{Binding IsLibraryWorkspace, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <TextBlock Text="Vídeos" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" DockPanel.Dock="Left" />
                 <StackPanel Width="250" DockPanel.Dock="Right">
-                    <Label Content="Pesquisar vídeos" Target="{Binding ElementName=CatalogSearchBox}" Foreground="{DynamicResource Brush.TextSecondary}" Padding="0,0,0,4" />
-                    <TextBox x:Name="CatalogSearchBox" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Padding="8" ToolTip="Pesquise pelo nome do vídeo ou pela data, por exemplo 15/08/2026" />
+                    <TextBlock Text="Pesquisar vídeos" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Padding="8" ToolTip="Pesquise pelo nome do vídeo ou pela data, por exemplo 15/08/2026" />
                 </StackPanel>
             </DockPanel>
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="{Binding IsLibraryWorkspace, Converter={StaticResource BooleanToVisibilityConverter}}">

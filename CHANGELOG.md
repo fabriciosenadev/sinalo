@@ -24,6 +24,11 @@ direto na instalação ou no uso do aplicativo.
 - Um aviso automático interrompe um áudio de teste que esteja tocando, para que
   os alertas de 5 e 1 minuto não sejam atrasados.
 
+### Corrigido
+
+- A janela principal passa a abrir corretamente também em ambientes Windows
+  usados na validação automatizada do instalador.
+
 ## 0.1.11 - 16/09/2026
 
 ### Novo
