@@ -15,6 +15,18 @@ Na raiz do projeto, execute:
 
 O comando le a versao atual de `Sinalo.App.csproj`, incrementa o numero de patch e atualiza o arquivo ao concluir a geracao do instalador. Por exemplo, `0.1.1` passa a `0.1.2`. O arquivo alterado deve acompanhar o proximo commit da entrega.
 
+## Politica de versao
+
+O Sinalo usa o formato `MAJOR.MINOR.PATCH`:
+
+- `PATCH` para correcoes compativeis, como `0.1.12` para `0.1.13`;
+- `MINOR` para novas funcionalidades compativeis, como `0.1.13` para `0.2.0`;
+- `MAJOR` para marcos de estabilidade ou mudancas incompativeis, como `1.0.0`.
+
+Uma versao publicada nunca deve ser renomeada ou substituida. Depois da
+validacao operacional de uma versao de correcao, uma nova release pode marcar
+o inicio da serie estavel `1.0.0`.
+
 Para gerar novamente a versao ja definida no projeto, sem incrementa-la:
 
 ```powershell

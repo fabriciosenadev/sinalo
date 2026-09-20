@@ -25,7 +25,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
                         <Border Background="{TemplateBinding Background}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="2">
-                            <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True" Focusable="False" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" ViewportSize="{TemplateBinding ViewportSize}" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                            <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True" Focusable="False">
                                 <Track.DecreaseRepeatButton>
                                     <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}" Background="Transparent" BorderThickness="0" IsTabStop="False" />
                                 </Track.DecreaseRepeatButton>

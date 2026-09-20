@@ -4,6 +4,16 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.13 - 19/09/2026
+
+### Corrigido
+
+- A atualização automática agora verifica e encerra instâncias remanescentes
+  do Sinalo no mesmo computador antes de abrir o instalador. Isso evita que a
+  atualização fique bloqueada por arquivos ainda em uso.
+- A barra de rolagem voltou a funcionar ao ser arrastada e a janela principal
+  abre de forma consistente em todos os ambientes Windows suportados.
+
 ## 0.1.12 - 19/09/2026
 
 ### Novo

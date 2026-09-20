@@ -273,6 +273,19 @@ public sealed class HomeWorkflowTests
     }
 
     [Fact]
+    public void UpdateWorkflow_ShouldKeepTheReadyMessageWhenAProgressNotificationArrivesLate()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), FakeConfigurationService.DefaultSources);
+
+        viewModel.ReportUpdateReady(new Version(0, 1, 13));
+        viewModel.ReportUpdateProgress(50);
+
+        Assert.True(viewModel.IsUpdateReady);
+        Assert.Equal(100, viewModel.UpdateProgressPercent);
+        Assert.Equal("Versão 0.1.13 pronta para instalar.", viewModel.UpdateMessage);
+    }
+
+    [Fact]
     public void UpdateWorkflow_ShouldKeepTheLibraryUsableWhenTheCheckFails()
     {
         Exception? exception = null;

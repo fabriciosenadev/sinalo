@@ -10,7 +10,7 @@ O MVP funcional possui descoberta, sincronização, reprodução local e exclus�
 
 O Minuto de Saúde está implementado, validado manualmente e coberto por testes. A descoberta da coleção trimestral, a leitura de datas e títulos e o download para `content\AAAA-TN\health` foram confirmados.
 
-A distribuição inicial também está concluída: o projeto gera instalador self-contained para `win-x64` com Inno Setup, preserva os dados do operador e publica releases pelo GitHub Actions. O aplicativo verifica atualizações na abertura e novamente a cada seis horas enquanto estiver aberto, faz o download do instalador e oferece **Atualizar e reiniciar** após a confirmação do operador.
+A distribuição inicial também está concluída: o projeto gera instalador self-contained para `win-x64` com Inno Setup, preserva os dados do operador e publica releases pelo GitHub Actions. O aplicativo verifica atualizações na abertura e novamente a cada seis horas enquanto estiver aberto, faz o download do instalador e oferece **Atualizar e reiniciar** após a confirmação do operador. Antes de instalar, o atualizador encerra a instância iniciadora e qualquer instância remanescente do Sinalo no mesmo caminho de instalação.
 
 Também já foram concluídos:
 
