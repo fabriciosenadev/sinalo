@@ -91,6 +91,7 @@ public partial class App : System.Windows.Application
             ProvaiEVedeSynchronizationService = synchronizationService,
             MissionsSynchronizationService = missionsSynchronizationService,
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
+            ManualSynchronizationService = new ManualContentSynchronizationService(contentCatalog, downloader, storageSpaceService),
             PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, new WindowsPlaybackLauncher())),
             PlaybackRuntime = mpvPlaybackLauncher
         };

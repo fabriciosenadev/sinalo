@@ -4,6 +4,24 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 0.1.14 - 21/09/2026
+
+### Novo
+
+- Foi adicionada a ação **Procurar vídeos** em cada programa de vídeo. Ela
+  permite consultar os vídeos publicados e escolher individualmente quais
+  serão baixados.
+- A tela de seleção informa título, data, situação e tamanho estimado de cada
+  vídeo. Conteúdos já disponíveis offline ficam bloqueados para não ocupar
+  espaço com um novo download.
+
+### Ajustado
+
+- A escolha manual é preservada ao entrar na fila: alterações posteriores na
+  regra de sábados não modificam os vídeos já confirmados pelo operador.
+- A documentação de configuração passa a explicar a diferença entre o fluxo
+  automático **Buscar e baixar** e a escolha manual em **Procurar vídeos**.
+
 ## 0.1.13 - 19/09/2026
 
 ### Corrigido

@@ -12,7 +12,9 @@ public enum SynchronizationQueueState
     Cancelled
 }
 
-public sealed record SynchronizationQueueRequest(SourceConfiguration Configuration);
+// SelectedItemIds congela uma escolha manual no instante em que ela entra na fila.
+// Uma alteração posterior da regra de datas não pode alterar esse pedido.
+public sealed record SynchronizationQueueRequest(SourceConfiguration Configuration, IReadOnlyList<string>? SelectedItemIds = null);
 public sealed record SynchronizationQueueProgress(string Message, double? Percentage = null, SynchronizationStage Stage = SynchronizationStage.Discovery);
 public sealed record SynchronizationQueueCompletion(int ReadyItems);
 public sealed record SynchronizationQueueEntry(

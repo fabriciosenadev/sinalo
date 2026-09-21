@@ -311,6 +311,8 @@
                     <TextBlock Text="Ações do programa" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
                     <TextBlock Text="{Binding SelectedSourceActionLabel}" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,12,0,6" />
                     <Button Content="{Binding UpdateAndSynchronizeSelectedSourceLabel}" Click="UpdateAndSynchronizeSelectedSource_Click" Padding="8" IsEnabled="{Binding CanQueueSelectedSource}" Style="{DynamicResource Button.Primary}" />
+                    <Button Content="Procurar vídeos" Click="DiscoverSelectedSource_Click" Padding="8" Margin="0,7,0,0" IsEnabled="{Binding CanQueueSelectedSource}" />
+                    <TextBlock Text="Procure os vídeos e escolha manualmente quais entrarão na fila." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
                     <TextBlock Text="A solicitação entra em uma fila única para não sobrecarregar o computador." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
                     <StackPanel Visibility="{Binding HasSynchronizationQueueItems, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Separator Margin="0,18,0,14" />

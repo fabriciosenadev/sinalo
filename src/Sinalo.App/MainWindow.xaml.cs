@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     public ProvaiEVedeSynchronizationService? ProvaiEVedeSynchronizationService { get; init; }
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
+    public ManualContentSynchronizationService? ManualSynchronizationService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public IAsyncDisposable? PlaybackRuntime { get; init; }
     public SynchronizationQueue? SynchronizationQueue
@@ -201,6 +202,51 @@ public partial class MainWindow : Window
         if (viewModel.SelectedSource == "Minuto de Saúde") await EnqueueSynchronizationAsync(Sinalo.Domain.ContentSource.Health);
     }
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void DiscoverSelectedSource_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HomeViewModel viewModel || ConfigurationService is null || DiscoveryService is null || ContentCatalog is null) return;
+        var source = viewModel.SelectedSource switch
+        {
+            "Provai e Vede" => Sinalo.Domain.ContentSource.ProvaiEVede,
+            "Informativo das Missões" => Sinalo.Domain.ContentSource.Missions,
+            "Minuto de Saúde" => Sinalo.Domain.ContentSource.Health,
+            _ => (Sinalo.Domain.ContentSource?)null
+        };
+        if (source is null) return;
+
+        try
+        {
+            viewModel.OperationMessage = $"Procurando vídeos em {viewModel.SelectedSource}...";
+            var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source.Value);
+            var items = await DiscoveryService.RefreshAsync(configuration);
+            var defaults = SynchronizationCandidateSelector.Select(source.Value, items, configuration.ResolvedDownloadSelection, new SaturdayWindowService(), DateOnly.FromDateTime(DateTime.Today))
+                .Select(item => item.Id)
+                .ToHashSet(StringComparer.Ordinal);
+            var selections = items.OrderBy(item => item.ScheduledDate).Select(item => new ManualVideoSelectionItem(item, defaults.Contains(item.Id))).ToArray();
+            var dialog = new ManualVideoSelectionWindow(configuration.DisplayName, selections, ThemeService) { Owner = this };
+            if (dialog.ShowDialog() != true) { viewModel.OperationMessage = "Seleção manual cancelada. Nenhum download foi iniciado."; return; }
+            var selectedIds = dialog.SelectedItemIds;
+            if (selectedIds.Count == 0) return;
+            if (ContentStorageSpaceService is not null)
+            {
+                var assessment = await ContentStorageSpaceService.AssessAsync(items.Where(item => selectedIds.Contains(item.Id)).ToArray());
+                if (!assessment.HasSufficientSpace) { viewModel.OperationMessage = new InsufficientStorageSpaceException(assessment).Message; return; }
+            }
+            var result = SynchronizationQueue?.Enqueue(new SynchronizationQueueRequest(configuration, selectedIds));
+            viewModel.OperationMessage = result?.Message ?? "Não foi possível adicionar a seleção à fila.";
+        }
+        catch (HttpRequestException)
+        {
+            viewModel.OperationMessage = $"Não foi possível consultar {viewModel.SelectedSource}. Verifique a conexão e tente novamente.";
+        }
+        catch (Exception exception)
+        {
+            var diagnostic = SynchronizationFailureClassifier.Classify(exception, source.Value, viewModel.SelectedSource, string.Empty, SynchronizationStage.Discovery);
+            viewModel.OperationMessage = diagnostic.FriendlyMessage;
+        }
+    }
+
     private async void CancelSynchronizationQueue_Click(object sender, RoutedEventArgs e)
     {
         SynchronizationQueue?.CancelAll();
@@ -273,7 +319,9 @@ public partial class MainWindow : Window
             }
         });
 
-        IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = request.Configuration.Source switch
+        IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = request.SelectedItemIds is { Count: > 0 } && ManualSynchronizationService is not null
+            ? await ManualSynchronizationService.SynchronizeAsync(request.Configuration.Source, request.SelectedItemIds, downloadProgress, cancellationToken)
+            : request.Configuration.Source switch
         {
             Sinalo.Domain.ContentSource.Missions when MissionsSynchronizationService is not null => request.Configuration.DownloadSelection is { } missionSelection
                 ? await MissionsSynchronizationService.SynchronizeAsync(missionSelection, downloadProgress, cancellationToken)
