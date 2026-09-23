@@ -42,6 +42,17 @@ public sealed class GitHubApplicationUpdateServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ShouldOfferStableMajorReleaseToAnInstalledPreOneVersion()
+    {
+        using var client = new HttpClient(new Handler(_ => Json("{\"tag_name\":\"v1.0.0\",\"assets\":[{\"name\":\"Sinalo-Setup-win-x64.exe\",\"browser_download_url\":\"https://example.test/setup.exe\"}]}")));
+        var service = new GitHubApplicationUpdateService(client, new LocalSinaloPathService(rootPath: _rootPath));
+
+        var update = await service.CheckAsync(new Version(0, 1, 14));
+
+        Assert.Equal(new Version(1, 0, 0), update!.Version);
+    }
+
+    [Fact]
     public async Task ShouldIgnoreReleaseWithoutInstaller()
     {
         using var client = new HttpClient(new Handler(_ => Json("{\"tag_name\":\"v0.1.5\",\"assets\":[]}")));

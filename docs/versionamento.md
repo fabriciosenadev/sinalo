@@ -1,34 +1,44 @@
 # Versionamento e releases
 
-O Sinalo usa o formato `MAJOR.MINOR.PATCH`, conhecido como versionamento
-semantico. O numero identifica a entrega que o operador instalou e deve ser o
-mesmo no aplicativo, no changelog, na tag Git e na release do GitHub.
+O Sinalo usa versionamento semântico no formato `MAJOR.MINOR.PATCH`. O número
+identifica a entrega instalada e deve coincidir no aplicativo, no changelog,
+na tag Git e na release do GitHub.
+
+A versão `1.0.0` marca o início da série estável do Sinalo. Ela reúne o produto
+que já vinha sendo usado e evoluído na série `0.x`; não representa, por si só,
+uma nova funcionalidade nem uma promessa de ausência de defeitos. A partir
+dela, as versões seguem estas regras:
 
 ## Quando incrementar cada numero
 
-- **Patch** (`0.1.12` para `0.1.13`): correcao compativel, sem alterar o uso
-  esperado das configuracoes ou dos dados existentes.
-- **Minor** (`0.1.13` para `0.2.0`): funcionalidade nova compativel, que nao
-  exige migracao do operador.
-- **Major** (`0.1.13` para `1.0.0`): marco de estabilidade para uso continuo
-  ou uma mudanca que deixa de ser compativel com comportamento anterior.
+- **Patch** (`1.0.0` para `1.0.1`): correção compatível que preserva os dados
+  e o uso esperado das configurações existentes.
+- **Minor** (`1.0.0` para `1.1.0`): funcionalidade nova compatível, que não
+  exige migração do operador.
+- **Major** (`1.0.0` para `2.0.0`): mudança incompatível que exige alteração
+  no uso esperado, nos dados ou nas configurações.
 
-O `0` inicial indica que o aplicativo ainda esta em evolucao. Isso nao reduz a
-necessidade de preservar videos, configuracoes e fluxos existentes em cada
-atualizacao.
+Mesmo em uma mudança major, a atualização deve explicar claramente qualquer
+migração necessária. Vídeos, configurações e fluxos existentes devem ser
+preservados sempre que possível.
 
 ## Fluxo de uma release
 
-1. Atualize o `CHANGELOG.md` com as mudancas perceptiveis pelo operador.
-2. Execute `./releaser.ps1 -NextPatch` para validar testes, cobertura de pelo
-   menos 75% e gerar o instalador local. O script atualiza a versao do projeto
-   somente quando a geracao termina com sucesso.
-3. Revise o instalador em `.release/installer` e os arquivos alterados.
-4. Faça o commit, envie o branch `main` e crie a tag anotada `vX.Y.Z` com a
-   mesma versao do projeto.
-5. A tag aciona o GitHub Actions, que gera o instalador novamente e publica a
-   release com o checksum SHA-256.
+1. Atualize o `CHANGELOG.md` com as mudanças perceptíveis pelo operador e
+   revise a documentação pública relacionada.
+2. Para uma versão normal de correção, execute `./releaser.ps1 -NextPatch`.
+   Para uma versão minor, major ou diferente da próxima patch, informe o número
+   explicitamente, por exemplo `./releaser.ps1 -Version 1.0.0`.
+3. O processo executa os testes, exige pelo menos 75% de cobertura de linhas e
+   ramificações, publica para `win-x64` e gera o instalador Inno Setup.
+4. Revise o instalador em `.release/installer`, o checksum e os arquivos
+   alterados. A versão explícita precisa estar registrada em
+   `src/Sinalo.App/Sinalo.App.csproj` antes da geração.
+5. Faça o commit, envie o branch `main` e crie a tag anotada `vX.Y.Z` com a
+   mesma versão do projeto.
+6. A tag aciona o GitHub Actions, que gera o instalador e publica a release
+   com o checksum SHA-256. Confirme a execução e os dois arquivos anexados.
 
-Uma tag ou release ja publicada e imutavel. Se uma correcao for necessaria,
-publique uma nova versao em vez de substituir arquivos de uma entrega que ja
+Uma tag ou release já publicada é imutável. Se uma correção for necessária,
+publique uma nova versão em vez de substituir arquivos de uma entrega que já
 chegou aos computadores da igreja.

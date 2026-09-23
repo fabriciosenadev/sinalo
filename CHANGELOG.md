@@ -4,6 +4,18 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 1.0.0 - 23/09/2026
+
+### Marco de estabilidade
+
+- O Sinalo inicia a série 1.x como versão estável, após sua evolução e uso
+  prático desde a série 0.x.
+- Esta versão consolida as funcionalidades já entregues, incluindo os três
+  programas de vídeo, ferramentas de apresentação e seleção manual de vídeos
+  para download.
+- Não há mudança no formato das configurações nem nos dados locais; a instalação
+  atualiza o Sinalo preservando vídeos e preferências.
+
 ## 0.1.14 - 21/09/2026
 
 ### Novo
