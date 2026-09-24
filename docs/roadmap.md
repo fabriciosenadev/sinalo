@@ -1,58 +1,76 @@
 # Roadmap do Sinalo
 
-## Estado atual
+**Versão atual:** 1.0.0 — série estável
+**Revisado em:** 24/09/2026
 
-O MVP funcional possui descoberta, sincronização, reprodução local e exclusão para as três fontes:
+Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
+continua recebendo correções e novas funcionalidades compatíveis.
+
+## Entregue
+
+O Sinalo está em uso com descoberta, sincronização e reprodução offline para as
+três fontes configuráveis:
 
 - Provai e Vede.
 - Informativo das Missões.
 - Minuto de Saúde, usando a coleção trimestral oficial de downloads.
 
-O Minuto de Saúde está implementado, validado manualmente e coberto por testes. A descoberta da coleção trimestral, a leitura de datas e títulos e o download para `content\AAAA-TN\health` foram confirmados.
+Também estão concluídos:
 
-A distribuição inicial também está concluída: o projeto gera instalador self-contained para `win-x64` com Inno Setup, preserva os dados do operador e publica releases pelo GitHub Actions. O aplicativo verifica atualizações na abertura e novamente a cada seis horas enquanto estiver aberto, faz o download do instalador e oferece **Atualizar e reiniciar** após a confirmação do operador. Antes de instalar, o atualizador encerra a instância iniciadora e qualquer instância remanescente do Sinalo no mesmo caminho de instalação.
-
-Também já foram concluídos:
-
-- Verificação de espaço livre antes e durante sincronizações, com bloqueio seguro
-  quando não houver espaço suficiente.
-- Diagnósticos de sincronização para rede, indisponibilidade do site, acesso
-  negado, alteração de estrutura, espaço em disco, arquivo inválido e falhas
-  locais, com retentativas seguras, detalhes para suporte e logs sanitizados.
+- Seleção manual de vídeos publicados antes de enfileirar os downloads, mantendo
+  disponível o fluxo automático por configuração.
+- Verificação de espaço livre antes e durante a sincronização.
+- Diagnósticos de sincronização para falhas de rede, site, acesso, estrutura,
+  armazenamento, arquivos e operações locais, com detalhes para suporte e logs
+  sanitizados.
 - Reprodução local com MPV incluído no instalador, fallback para VLC e escolha
   persistida da tela de saída.
-- Ferramentas de apresentação: cronômetro simples e sorteio na tela configurada.
-- Limpeza automática mensal de vídeos antigos, configurável por período de
-  retenção e tolerância. Vídeos fixados pelo operador são preservados.
+- Cronômetro simples, Cronômetro de Culto com avisos sonoros e controles de áudio,
+  sorteio e saída na tela de apresentação configurada.
+- Exclusão de vídeos baixados e limpeza automática mensal com período de retenção
+  configurável; vídeos fixados são preservados.
+- Instalador self-contained para `win-x64`, atualização automática na abertura e
+  durante a execução, e publicação de releases pelo GitHub Actions.
+- Guia do operador publicado no GitHub Pages.
 
-## Melhorias mapeadas para depois
+## Melhorias futuras
 
-Estas melhorias são válidas, mas estão fora do escopo atual e não devem bloquear a distribuição inicial:
+### Dependências de mídia — prioridade média
 
-- Seleção manual de vídeos específicos antes de sincronizar.
-- Miniaturas reais geradas com FFmpeg.
-- Empacotamento e atualização das dependências VLC e FFmpeg/ffprobe.
-- Integração do instalador com assinatura de código, quando houver uma alternativa sustentável.
-- Cronômetro de Culto com hora-alvo, ajustes rápidos, progresso e avisos sonoros.
-- Bíblia offline e apresentação de passagens:
-  - antes de implementar ou distribuir um banco bíblico, identificar a edição e
-    confirmar a licença de cada tradução;
-  - não reutilizar automaticamente o banco do Desktop nem textos encontrados em
-    repositórios de terceiros, pois a licença do arquivo ou do código não
-    necessariamente autoriza redistribuir a tradução;
-  - para traduções modernas protegidas (como ARA, ARC, NAA, NTLH ou NVI), obter
-    autorização escrita que cubra busca, projeção e distribuição offline pelo
-    instalador;
-  - como alternativa inicial, avaliar uma tradução comprovadamente em domínio
-    público ou com licença aberta compatível, exibindo atribuição e edição no
-    aplicativo;
-  - somente após essa definição, criar o banco SQLite bíblico, busca por
-    referência/texto e integração com a tela de apresentação.
-- Distribuição confiável no Windows e redução de alertas do SmartScreen:
-  - avaliar a publicação na Microsoft Store como opção preferencial sem custo,
-    empacotando o aplicativo como MSIX; apps distribuídos pela Store recebem
-    assinatura Microsoft;
-  - caso o projeto adote uma licença open source elegível, avaliar o SignPath
-    Foundation para assinatura gratuita;
-  - para computadores administrados pela igreja, considerar uma política interna
-    de confiança como alternativa operacional, sem usá-la como solução pública.
+- Definir uma política controlada para empacotar e atualizar VLC e FFmpeg/ffprobe.
+  Hoje o MPV é incluído no instalador; VLC é alternativa quando já está instalado.
+- A decisão sobre FFmpeg deve preceder as miniaturas reais para que instalação,
+  atualização e diagnóstico da dependência tenham um comportamento definido.
+
+### Miniaturas reais — prioridade baixa, implementação grande
+
+- Gerar miniaturas dos vídeos locais com FFmpeg em segundo plano, mantendo os
+  cartões funcionais quando a geração falhar.
+- Há uma especificação detalhada em `Sinalo-specs/miniaturas-reais-ffmpeg.md`.
+
+### Bíblia offline e apresentação de passagens — prioridade ainda não definida
+
+- Primeiro identificar uma edição e obter confirmação de que sua licença permite
+  busca, projeção e redistribuição offline pelo instalador.
+- Não reutilizar automaticamente banco/texto do Desktop ou conteúdo de terceiros
+  sem confirmar a licença da tradução.
+- Após resolver a licença, especificar armazenamento, busca por referência/texto
+  e integração com a tela de apresentação.
+
+### Distribuição confiável no Windows — depende de decisão externa
+
+- Avaliar alternativas sustentáveis para reduzir avisos do SmartScreen, incluindo
+  Microsoft Store/MSIX ou assinatura gratuita caso o projeto atenda aos critérios
+  de uma iniciativa de assinatura.
+- Manter a decisão em aberto até confirmar requisitos, elegibilidade e custos.
+
+## Itens fora do roadmap ativo
+
+Não há outra fonte oficial confirmada para o Minuto de Saúde além da coleção
+trimestral já integrada. Uma nova fonte só deve ser planejada se houver uma fonte
+oficial identificável e conteúdo que o Sinalo possa acessar.
+
+## Revisão ao encerrar uma implementação
+
+Ao concluir cada melhoria, atualizar este roadmap e verificar se o guia público,
+as notas de versão ou outras especificações também precisam de atualização.
