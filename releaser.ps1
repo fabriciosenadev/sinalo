@@ -12,6 +12,7 @@ $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $appProject = Join-Path $projectRoot "src\Sinalo.App\Sinalo.App.csproj"
 $updaterProject = Join-Path $projectRoot "src\Sinalo.Updater\Sinalo.Updater.csproj"
 $coverageScript = Join-Path $projectRoot "eng\test-coverage.ps1"
+$videoToolsScript = Join-Path $projectRoot "eng\prepare-video-download-tools.ps1"
 $releaseRoot = Join-Path $projectRoot ".release"
 $publishDirectory = Join-Path $releaseRoot "Sinalo-$Runtime"
 $installerDirectory = Join-Path $releaseRoot "installer"
@@ -138,6 +139,9 @@ if (-not $SkipTests) {
     }
 }
 
+Write-Step "Preparando componentes de download por link"
+& $videoToolsScript
+
 Write-Step "Publicando Sinalo $Version para $Runtime"
 New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
 Remove-Item -LiteralPath $publishDirectory -Recurse -Force -ErrorAction SilentlyContinue
@@ -160,6 +164,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Sync-MpvRuntime
+
+$videoPublishDirectory = Join-Path $publishDirectory "binaries\video-download"
+foreach ($requiredFile in @("yt-dlp.exe", "deno.exe", "ffmpeg.exe", "FFmpeg-LICENSE.txt", "Deno-LICENSE.md", "yt-dlp-THIRD_PARTY_LICENSES.txt")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $videoPublishDirectory $requiredFile) -PathType Leaf)) {
+        throw "Componente de download ausente no publish: $requiredFile"
+    }
+}
+Write-Host "Componentes de download por link validados no publish." -ForegroundColor Green
 
 Write-Step "Publicando atualizador"
 $updaterDirectory = Join-Path $publishDirectory "updater"

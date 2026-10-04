@@ -4,6 +4,25 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 1.0.1 - 04/10/2026
+
+### Novo
+
+- A opção **Vídeo por link** na navegação permite consultar um vídeo do YouTube,
+  escolher qualidade MP4, data de uso e programa de destino entre Informativo
+  das Missões, Provai e Vede e Minuto de Saúde antes de colocá-lo na fila.
+- Downloads por link preservam arquivos parciais após queda de conexão ou
+  cancelamento; informar novamente o mesmo link e a mesma qualidade permite
+  tentar retomar. Durante a reprodução, o download aguarda o player terminar.
+- O vídeo só aparece como pronto offline após concluir e validar o arquivo.
+  Vídeos adicionados por link são fixados por padrão para evitar limpeza
+  automática.
+
+### Ajustes
+
+- A navegação lateral mostra uma barra de rolagem quando as opções não cabem
+  na altura disponível.
+
 ## 1.0.0 - 23/09/2026
 
 ### Marco de estabilidade

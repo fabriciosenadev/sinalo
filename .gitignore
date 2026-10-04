@@ -8,6 +8,7 @@
 **/obj/
 TestResults/
 .release/
+src/Sinalo.App/binaries/video-download/
 
 # Local runtime data
 data/

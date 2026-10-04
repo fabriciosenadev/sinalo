@@ -1,5 +1,6 @@
 using Sinalo.App.ViewModels;
 using Sinalo.Application.Configuration;
+using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 using Sinalo.Infrastructure;
 
@@ -7,6 +8,70 @@ namespace Sinalo.Tests.Unit;
 
 public sealed class HomeViewModelTests
 {
+    [Fact]
+    public void LinkedVideoWorkspace_RequiresInspectionDestinationAndValidDate()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []);
+        var format = new LinkedVideoFormat("18", null, 360, null);
+        var video = new LinkedVideo("RN92XFsaPHE", "Teste", new Uri("https://youtu.be/RN92XFsaPHE"), new DateOnly(2026, 8, 1), [format]);
+
+        viewModel.SelectLinkedVideoWorkspace();
+        Assert.True(viewModel.IsLinkedVideoWorkspace);
+        Assert.False(viewModel.IsLibraryWorkspace);
+        Assert.False(viewModel.CanQueueLinkedVideo);
+
+        viewModel.LinkedVideoUrl = video.PageUri.AbsoluteUri;
+        viewModel.SetInspectedLinkedVideo(video);
+        viewModel.SelectedLinkedVideoDestination = viewModel.LinkedVideoDestinations.Single(item => item.Source == ContentSource.ProvaiEVede);
+        viewModel.LinkedVideoDateText = "15/08/2026";
+        var request = viewModel.CreateLinkedVideoRequest();
+        Assert.Equal(ContentSource.ProvaiEVede, request.Destination);
+        Assert.Equal(new DateOnly(2026, 8, 15), request.ScheduledDate);
+        Assert.Equal("provai-e-vede-youtube-RN92XFsaPHE", request.ItemId);
+
+        viewModel.LinkedVideoDateText = "dia quinze";
+        Assert.False(viewModel.CanQueueLinkedVideo);
+        viewModel.LinkedVideoUrl = "https://youtu.be/AB92XFsaPHE";
+        Assert.Empty(viewModel.LinkedVideoFormats);
+        Assert.False(viewModel.CanQueueLinkedVideo);
+    }
+
+    [Fact]
+    public void LinkedVideoWorkspace_RestoresSelectionAndInspectionAfterSettingsReload()
+    {
+        var previous = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []);
+        var format = new LinkedVideoFormat("18", null, 360, null);
+        var video = new LinkedVideo("RN92XFsaPHE", "Teste", new Uri("https://youtu.be/RN92XFsaPHE"), new DateOnly(2026, 8, 1), [format]);
+        previous.SelectLinkedVideoWorkspace();
+        previous.LinkedVideoUrl = video.PageUri.AbsoluteUri;
+        previous.SetInspectedLinkedVideo(video);
+        previous.SelectedLinkedVideoDestination = previous.LinkedVideoDestinations.Single(item => item.Source == ContentSource.Missions);
+        previous.LinkedVideoDateText = "08/08/2026";
+
+        var restored = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []);
+        restored.RestoreLinkedVideoState(previous);
+
+        Assert.True(restored.IsLinkedVideoWorkspace);
+        Assert.True(restored.CanQueueLinkedVideo);
+        Assert.Equal(ContentSource.Missions, restored.CreateLinkedVideoRequest().Destination);
+        Assert.Equal(previous.LinkedVideoStatus, restored.LinkedVideoStatus);
+        restored.SelectedSource = "Informativo das Missões";
+        Assert.True(restored.IsLibraryWorkspace);
+    }
+
+    [Fact]
+    public void LinkedVideoWorkspace_RejectsIncompleteRequest()
+    {
+        var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []);
+        Assert.Throws<InvalidOperationException>(viewModel.CreateLinkedVideoRequest);
+        Assert.False(viewModel.CanInspectLinkedVideo);
+        viewModel.LinkedVideoUrl = "https://youtu.be/RN92XFsaPHE";
+        Assert.True(viewModel.CanInspectLinkedVideo);
+        viewModel.IsInspectingLinkedVideo = true;
+        Assert.False(viewModel.CanInspectLinkedVideo);
+        Assert.False(viewModel.CanQueueLinkedVideo);
+    }
+
     [Fact]
     public void ApplicationVersion_ShouldExposeTheCurrentAppVersion()
     {

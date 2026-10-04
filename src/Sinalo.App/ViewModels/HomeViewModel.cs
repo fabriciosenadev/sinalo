@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Services;
@@ -22,6 +23,7 @@ public sealed partial class HomeViewModel : ObservableObject
         PreviousSaturday = FormatDate(window.Previous);
         CurrentSaturday = FormatDate(window.Current);
         NextSaturday = FormatDate(window.Next);
+        LinkedVideoDateText = CurrentSaturday;
         ContentPath = pathService.GetPaths().ContentPath;
         Sources = configurations.Select(item => new SourceCard(
             item.Source,
@@ -66,6 +68,14 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private bool isTimerWorkspace;
     [ObservableProperty] private bool isRaffleWorkspace;
     [ObservableProperty] private bool isWorshipTimerWorkspace;
+    [ObservableProperty] private bool isLinkedVideoWorkspace;
+    [ObservableProperty] private string linkedVideoUrl = string.Empty;
+    [ObservableProperty] private string linkedVideoStatus = "Cole o link de um vídeo para consultar as qualidades MP4 disponíveis.";
+    [ObservableProperty] private string linkedVideoDateText = string.Empty;
+    [ObservableProperty] private LinkedVideoDestinationOption? selectedLinkedVideoDestination;
+    [ObservableProperty] private LinkedVideoFormat? selectedLinkedVideoFormat;
+    [ObservableProperty] private bool isInspectingLinkedVideo;
+    private LinkedVideo? _inspectedLinkedVideo;
     [ObservableProperty] private string selectedAvailability = "Todos";
     [ObservableProperty] private string searchQuery = string.Empty;
     [ObservableProperty] private CatalogCard? selectedCatalogItem;
@@ -82,6 +92,13 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private double updateProgressPercent;
 
     public IReadOnlyList<SourceCard> Sources { get; }
+    public IReadOnlyList<LinkedVideoDestinationOption> LinkedVideoDestinations { get; } =
+    [
+        new(ContentSource.Missions, "Informativo das Missões"),
+        new(ContentSource.ProvaiEVede, "Provai e Vede"),
+        new(ContentSource.Health, "Minuto de Saúde")
+    ];
+    public ObservableCollection<LinkedVideoFormat> LinkedVideoFormats { get; } = [];
     public ObservableCollection<CatalogCard> CatalogItems { get; } = [];
     public ObservableCollection<ScheduleCard> ScheduleItems { get; } = [];
     public ObservableCollection<SynchronizationQueueCard> SynchronizationQueueItems { get; } = [];
@@ -90,7 +107,13 @@ public sealed partial class HomeViewModel : ObservableObject
     public RaffleViewModel Raffle { get; }
     public WorshipTimerViewModel WorshipTimer { get; }
     public string ApplicationVersion => $"Versão {typeof(HomeViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
-    public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace && !IsWorshipTimerWorkspace;
+    public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace && !IsWorshipTimerWorkspace && !IsLinkedVideoWorkspace;
+    public bool CanQueueLinkedVideo => !IsInspectingLinkedVideo && _inspectedLinkedVideo is not null &&
+        SelectedLinkedVideoFormat is not null && SelectedLinkedVideoDestination is not null &&
+        DateOnly.TryParseExact(LinkedVideoDateText, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+    public bool CanInspectLinkedVideo => !IsInspectingLinkedVideo && !string.IsNullOrWhiteSpace(LinkedVideoUrl);
+    public string LinkedVideoTitle => _inspectedLinkedVideo?.Title ?? string.Empty;
+    public string LinkedVideoPublishedDate => _inspectedLinkedVideo is null ? string.Empty : $"Publicado em {_inspectedLinkedVideo.PublishedDate:dd/MM/yyyy}";
 
     public string SelectedItemTitle => SelectedCatalogItem?.Title ?? "Selecione um vídeo";
     public string SelectedItemDetails => SelectedCatalogItem is null
@@ -113,6 +136,7 @@ public sealed partial class HomeViewModel : ObservableObject
         IsTimerWorkspace = false;
         IsRaffleWorkspace = false;
         IsWorshipTimerWorkspace = false;
+        IsLinkedVideoWorkspace = false;
         ApplyFilters();
         OnPropertyChanged(nameof(SelectedSourceActionLabel));
         OnPropertyChanged(nameof(UpdateAndSynchronizeSelectedSourceLabel));
@@ -123,9 +147,56 @@ public sealed partial class HomeViewModel : ObservableObject
     partial void OnIsTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
     partial void OnIsRaffleWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
     partial void OnIsWorshipTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
-    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; }
-    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; }
-    public void SelectWorshipTimerWorkspace() { IsWorshipTimerWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; }
+    partial void OnIsLinkedVideoWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
+    partial void OnLinkedVideoUrlChanged(string value) { ClearInspectedLinkedVideo(); LinkedVideoStatus = "Cole o link de um vídeo para consultar as qualidades MP4 disponíveis."; OnPropertyChanged(nameof(CanInspectLinkedVideo)); }
+    partial void OnLinkedVideoDateTextChanged(string value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
+    partial void OnSelectedLinkedVideoDestinationChanged(LinkedVideoDestinationOption? value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
+    partial void OnSelectedLinkedVideoFormatChanged(LinkedVideoFormat? value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
+    partial void OnIsInspectingLinkedVideoChanged(bool value) { OnPropertyChanged(nameof(CanQueueLinkedVideo)); OnPropertyChanged(nameof(CanInspectLinkedVideo)); }
+    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
+    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
+    public void SelectWorshipTimerWorkspace() { IsWorshipTimerWorkspace = true; IsRaffleWorkspace = false; IsTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
+    public void SelectLinkedVideoWorkspace() { SelectedSource = "Todos"; IsLinkedVideoWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; }
+    public void RestoreLinkedVideoState(HomeViewModel previous)
+    {
+        LinkedVideoUrl = previous.LinkedVideoUrl;
+        LinkedVideoDateText = previous.LinkedVideoDateText;
+        SelectedLinkedVideoDestination = LinkedVideoDestinations.FirstOrDefault(option => option.Source == previous.SelectedLinkedVideoDestination?.Source);
+        if (previous._inspectedLinkedVideo is not null && previous.LinkedVideoUrl == LinkedVideoUrl)
+        {
+            SetInspectedLinkedVideo(previous._inspectedLinkedVideo);
+            SelectedLinkedVideoFormat = LinkedVideoFormats.FirstOrDefault(format => format == previous.SelectedLinkedVideoFormat);
+        }
+        LinkedVideoStatus = previous.LinkedVideoStatus;
+        IsLinkedVideoWorkspace = previous.IsLinkedVideoWorkspace;
+    }
+    public void SetInspectedLinkedVideo(LinkedVideo video)
+    {
+        _inspectedLinkedVideo = video;
+        LinkedVideoFormats.Clear();
+        foreach (var format in video.Formats) LinkedVideoFormats.Add(format);
+        SelectedLinkedVideoFormat = video.Formats.FirstOrDefault(format => format.Height >= 480) ?? video.Formats.FirstOrDefault();
+        LinkedVideoStatus = $"{video.Formats.Count} qualidade(s) MP4 disponíveis.";
+        OnPropertyChanged(nameof(LinkedVideoTitle));
+        OnPropertyChanged(nameof(LinkedVideoPublishedDate));
+        OnPropertyChanged(nameof(CanQueueLinkedVideo));
+    }
+    public void ClearInspectedLinkedVideo()
+    {
+        _inspectedLinkedVideo = null;
+        SelectedLinkedVideoFormat = null;
+        LinkedVideoFormats.Clear();
+        OnPropertyChanged(nameof(LinkedVideoTitle));
+        OnPropertyChanged(nameof(LinkedVideoPublishedDate));
+        OnPropertyChanged(nameof(CanQueueLinkedVideo));
+    }
+    public LinkedVideoDownloadRequest CreateLinkedVideoRequest()
+    {
+        if (!CanQueueLinkedVideo || _inspectedLinkedVideo is null || SelectedLinkedVideoFormat is null || SelectedLinkedVideoDestination is null ||
+            !DateOnly.TryParseExact(LinkedVideoDateText, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            throw new InvalidOperationException("Consulte um vídeo e informe programa, qualidade e data de uso válidos.");
+        return new LinkedVideoDownloadRequest(_inspectedLinkedVideo, SelectedLinkedVideoFormat, SelectedLinkedVideoDestination.Source, date);
+    }
     partial void OnSelectedAvailabilityChanged(string value) => ApplyFilters();
     partial void OnSearchQueryChanged(string value) => ApplyFilters();
     partial void OnSelectedCatalogItemChanged(CatalogCard? value)
@@ -317,6 +388,7 @@ public sealed partial class HomeViewModel : ObservableObject
 }
 
 public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);
+public sealed record LinkedVideoDestinationOption(ContentSource Source, string Label);
 public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph, string PlaybackLabel = "", bool IsPinned = false)
 {
     // Compatibilidade com consumidores que já exibiam a coluna "Source" da lista anterior.

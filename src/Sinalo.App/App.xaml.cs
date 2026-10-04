@@ -61,6 +61,10 @@ public partial class App : System.Windows.Application
         var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService);
 
         var mpvPlaybackLauncher = new MpvPlaybackLauncher();
+        var playbackGate = new PlaybackActivityGate();
+        mpvPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
+        var windowsPlaybackLauncher = new WindowsPlaybackLauncher();
+        windowsPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
         var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory());
         _presentationOutputService = presentationOutputService;
@@ -92,7 +96,8 @@ public partial class App : System.Windows.Application
             MissionsSynchronizationService = missionsSynchronizationService,
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
             ManualSynchronizationService = new ManualContentSynchronizationService(contentCatalog, downloader, storageSpaceService),
-            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, new WindowsPlaybackLauncher())),
+            LinkedVideoService = new LinkedVideoService(pathService, playbackGate: playbackGate),
+            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher)),
             PlaybackRuntime = mpvPlaybackLauncher
         };
 

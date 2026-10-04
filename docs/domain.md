@@ -8,7 +8,7 @@
 | `provai-e-vede` | Provai e Vede | Trimestre completo |
 | `health` | Minuto de Saude | Mensal completo ou janela de sabados |
 
-As URLs de pagina/canal de cada fonte sao configuradas pelo operador. A fonte pode ser consultada para descobrir itens publicados, mas somente arquivos oficiais e autorizados podem ser sincronizados para uso offline.
+As URLs das fontes são configuradas pelo operador para a descoberta automática. Há também uma tela manual de vídeo por link, separada da descoberta trimestral. O operador escolhe Informativo das Missões, Provai e Vede ou Minuto de Saúde como destino e informa a data de uso; o vídeo fica somente na biblioteca escolhida.
 
 ## Periodos e disponibilidade
 
@@ -54,6 +54,7 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
   existente é preservada; configurações legadas sem tela definida usam a tela
   principal informada pelo Windows.
 - Itens fixados nao sao removidos automaticamente.
+- Vídeos adicionados manualmente por link são fixados por padrão e identificados pelo programa e ID estável do vídeo para evitar download duplicado no mesmo destino. O identificador legado `health-youtube-<id>` permanece válido para Minuto de Saúde.
 - O trimestre anterior pode ser limpo somente apos sincronizacao completa do novo, respeitando o periodo de tolerancia configurado.
 
 ## Fila de sincronizacao

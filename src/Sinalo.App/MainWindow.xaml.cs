@@ -52,6 +52,7 @@ public partial class MainWindow : Window
     public MissionsSynchronizationService? MissionsSynchronizationService { get; init; }
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
     public ManualContentSynchronizationService? ManualSynchronizationService { get; init; }
+    public ILinkedVideoService? LinkedVideoService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public IAsyncDisposable? PlaybackRuntime { get; init; }
     public SynchronizationQueue? SynchronizationQueue
@@ -71,6 +72,7 @@ public partial class MainWindow : Window
         _timerRefresh.Tick += TimerRefresh_Tick;
         _updateCheckTimer.Tick += PeriodicUpdateCheck_Tick;
         Loaded += (_, _) => _timerRefresh.Start();
+        Closing += (_, _) => SynchronizationQueue?.CancelAll();
         Closed += (_, _) =>
         {
             _timerRefresh.Stop();
@@ -247,6 +249,47 @@ public partial class MainWindow : Window
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private void LinkedVideoWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectLinkedVideoWorkspace();
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void InspectLinkedVideo_Click(object sender, RoutedEventArgs e)
+    {
+        if (LinkedVideoService is null || DataContext is not HomeViewModel viewModel || !viewModel.CanInspectLinkedVideo) return;
+        var url = viewModel.LinkedVideoUrl;
+        viewModel.IsInspectingLinkedVideo = true;
+        viewModel.ClearInspectedLinkedVideo();
+        viewModel.LinkedVideoStatus = "Consultando informações do vídeo...";
+        try
+        {
+            var video = await LinkedVideoService.InspectAsync(url);
+            if (viewModel.LinkedVideoUrl == url) viewModel.SetInspectedLinkedVideo(video);
+        }
+        catch (Exception exception) { if (viewModel.LinkedVideoUrl == url) viewModel.LinkedVideoStatus = exception.Message; }
+        finally { viewModel.IsInspectingLinkedVideo = false; }
+    }
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async void QueueLinkedVideo_Click(object sender, RoutedEventArgs e)
+    {
+        if (ConfigurationService is null || ContentCatalog is null || SynchronizationQueue is null || DataContext is not HomeViewModel viewModel || !viewModel.CanQueueLinkedVideo) return;
+        try
+        {
+            var selected = viewModel.CreateLinkedVideoRequest();
+            var existing = await ContentCatalog.FindByIdAsync(selected.ItemId);
+            if (existing?.IsReadyOffline == true && existing.LocalPath is { } localPath && File.Exists(localPath))
+            {
+                viewModel.OperationMessage = "Este vídeo já está pronto offline no programa escolhido.";
+                viewModel.LinkedVideoStatus = viewModel.OperationMessage;
+                return;
+            }
+            var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == selected.Destination);
+            viewModel.OperationMessage = SynchronizationQueue.Enqueue(new SynchronizationQueueRequest(configuration, LinkedVideo: selected)).Message;
+            viewModel.LinkedVideoStatus = viewModel.OperationMessage;
+        }
+        catch (Exception exception) { viewModel.LinkedVideoStatus = $"Não foi possível adicionar o vídeo à fila: {exception.Message}"; }
+    }
+
     private async void CancelSynchronizationQueue_Click(object sender, RoutedEventArgs e)
     {
         SynchronizationQueue?.CancelAll();
@@ -302,6 +345,19 @@ public partial class MainWindow : Window
         CancellationToken cancellationToken)
     {
         if (DiscoveryService is null || ContentCatalog is null) throw new InvalidOperationException("Os serviços de sincronização não estão disponíveis.");
+        if (request.LinkedVideo is { } linked)
+        {
+            if (LinkedVideoService is null) throw new InvalidOperationException("O componente de download por link não está disponível.");
+            if (linked.Destination != request.Configuration.Source) throw new InvalidOperationException("O programa do vídeo não corresponde ao pedido da fila.");
+            var existing = await ContentCatalog.FindByIdAsync(linked.ItemId, cancellationToken);
+            if (existing?.IsReadyOffline == true && existing.LocalPath is { } file && File.Exists(file)) return new SynchronizationQueueCompletion(0);
+            var progress = new Progress<DownloadProgress>(update => queueProgress.Report(new SynchronizationQueueProgress(
+                $"{linked.Video.Title}: {update.Stage}", update.Percentage, GetSynchronizationStage(update.Stage))));
+            var downloaded = await LinkedVideoService.DownloadAsync(linked, progress, cancellationToken);
+            await ContentCatalog.UpsertAsync([downloaded], cancellationToken);
+            _ = Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.MarkItemAsReady(downloaded));
+            return new SynchronizationQueueCompletion(1);
+        }
         queueProgress.Report(new SynchronizationQueueProgress("Consultando o site oficial...", Stage: SynchronizationStage.Discovery));
         await DiscoveryService.RefreshAsync(request.Configuration, cancellationToken);
         queueProgress.Report(new SynchronizationQueueProgress("Catálogo atualizado. Preparando downloads...", Stage: SynchronizationStage.Download));
@@ -863,6 +919,7 @@ public partial class MainWindow : Window
         current.SelectedSource = previous.SelectedSource;
         current.SelectedAvailability = previous.SelectedAvailability;
         current.SearchQuery = previous.SearchQuery;
+        current.RestoreLinkedVideoState(previous);
     }
 
     private static string GetSourceName(Sinalo.Domain.ContentSource source) => source switch

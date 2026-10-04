@@ -14,7 +14,11 @@ public enum SynchronizationQueueState
 
 // SelectedItemIds congela uma escolha manual no instante em que ela entra na fila.
 // Uma alteração posterior da regra de datas não pode alterar esse pedido.
-public sealed record SynchronizationQueueRequest(SourceConfiguration Configuration, IReadOnlyList<string>? SelectedItemIds = null);
+public sealed record SynchronizationQueueRequest(SourceConfiguration Configuration, IReadOnlyList<string>? SelectedItemIds = null, LinkedVideoDownloadRequest? LinkedVideo = null)
+{
+    public string Key => LinkedVideo is null ? Configuration.Source.ToString() : $"linked:{LinkedVideo.ItemId}";
+    public string DisplayName => LinkedVideo is null ? Configuration.DisplayName : $"{LinkedVideo.Video.Title} · {Configuration.DisplayName}";
+}
 public sealed record SynchronizationQueueProgress(string Message, double? Percentage = null, SynchronizationStage Stage = SynchronizationStage.Discovery);
 public sealed record SynchronizationQueueCompletion(int ReadyItems);
 public sealed record SynchronizationQueueEntry(
@@ -46,15 +50,15 @@ public sealed class SynchronizationQueue(
         SynchronizationQueueEnqueueResult result;
         lock (_gate)
         {
-            _jobs.RemoveAll(job => job.Request.Configuration.Source == request.Configuration.Source &&
+            _jobs.RemoveAll(job => job.Request.Key == request.Key &&
                                    job.State is SynchronizationQueueState.Completed or SynchronizationQueueState.Failed or SynchronizationQueueState.Cancelled);
-            if (_jobs.Any(job => job.Request.Configuration.Source == request.Configuration.Source))
+            if (_jobs.Any(job => job.Request.Key == request.Key))
             {
-                return new(false, $"{request.Configuration.DisplayName} já está em andamento ou na fila.");
+                return new(false, $"{request.DisplayName} já está em andamento ou na fila.");
             }
 
             _jobs.Add(new QueueJob(request));
-            result = new(true, $"{request.Configuration.DisplayName} foi adicionado à fila.");
+            result = new(true, $"{request.DisplayName} foi adicionado à fila.");
             if (!_isProcessing)
             {
                 _isProcessing = true;
@@ -146,8 +150,8 @@ public sealed class SynchronizationQueue(
                     job.Diagnostic = SynchronizationFailureClassifier.Classify(
                         exception,
                         job.Request.Configuration.Source,
-                        job.Request.Configuration.DisplayName,
-                        job.Request.Configuration.PageUrl,
+                        job.Request.DisplayName,
+                        job.Request.LinkedVideo?.Video.PageUri.AbsoluteUri ?? job.Request.Configuration.PageUrl,
                         job.Stage);
                     job.Message = job.Diagnostic.FriendlyMessage;
                 }
@@ -190,7 +194,7 @@ public sealed class SynchronizationQueue(
 
     private SynchronizationQueueSnapshot CreateSnapshot() => new(_isProcessing, _jobs.Select(job => new SynchronizationQueueEntry(
         job.Request.Configuration.Source,
-        job.Request.Configuration.DisplayName,
+        job.Request.DisplayName,
         job.State,
         job.Message,
         job.Percentage,

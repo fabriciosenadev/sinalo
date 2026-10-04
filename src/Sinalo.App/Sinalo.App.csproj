@@ -16,6 +16,12 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <TargetPath>binaries\mpv\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </Content>
+    <Content Include="binaries\video-download\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <TargetPath>binaries\video-download\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
     <Content Include="Assets\sinalo.ico;Assets\sinalo-dark.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

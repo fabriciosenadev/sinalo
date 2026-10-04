@@ -10,7 +10,10 @@ licença do código do Sinalo não substitui nem altera as licenças abaixo.
 | Microsoft.Data.Sqlite | Banco de dados local | Preservar os avisos do pacote e de suas dependências. |
 | SQLitePCLRaw.lib.e_sqlite3 | Biblioteca nativa SQLite | Preservar os avisos do pacote e da biblioteca SQLite. |
 | MPV e bibliotecas nativas incluídas | Reprodução local de vídeo | O runtime está em `src/Sinalo.App/binaries/mpv`. Consultar e distribuir os avisos e obrigações aplicáveis a cada biblioteca. O `NOTICE.txt` presente nesse diretório ainda requer revisão antes de uma distribuição pública. |
-| VLC e FFmpeg/ffprobe | Integração ou dependências externas opcionais | Não são licenciados pelo Sinalo. Caso sejam incorporados ao instalador em uma versão futura, incluir seus avisos, textos de licença e eventuais ofertas de código-fonte exigidos. |
+| yt-dlp 2026.08.19 | Consulta de formatos e download por link | Executável separado incluído no instalador; o build oficial para Windows inclui componentes sob GPLv3+. Consultar [código, licenças e fontes](https://github.com/yt-dlp/yt-dlp). |
+| Deno 2.9.7 | Execução dos componentes JavaScript necessários ao extrator | Executável separado incluído no instalador; consultar [licença e fontes](https://github.com/denoland/deno). |
+| FFmpeg build `autobuild-2026-10-03-19-23` | Mescla de vídeo e áudio MP4 | Executável separado sob GPLv3, incluído no instalador. Disponibilizar os termos e o código-fonte correspondente conforme [o projeto do build](https://github.com/yt-dlp/FFmpeg-Builds) antes de distribuir publicamente. |
+| VLC/ffprobe | Integrações externas opcionais | Não são licenciados pelo Sinalo e não são incorporados por este fluxo. |
 | Vídeos, imagens, textos bíblicos e demais conteúdos | Conteúdo obtido de fontes oficiais ou configurado pelo operador | Permanecem sob os direitos e os termos de seus respectivos titulares. Não devem ser relicenciados como Apache-2.0. |
 
 ## Traduções bíblicas

@@ -12,7 +12,10 @@ public static class SynchronizationCandidateSelector
         ISaturdayWindowService saturdayWindowService,
         DateOnly operatingDate)
     {
-        var candidates = items.Where(item => item.Assets.Count > 0 && (!item.IsReadyOffline || string.IsNullOrWhiteSpace(item.LocalPath) || !File.Exists(item.LocalPath))).ToArray();
+        var candidates = items.Where(item =>
+            !LinkedVideoDownloadRequest.IsManualItemId(item.Id) &&
+            item.Assets.Count > 0 &&
+            (!item.IsReadyOffline || string.IsNullOrWhiteSpace(item.LocalPath) || !File.Exists(item.LocalPath))).ToArray();
         if (selection.DownloadsQuarterly) return candidates.OrderBy(item => item.ScheduledDate).ToArray();
 
         var window = saturdayWindowService.GetWindow(operatingDate);

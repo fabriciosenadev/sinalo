@@ -3,6 +3,10 @@
 **Versão atual:** 1.0.0 — série estável
 **Revisado em:** 24/09/2026
 
+**Implementado localmente, aguardando versão publicada:** tela de vídeo por link,
+separada da descoberta automática, com escolha entre os três programas, data de uso,
+qualidades MP4, fila única e retomada de arquivos parciais.
+
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
 

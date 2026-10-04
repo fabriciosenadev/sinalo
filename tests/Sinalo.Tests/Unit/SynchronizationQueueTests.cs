@@ -140,6 +140,28 @@ public sealed class SynchronizationQueueTests
 
     private static SynchronizationQueueRequest Request(ContentSource source) => new(new SourceConfiguration(source, source.ToString(), "https://example.test/", AvailabilityPolicy.RollingSaturday));
 
+    [Fact]
+    public async Task Queue_AllowsDifferentLinkedVideosAndDestinationsButRejectsTheSameTarget()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var queue = new SynchronizationQueue(async (_, _, _) => { started.TrySetResult(); await release.Task; return new SynchronizationQueueCompletion(1); });
+        SynchronizationQueueRequest Linked(string id, ContentSource destination = ContentSource.Health)
+        {
+            var video = new LinkedVideo(id, id, new Uri($"https://youtu.be/{id}"), new DateOnly(2026, 8, 8), [new LinkedVideoFormat("18", null, 360, null)]);
+            return new SynchronizationQueueRequest(Request(destination).Configuration, LinkedVideo: new LinkedVideoDownloadRequest(video, video.Formats[0], destination, video.PublishedDate));
+        }
+
+        Assert.True(queue.Enqueue(Linked("RN92XFsaPHE")).Added);
+        await started.Task;
+        Assert.False(queue.Enqueue(Linked("RN92XFsaPHE")).Added);
+        Assert.True(queue.Enqueue(Linked("RN92XFsaPHE", ContentSource.Missions)).Added);
+        Assert.True(queue.Enqueue(Linked("AB92XFsaPHE")).Added);
+        release.TrySetResult();
+        await queue.WhenIdleAsync();
+        Assert.Equal(3, queue.GetSnapshot().Entries.Count);
+    }
+
     private sealed class RecordingStore : ISynchronizationDiagnosticStore
     {
         public List<SynchronizationDiagnostic> Diagnostics { get; } = [];

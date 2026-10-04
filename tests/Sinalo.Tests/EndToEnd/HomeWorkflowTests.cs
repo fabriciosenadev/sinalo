@@ -19,6 +19,71 @@ namespace Sinalo.Tests.EndToEnd;
 public sealed class HomeWorkflowTests
 {
     [Fact]
+    public void Navigation_ShouldScrollWhenTheAvailableHeightIsSmall()
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var sources = new[]
+                {
+                    new SourceConfiguration(Sinalo.Domain.ContentSource.Missions, "Informativo das Missões", "", Sinalo.Domain.AvailabilityPolicy.MonthlyFull),
+                    new SourceConfiguration(Sinalo.Domain.ContentSource.ProvaiEVede, "Provai e Vede", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull),
+                    new SourceConfiguration(Sinalo.Domain.ContentSource.Health, "Minuto de Saúde", "", Sinalo.Domain.AvailabilityPolicy.QuarterlyFull)
+                };
+                var window = new Sinalo.App.MainWindow
+                {
+                    DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), sources),
+                    MinHeight = 300,
+                    Height = 420
+                };
+                window.Show();
+                window.UpdateLayout();
+                var scroll = (ScrollViewer)window.FindName("NavigationScrollViewer");
+                Assert.True(scroll.ScrollableHeight > 0);
+                Assert.Equal(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
+                scroll.ScrollToBottom();
+                window.UpdateLayout();
+                Assert.Equal(scroll.ScrollableHeight, scroll.VerticalOffset, 1);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void LinkedVideoNavigation_ShouldShowTheCentralWorkspace()
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var viewModel = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []);
+                var window = new Sinalo.App.MainWindow { DataContext = viewModel };
+                window.Show();
+                ((Button)window.FindName("LinkedVideoNavigationButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                window.UpdateLayout();
+
+                Assert.True(viewModel.IsLinkedVideoWorkspace);
+                Assert.True(((ScrollViewer)window.FindName("LinkedVideoWorkspace")).IsVisible);
+                Assert.False(viewModel.IsLibraryWorkspace);
+                window.Close();
+            }
+            catch (Exception caught) { exception = caught; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public void MainWindow_ShouldLoadItsVisualTreeOnAnStaThread()
     {
         Exception? exception = null;

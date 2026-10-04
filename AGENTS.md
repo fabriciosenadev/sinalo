@@ -20,7 +20,7 @@ Sinalo e um aplicativo desktop Windows para preparar e exibir videos de programa
 - A prioridade de sincronizacao e: sabado anterior, sabado atual e proximo sabado que ja esteja disponivel.
 - Provai e Vede usa download trimestral completo quando os arquivos estiverem publicados.
 - Missoes e Minuto de Saude usam download mensal completo quando possivel; caso contrario, usam a janela de tres sabados.
-- Conteudo de fonte sem arquivo oficial/autorizado deve permanecer `OnlineSomente`; nao implementar bypass ou download nao autorizado de plataformas.
+- A descoberta automática das páginas configuradas só baixa arquivos disponibilizados pela fonte. Há também um fluxo manual, explícito, de vídeo do YouTube por link informado pelo operador, com destino escolhido entre os três programas; ele não altera a configuração das fontes nem promete download de todo vídeo.
 - Links das fontes sao configuraveis pelo operador.
 
 ## Qualidade e operacao

@@ -11,7 +11,7 @@ O Sinalo e um aplicativo Windows para preparar e exibir, sem dependencia de inte
 - Simplicidade operacional: sem contas, permissao por usuario ou servidor proprio no MVP.
 - Conteudo verificavel: um video so fica disponivel apos concluir o download e validar integridade.
 - Disco rigido consciente: downloads e miniaturas ocorrem em segundo plano; nunca durante a reproducao.
-- Fontes oficiais: o aplicativo consome apenas URLs autorizadas e arquivos disponibilizados pelos respectivos responsaveis.
+- A descoberta automática consome páginas e arquivos disponibilizados pelas fontes configuradas. Uma tela separada aceita um link de vídeo informado manualmente pelo operador e permite escolher o programa de destino.
 
 ## Visao geral
 
@@ -31,7 +31,7 @@ Fila unica de sincronizacao ----> arquivos .part ----> validacao SHA-256
       Interface WPF ----> MPV persistente ----> tela principal / projetor
 ```
 
-Os conectores identificam os itens publicados nas URLs configuradas e montam um catalogo local. O video e baixado para armazenamento local antes do uso.
+Os conectores identificam os itens publicados nas URLs configuradas e montam um catalogo local. O video e baixado para armazenamento local antes do uso. Na opção Vídeo por link da navegação, o operador consulta os formatos de um link colado, escolhe o programa e a data de uso e coloca o pedido na mesma fila de downloads, sem depender da página trimestral.
 
 ## Componentes
 
@@ -199,9 +199,9 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 - Login, usuarios e permissao por igreja.
 - API propria ou painel web.
 - Edicao de catalogo dentro do app.
-- Streaming adaptativo e download de plataformas sem arquivo autorizado.
+- Descoberta automática de canais de vídeo ou playlists de plataformas; o fluxo manual por link não varre um canal.
 - Estatisticas centralizadas e sincronizacao entre computadores.
 
 ## Premissa para sincronizacao offline
 
-O Sinalo so marca um item como offline quando o conector encontrar uma URL de arquivo autorizada, estavel e baixavel. Especialmente no Minuto de Saude, se a fonte continuar oferecendo somente YouTube, o item sera exibido como online ate que exista uma origem oficial de arquivo ou autorizacao para download.
+O Sinalo so marca um item como offline depois de validar um arquivo local completo. A busca no site configurado e o download manual de um link do YouTube são caminhos distintos: um item ausente no site pode ser adicionado pelo operador por link. Esse download conserva arquivos parciais para retomada quando a origem permitir e não torna o vídeo pronto antes da validação.

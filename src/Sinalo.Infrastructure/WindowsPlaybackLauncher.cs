@@ -5,6 +5,7 @@ namespace Sinalo.Infrastructure;
 
 public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
 {
+    public event Action<bool>? PlaybackActivityChanged;
     public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
     {
         try
@@ -14,6 +15,21 @@ public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
             var process = string.IsNullOrWhiteSpace(vlcPath)
                 ? Process.Start(new ProcessStartInfo { FileName = filePath, UseShellExecute = true, Verb = "open" })
                 : Process.Start(new ProcessStartInfo { FileName = vlcPath, Arguments = BuildVlcArguments(filePath, options), UseShellExecute = false });
+
+            if (process is not null)
+            {
+                PlaybackActivityChanged?.Invoke(true);
+                var completed = 0;
+                void OnExited(object? _, EventArgs __)
+                {
+                    if (Interlocked.Exchange(ref completed, 1) != 0) return;
+                    PlaybackActivityChanged?.Invoke(false);
+                    process.Dispose();
+                }
+                process.Exited += OnExited;
+                process.EnableRaisingEvents = true;
+                if (process.HasExited) OnExited(process, EventArgs.Empty);
+            }
 
             var result = CreateLaunchResult(vlcPath, process is not null);
             return Task.FromResult(result with

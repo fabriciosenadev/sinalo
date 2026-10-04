@@ -18,6 +18,7 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
     private StreamWriter? _writer;
     private CancellationTokenSource? _readerCancellation;
     private int _isDisposed;
+    public event Action<bool>? PlaybackActivityChanged;
 
     public MpvPlaybackLauncher(string? mpvPath = null, string? pipeName = null)
     {
@@ -129,19 +130,39 @@ public sealed class MpvPlaybackLauncher : IPlaybackLauncher, IPlaybackPreloader,
         }
     }
 
-    private static async Task DrainResponsesAsync(Stream stream, CancellationToken cancellationToken)
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    private async Task DrainResponsesAsync(Stream stream, CancellationToken cancellationToken)
     {
         try
         {
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-            while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is not null) { }
+            string? line;
+            while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) is not null)
+            {
+                var active = ParsePlaybackActivityEvent(line);
+                if (active is { } state) PlaybackActivityChanged?.Invoke(state);
+            }
         }
         catch (OperationCanceledException) { }
         catch (IOException) { }
     }
 
+    public static bool? ParsePlaybackActivityEvent(string line)
+    {
+        try
+        {
+            using var response = JsonDocument.Parse(line);
+            if (response.RootElement.ValueKind != JsonValueKind.Object ||
+                !response.RootElement.TryGetProperty("event", out var eventName) ||
+                eventName.ValueKind != JsonValueKind.String) return null;
+            return eventName.GetString() switch { "file-loaded" => true, "end-file" or "idle" => false, _ => null };
+        }
+        catch (JsonException) { return null; }
+    }
+
     private async Task StopAsync()
     {
+        PlaybackActivityChanged?.Invoke(false);
         _readerCancellation?.Cancel();
         _readerCancellation?.Dispose();
         _readerCancellation = null;

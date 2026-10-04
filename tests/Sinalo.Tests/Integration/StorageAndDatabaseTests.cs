@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Sinalo.Application.Configuration;
 using Sinalo.Application.Appearance;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Synchronization;
 using Sinalo.Application.Timer;
 using Sinalo.Application.WorshipTimer;
 using Sinalo.Domain;
@@ -54,6 +55,30 @@ public sealed class StorageAndDatabaseTests : IDisposable
 
         Assert.True(File.Exists(pathService.GetPaths().DatabasePath));
         Assert.True(Directory.Exists(pathService.GetPaths().ContentPath));
+    }
+
+    [Fact]
+    public async Task Catalog_ShouldKeepLegacyHealthLinkAndNewDestinationsSeparate()
+    {
+        var paths = new TestPathService(_rootPath);
+        await new SinaloDatabase(paths).InitializeAsync();
+        var catalog = new SqliteContentCatalog(paths);
+        var video = new LinkedVideo("RN92XFsaPHE", "Vídeo manual", new Uri("https://youtu.be/RN92XFsaPHE"), new DateOnly(2026, 8, 1), []);
+        var format = new LinkedVideoFormat("18", null, 360, null);
+        var date = new DateOnly(2026, 8, 8);
+        var healthId = new LinkedVideoDownloadRequest(video, format, ContentSource.Health, date).ItemId;
+        var missionsId = new LinkedVideoDownloadRequest(video, format, ContentSource.Missions, date).ItemId;
+        Assert.Equal("health-youtube-RN92XFsaPHE", healthId);
+
+        await catalog.UpsertAsync([
+            new ContentItem(healthId, ContentSource.Health, video.Title, date, video.PageUri, [], SyncState.Ready, true),
+            new ContentItem(missionsId, ContentSource.Missions, video.Title, date, video.PageUri, [], SyncState.Ready, true)
+        ]);
+
+        Assert.Equal(ContentSource.Health, (await catalog.FindByIdAsync(healthId))?.Source);
+        Assert.Equal(ContentSource.Missions, (await catalog.FindByIdAsync(missionsId))?.Source);
+        Assert.Single(await catalog.ListBySourceAsync(ContentSource.Health));
+        Assert.Single(await catalog.ListBySourceAsync(ContentSource.Missions));
     }
 
     [Fact]
