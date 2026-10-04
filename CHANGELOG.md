@@ -4,7 +4,7 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
-## 1.0.1 - 04/10/2026
+## 1.1.0 - 04/10/2026
 
 ### Novo
 
