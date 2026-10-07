@@ -386,6 +386,22 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                     <TextBlock Text="Com uma tela selecionada, o video será reproduzido nela." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" />
+                    <StackPanel x:Name="PlaybackPanel" DataContext="{Binding Playback, RelativeSource={RelativeSource AncestorType=Window}}" Margin="0,12,0,0">
+                        <TextBlock Text="{Binding Title}" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding PlayerAndOutput}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding Status}" Foreground="{DynamicResource Brush.Accent}" Margin="0,5,0,0" />
+                        <TextBlock Text="{Binding TimeLabel}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,8,0,0" />
+                        <Slider x:Name="VideoSeekSlider" Style="{DynamicResource Slider.Playback}" Minimum="0" Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" IsEnabled="{Binding CanSeek}" PreviewMouseLeftButtonDown="VideoSeek_Begin" PreviewMouseLeftButtonUp="VideoSeek_Commit" PreviewKeyDown="VideoSeek_KeyDown" PreviewKeyUp="VideoSeek_KeyUp" ToolTip="Avançar ou voltar no vídeo" Margin="0,5,0,8" />
+                        <UniformGrid Columns="2">
+                            <Button Content="{Binding PlayPauseLabel}" Command="{Binding PlayPauseCommand}" Style="{DynamicResource Button.Primary}" Margin="0,0,4,0" Padding="6" />
+                            <Button Content="Parar" Command="{Binding StopCommand}" Padding="6" />
+                        </UniformGrid>
+                        <Button Content="Reiniciar vídeo" Command="{Binding RestartCommand}" Margin="0,6,0,0" Padding="6" />
+                        <TextBlock Text="Volume" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,10,0,0" />
+                        <Slider x:Name="VideoVolumeSlider" Style="{DynamicResource Slider.Playback}" Minimum="0" Maximum="100" Value="{Binding Volume}" IsEnabled="{Binding CanVolume}" PreviewMouseLeftButtonDown="VideoVolume_Begin" PreviewMouseLeftButtonUp="VideoVolume_Commit" PreviewKeyDown="VideoVolume_KeyDown" PreviewKeyUp="VideoVolume_KeyUp" ToolTip="Volume do vídeo" Margin="0,5,0,5" />
+                        <Button Content="{Binding MuteLabel}" Command="{Binding ToggleMuteCommand}" Padding="6" />
+                        <TextBlock Text="{Binding Message}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    </StackPanel>
                     <StackPanel Visibility="{Binding HasSelectedItem, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Separator Margin="0,18,0,14" />
                         <TextBlock Text="Vídeo selecionado" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />

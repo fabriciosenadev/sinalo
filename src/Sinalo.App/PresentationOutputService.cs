@@ -4,7 +4,7 @@ using Sinalo.Application.Presentation;
 
 namespace Sinalo.App;
 
-public sealed class PresentationOutputService(IMonitorService monitorService, IPresentationWindowFactory windowFactory) : IPresentationOutputService
+public sealed class PresentationOutputService(IMonitorService monitorService, IPresentationWindowFactory windowFactory, PlaybackOutputCoordinator? playbackCoordinator = null) : IPresentationOutputService
 {
     private readonly IMonitorService _monitorService = monitorService;
     private readonly IPresentationWindowFactory _windowFactory = windowFactory;
@@ -18,6 +18,12 @@ public sealed class PresentationOutputService(IMonitorService monitorService, IP
         var availableOutputs = await _monitorService.GetOutputsAsync(cancellationToken);
         var output = OutputSelectionResolver.Resolve(new PlaybackConfiguration(requestedOutput.ScreenNumber, requestedOutput.MonitorKey), availableOutputs);
         if (output is null) return new(false, "A tela de saída não está disponível. Verifique os monitores conectados ao Windows.");
+
+        if (playbackCoordinator is not null)
+        {
+            var preparation = await playbackCoordinator.PreparePresentationAsync(new PlaybackLaunchOptions(output), cancellationToken);
+            if (!preparation.Succeeded) return new(false, preparation.Message ?? "Não foi possível liberar a saída de vídeo.");
+        }
 
         if (_window is null || !_window.IsVisible) _window = _windowFactory.Create();
         _window.Display(scene, output);

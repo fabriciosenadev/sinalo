@@ -3,9 +3,12 @@ using Sinalo.Application.Playback;
 
 namespace Sinalo.Infrastructure;
 
-public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
+public sealed class WindowsPlaybackLauncher : IPlaybackLauncher, IPlaybackController
 {
     public event Action<bool>? PlaybackActivityChanged;
+    public PlaybackSnapshot Current { get; private set; } = PlaybackSnapshot.Idle;
+    public event Action<PlaybackSnapshot>? Changed;
+    public event Action<PlaybackSnapshot>? Ended;
     public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
     {
         try
@@ -18,11 +21,21 @@ public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
 
             if (process is not null)
             {
+                var sessionId = Guid.NewGuid();
+                Current = new(sessionId, options.ContentId, options.Title ?? Path.GetFileNameWithoutExtension(filePath),
+                    filePath, string.IsNullOrWhiteSpace(vlcPath) ? "Aplicativo padrão" : "VLC", options, PlaybackState.Playing);
+                Changed?.Invoke(Current);
                 PlaybackActivityChanged?.Invoke(true);
                 var completed = 0;
                 void OnExited(object? _, EventArgs __)
                 {
                     if (Interlocked.Exchange(ref completed, 1) != 0) return;
+                    if (Current.SessionId == sessionId)
+                    {
+                        Current = Current with { State = PlaybackState.Ended, EndReason = PlaybackEndReason.ExternalClosed };
+                        Changed?.Invoke(Current);
+                        Ended?.Invoke(Current);
+                    }
                     PlaybackActivityChanged?.Invoke(false);
                     process.Dispose();
                 }
@@ -42,6 +55,13 @@ public sealed class WindowsPlaybackLauncher : IPlaybackLauncher
         catch (OperationCanceledException) { throw; }
         catch (Exception) { return Task.FromResult(new PlaybackLaunchResult(false, string.Empty, "Não foi possível abrir o vídeo no VLC ou no aplicativo padrão do Windows.")); }
     }
+
+    public Task<PlaybackCommandResult> SetPausedAsync(bool paused, CancellationToken cancellationToken = default) => Task.FromResult(PlaybackCommandResult.Unsupported);
+    public Task<PlaybackCommandResult> StopMediaAsync(CancellationToken cancellationToken = default) => Task.FromResult(PlaybackCommandResult.Unsupported);
+    public Task<PlaybackCommandResult> RestartAsync(CancellationToken cancellationToken = default) => Task.FromResult(PlaybackCommandResult.Unsupported);
+    public Task<PlaybackCommandResult> SeekAsync(double seconds, CancellationToken cancellationToken = default) => Task.FromResult(PlaybackCommandResult.Unsupported);
+    public Task<PlaybackCommandResult> SetVolumeAsync(double volume, CancellationToken cancellationToken = default) => Task.FromResult(PlaybackCommandResult.Unsupported);
+    public Task<PlaybackCommandResult> SetMutedAsync(bool muted, CancellationToken cancellationToken = default) => Task.FromResult(PlaybackCommandResult.Unsupported);
 
     public static PlaybackLaunchResult CreateLaunchResult(string? vlcPath, bool processStarted) =>
         !processStarted ? new PlaybackLaunchResult(false, string.Empty, "O Windows não conseguiu iniciar um player para este vídeo.") :
