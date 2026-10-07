@@ -1,11 +1,7 @@
 # Roadmap do Sinalo
 
-**Versão atual:** 1.0.0 — série estável
-**Revisado em:** 24/09/2026
-
-**Implementado localmente, aguardando versão publicada:** tela de vídeo por link,
-separada da descoberta automática, com escolha entre os três programas, data de uso,
-qualidades MP4, fila única e retomada de arquivos parciais.
+**Versão atual:** 1.1.0 — série estável
+**Revisado em:** 07/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
@@ -36,8 +32,81 @@ Também estão concluídos:
 - Instalador self-contained para `win-x64`, atualização automática na abertura e
   durante a execução, e publicação de releases pelo GitHub Actions.
 - Guia do operador publicado no GitHub Pages.
+- Vídeo por link, separado da descoberta automática, com escolha entre os três
+  programas, data de uso, qualidades MP4, fila única de downloads e retomada de
+  arquivos parciais.
+
+## Implementado e validado — preservado em branch, sem release
+
+- **Controle completo do MPV:** painel de reprodução independente da navegação,
+  pausa/continuação, parada, reinício, posição, volume e mudo; estado e término
+  confirmados por IPC, histórico após carregamento e coordenação com apresentação.
+  A base da fila foi entregue, mas a fila automática continua fora desta etapa.
+  O usuário confirmou em 07/10/2026 que o teste realizado funcionou. A validação
+  automatizada passou com 288 testes, 86,28% de linhas e 75,72% de branches.
+  Implementação, testes, notas em desenvolvimento e ajustes do guia estão na
+  branch [`feat/controle-completo-mpv`](https://github.com/fabriciosenadev/sinalo/tree/feat/controle-completo-mpv).
+  Por decisão do usuário, a publicação foi adiada, sem nova versão definida.
+  O código não foi integrado à `main`; nesta branch principal permanece apenas
+  este registro do roadmap. Não criar tag/release nem incluir o recurso em
+  versões da `main` até autorização para integrar a branch.
+  Antes da publicação futura, confirmar os cenários de dois monitores,
+  computador com HD e instalação/atualização que não tenham sido cobertos pelo
+  teste informado. Spec: `Sinalo-specs/controle-completo-mpv.md`.
 
 ## Melhorias futuras
+
+### Organização e reprodução completas inspiradas no MidiaDeck — implementação grande, por etapas
+
+O Sinalo já tem catálogo SQLite de vídeos offline, três programas de origem,
+MPV persistente, escolha de monitor, fallback para VLC e uma programação simples
+em memória. Esses componentes serão preservados. A fila de sincronização atual
+é exclusiva de descoberta/download: não deve ser reaproveitada como fila de
+reprodução. A evolução abaixo deve manter os vídeos existentes, as configurações
+de saída e o funcionamento offline das instalações atuais.
+
+1. **Biblioteca geral e importação local — base, prioridade alta.** Ampliar o
+   catálogo para vídeos, áudios e imagens adicionados pelo operador, mantendo
+   os três programas como origem/atributo dos vídeos atuais. Definir e mostrar
+   se cada importação referencia o arquivo original ou copia para o conteúdo
+   gerenciado; detectar arquivos movidos, ausentes ou inválidos. Preservar IDs,
+   caminhos, fixação e histórico de reprodução já gravados no SQLite.
+   Spec: `Sinalo-specs/biblioteca-geral-importacao-local.md`. A primeira entrega
+   cobre vídeos e usa a reprodução atual, sem depender do controle completo do
+   MPV; áudio e imagem tornam-se operacionais nos ciclos dos serviços dedicados.
+2. **Coletâneas e operação persistente — prioridade alta.** Permitir coletâneas
+   criadas pelo usuário, independentes dos programas de origem, com busca,
+   filtros e ordenação. Criar uma operação global e ordenável de itens preparados,
+   admitindo o mesmo vídeo mais de uma vez. Migrar a programação atual, hoje
+   apenas em memória, para esse modelo sem duplicar os arquivos físicos.
+3. **Controle completo do player — implementado e validado em branch.** Base de
+   controle concluída em `feat/controle-completo-mpv`; integração e publicação
+   adiadas por decisão do usuário, conforme seção acima.
+4. **Fila de reprodução separada — prioridade alta, depende do player.** Ao
+   implementar, trabalhar sobre a branch do controle ou integrar essa base com
+   autorização; os contratos novos ainda não estão disponíveis na `main`. Salvar
+   ordem, destino, item atual e estado da fila; oferecer modo manual e automático.
+   Avançar automaticamente apenas após término confirmado de mídia iniciada pela
+   fila. Validar o arquivo local antes de cada reprodução; imagens devem ficar
+   visíveis até uma ação explícita, não avançar como vídeos temporizados.
+5. **Roteiro de evento em blocos — prioridade média, depende da biblioteca e da
+   reprodução.** Criar eventos, blocos e itens ordenáveis que referenciem mídias
+   da biblioteca e ferramentas já existentes (cronômetros e sorteio). Acrescentar
+   tipos externos, como PDF, apresentação, site e links, por adaptadores próprios,
+   sem tratá-los artificialmente como vídeos. Distinguir o roteiro completo da
+   operação rápida e da fila que está efetivamente em execução.
+6. **Paridade avançada — prioridade condicionada, após o núcleo.** Adicionar
+   serviço dedicado para áudio, visualizador persistente de imagens e importação/
+   exportação portátil de coletâneas com validação de integridade. Avaliar duas
+   saídas simultâneas de vídeo somente após medir CPU, memória e disco no
+   computador da igreja; duas instâncias do MPV não são requisito da reprodução
+   normal em uma tela.
+
+Em cada etapa, criar migrações SQLite reversíveis quando possível, testes
+unitários/de integração/de ponta a ponta e validação manual em computador lento.
+Não alterar a regra de que só arquivos locais completos e validados aparecem
+como prontos para uso offline. A implementação deve preservar a separação
+`App -> Application -> Domain`, com `Infrastructure` implementando os contratos.
 
 ### Dependências de mídia — prioridade média
 
