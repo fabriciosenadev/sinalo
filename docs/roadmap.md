@@ -46,6 +46,10 @@ Também estão concluídos:
   automatizada passou com 288 testes, 86,28% de linhas e 75,72% de branches.
   Implementação, testes, notas em desenvolvimento e ajustes do guia estão na
   branch [`feat/controle-completo-mpv`](https://github.com/fabriciosenadev/sinalo/tree/feat/controle-completo-mpv).
+  **Envio remoto pendente:** a branch e os commits estão salvos localmente.
+  Em 07/10/2026, o GitHub rejeitou os pushes da branch e do roadmap da `main`
+  com `Internal Server Error`; repetir os envios sem force push quando o serviço
+  aceitar novamente. O link acima identifica o destino remoto planejado.
   Por decisão do usuário, a publicação foi adiada, sem nova versão definida.
   O código não foi integrado à `main`; nesta branch principal permanece apenas
   este registro do roadmap. Não criar tag/release nem incluir o recurso em
