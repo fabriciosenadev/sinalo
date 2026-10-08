@@ -75,6 +75,7 @@ public sealed class PlaybackPanelTests
                 var encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 var destination = Path.Combine(root, "TestResults", $"playback-panel-{(dark ? "dark" : "light")}.png");
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 using var output = File.Create(destination);
                 encoder.Save(output);
             }

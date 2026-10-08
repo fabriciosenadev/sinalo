@@ -16,6 +16,17 @@ Os testes ficam em `tests/Sinalo.Tests/Unit`, `Integration` e `EndToEnd`. Cada t
 
 ## Execução local
 
+Em um checkout novo, prepare as ferramentas de mídia antes de compilar/testar:
+
+```powershell
+.\eng\prepare-video-download-tools.ps1
+```
+
+O CI executa essa preparação antes dos testes. Os downloads usam versões fixadas
+e SHA-256; os testes de MPV geram um MP4 sintético local com FFmpeg, sem buscar
+vídeos externos. O MPV é distribuído no repositório. Os testes que geram capturas
+criam a pasta de destino, sem depender de uma execução anterior.
+
 ```powershell
 .\eng\test-coverage.ps1
 ```
