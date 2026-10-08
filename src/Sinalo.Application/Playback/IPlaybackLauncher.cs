@@ -2,7 +2,7 @@ using Sinalo.Application.Monitors;
 
 namespace Sinalo.Application.Playback;
 
-public sealed record PlaybackLaunchResult(bool Started, string PlayerName, string Message);
+public sealed record PlaybackLaunchResult(bool Started, string PlayerName, string Message, bool AllowsFallback = true);
 
 public sealed record PlaybackLaunchOptions
 {
@@ -24,6 +24,8 @@ public sealed record PlaybackLaunchOptions
     }
 
     public int FullscreenScreenNumber { get; }
+    public string? ContentId { get; init; }
+    public string? Title { get; init; }
     public string? MonitorKey { get; }
     public string? DisplayName { get; }
     public int? BoundsX { get; }

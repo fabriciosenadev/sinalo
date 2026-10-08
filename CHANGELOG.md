@@ -4,6 +4,25 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## Em desenvolvimento
+
+### Novo
+
+- Controle de vídeos na área **Reprodução**: pausar/continuar, parar, reiniciar,
+  avançar para uma posição, ajustar volume e silenciar, com título, tempo e tela
+  do vídeo que está efetivamente em reprodução.
+- O painel acompanha o estado confirmado pelo MPV, inclusive encerramento e
+  falhas. Pausar, buscar e reiniciar não contam como novas reproduções.
+- Abrir a apresentação na mesma saída interrompe o vídeo pelo MPV. Quando um
+  player externo estiver ativo, o Sinalo informa a necessidade de fechá-lo.
+
+### Melhorado
+
+- Comandos por IPC confirmados e encerramento limitado no tempo. O MPV continua
+  aquecido entre vídeos; a contingência para VLC permanece para falhas de início,
+  sem abrir outro player em resposta a erros do arquivo ou durante a reprodução.
+- Controles e barras de posição/volume compatíveis com os temas claro e escuro.
+
 ## 1.1.0 - 04/10/2026
 
 ### Novo

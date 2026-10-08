@@ -55,6 +55,8 @@ public partial class MainWindow : Window
     public ILinkedVideoService? LinkedVideoService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public IAsyncDisposable? PlaybackRuntime { get; init; }
+    public static readonly DependencyProperty PlaybackProperty = DependencyProperty.Register(nameof(Playback), typeof(PlaybackViewModel), typeof(MainWindow));
+    public PlaybackViewModel? Playback { get => (PlaybackViewModel?)GetValue(PlaybackProperty); init => SetValue(PlaybackProperty, value); }
     public SynchronizationQueue? SynchronizationQueue
     {
         get => _synchronizationQueue;
@@ -79,6 +81,7 @@ public partial class MainWindow : Window
             _updateCheckTimer.Stop();
             _updateCheckCancellation.Cancel();
             WorshipTimerAudioPlayer?.Stop();
+            Playback?.Dispose();
         };
     }
 
@@ -533,6 +536,16 @@ public partial class MainWindow : Window
         await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey));
     }
 
+    private void VideoSeek_Begin(object sender, System.Windows.Input.MouseButtonEventArgs e) => Playback?.BeginSeek();
+    private async void VideoSeek_Commit(object sender, System.Windows.Input.MouseButtonEventArgs e) { if (Playback is not null) await Playback.CommitSeekAsync(); }
+    private void VideoSeek_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) { if (IsPlaybackAdjustmentKey(e.Key)) Playback?.BeginSeek(); }
+    private async void VideoSeek_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) { if (Playback is not null && IsPlaybackAdjustmentKey(e.Key)) await Playback.CommitSeekAsync(); }
+    private async void VideoVolume_Commit(object sender, System.Windows.Input.MouseButtonEventArgs e) { if (Playback is not null) await Playback.CommitVolumeAsync(); }
+    private void VideoVolume_Begin(object sender, System.Windows.Input.MouseButtonEventArgs e) => Playback?.BeginVolume();
+    private void VideoVolume_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) { if (IsPlaybackAdjustmentKey(e.Key)) Playback?.BeginVolume(); }
+    private async void VideoVolume_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) { if (Playback is not null && IsPlaybackAdjustmentKey(e.Key)) await Playback.CommitVolumeAsync(); }
+    private static bool IsPlaybackAdjustmentKey(System.Windows.Input.Key key) => key is System.Windows.Input.Key.Left or System.Windows.Input.Key.Right or System.Windows.Input.Key.Up or System.Windows.Input.Key.Down or System.Windows.Input.Key.Home or System.Windows.Input.Key.End or System.Windows.Input.Key.PageUp or System.Windows.Input.Key.PageDown;
+
     private async void CatalogItem_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (PlaybackService is null || DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: CatalogCard item }) return;
@@ -567,9 +580,14 @@ public partial class MainWindow : Window
             launchOptions = new PlaybackLaunchOptions(output);
         }
 
-        var result = await PlaybackService.PlayAsync(item.Id, launchOptions);
-        viewModel.OperationMessage = result.Message;
-        if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
+        try
+        {
+            var result = await PlaybackService.PlayAsync(item.Id, launchOptions);
+            viewModel.OperationMessage = result.Message;
+            if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
+        }
+        catch (OperationCanceledException) { viewModel.OperationMessage = "Reprodução cancelada."; }
+        catch (Exception exception) { viewModel.OperationMessage = $"Não foi possível reproduzir o vídeo: {exception.Message}"; }
     }
 
     private async void TestPresentation_Click(object sender, RoutedEventArgs e)
