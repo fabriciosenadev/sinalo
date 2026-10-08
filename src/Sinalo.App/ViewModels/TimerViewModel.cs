@@ -34,7 +34,7 @@ public sealed partial class TimerViewModel : ObservableObject
     [ObservableProperty] private bool isCountdown;
 
     public TimerConfiguration Configuration => new(SelectedDirection.Value, ParseDuration(CountdownDurationText), SelectedFormat.Value);
-    public string StartPauseLabel => IsRunning ? "Pausar" : "Iniciar";
+    public string StartPauseLabel => IsRunning ? "Pausar" : StateLabel == "Pausado" ? "Continuar" : "Iniciar";
 
     public void ApplyConfiguration()
     {

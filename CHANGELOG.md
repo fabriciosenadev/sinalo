@@ -4,6 +4,34 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## Em desenvolvimento
+
+### Melhorias
+
+- Navegação com identificação da tela ativa e espaço central dedicado à tarefa.
+  As ferramentas deixam de competir com uma lateral de ações de vídeos.
+- Programas com pesquisa identificada, títulos legíveis e detalhes contextuais;
+  reprodução explícita informa a tela de saída. Ações secundárias ficam em
+  **Mais opções**; em janelas compactas, a escolha de saída pode ser expandida.
+- **Downloads** acompanha pedidos e diagnósticos em qualquer tela. Progresso
+  desconhecido não é apresentado como uma porcentagem de download.
+- Vídeo por link organizado em consulta, qualidade e destino, com ação final
+  acessível sem esticar a janela.
+- Cronômetros e sorteio reorganizados; áudio ativo oferece **Parar áudio**
+  mesmo ao mudar de tela. A apresentação mantém a cena aberta ao navegar.
+- Configurações separadas em Aparência, Armazenamento e Programas de vídeo,
+  com modos de busca explícitos e manutenção das escolhas antigas.
+- Confirmação antes de transferir conteúdo, descartar alterações, reiniciar
+  sorteio ou remover participantes; feedback de validação no formulário.
+- Programação desta sessão em painel próprio, com posições e ações nomeadas.
+  Continua apenas em memória, sem reprodução automática.
+- Temas claro e escuro consistentes em listas, controles, rolagem e diálogos;
+  Novidades destaca a versão instalada e recolhe o histórico anterior.
+
+Esta interface está em validação na branch `feat/experiencia-usuario`.
+Não integra a Biblioteca geral nem o controle completo do MPV e ainda não
+foi publicada em uma nova versão.
+
 ## 1.1.0 - 04/10/2026
 
 ### Novo

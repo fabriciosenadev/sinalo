@@ -29,3 +29,21 @@ O script executa os testes, gera `TestResults\coverage.cobertura.xml` e falha qu
 - Todo bug corrigido deve receber um teste que reproduza a falha anterior.
 - Recursos externos, como HTTP, VLC e FFmpeg, devem ser encapsulados por contratos para permitirem doubles de teste.
 - A fila de sincronizacao deve ter testes para serializacao, deduplicacao, cancelamento e continuidade apos falha; ao menos um teste de integracao deve confirmar que fontes diferentes nao executam downloads simultaneos.
+
+## UX/UI — branch de experiência
+
+`ExperienceLayoutTests` instancia e renderiza as telas WPF em STA nos dois temas,
+1280×720, 1920×1080 e janela mínima; escalas por LayoutTransform exercitam
+restrições de espaço, mas não substituem DPI real. As imagens são geradas em
+`TestResults/ux-ui` (não versionadas).
+
+A suíte verifica espaço útil do catálogo, ação final do link, regras antigas,
+validação de campos, encaminhamento de comandos, áudio global, thumb/track da
+rolagem e preservação da cena ao navegar. `WorkspaceExperienceTests` cobre
+contexto, seleção, programação e novidades. Rede, áudio e saída físicos são
+substituídos por doubles nos cenários funcionais apropriados.
+
+Conferir em uso real: DPI do Windows, teclado/leitor de tela, monitor principal
+e projetor, atualização instalada e máquina com HD. Ver roteiro em
+[execução UX/UI](ux-ui/execucao.md). Não transformar testes simulados em aceite
+manual nem reduzir a meta de 75% para acomodar o redesign.

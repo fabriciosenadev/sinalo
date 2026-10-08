@@ -25,6 +25,10 @@ public sealed partial class RaffleViewModel : ObservableObject
     public ObservableCollection<RaffleParticipant> Available { get; } = [];
     public ObservableCollection<RaffleParticipant> Drawn { get; } = [];
     public RaffleConfiguration Configuration => new(TimeSpan.FromSeconds(ParseSeconds()));
+    public bool CanStart => !IsAnimating && AvailableCount > 0;
+    public bool CanEdit => !IsAnimating;
+    partial void OnIsAnimatingChanged(bool value) { OnPropertyChanged(nameof(CanStart)); OnPropertyChanged(nameof(CanEdit)); }
+    partial void OnAvailableCountChanged(int value) => OnPropertyChanged(nameof(CanStart));
     public void AddName() { _session.AddName(NameToAdd); NameToAdd = string.Empty; Refresh(); }
     public void AddRange() { _session.AddRange(int.Parse(RangeStart), string.IsNullOrWhiteSpace(RangeEnd) ? int.Parse(RangeStart) : int.Parse(RangeEnd)); RangeStart = RangeEnd = string.Empty; Refresh(); }
     public void Start() { _session.SetAnimationDuration(Configuration.AnimationDuration); _session.Start(); Refresh(); }
