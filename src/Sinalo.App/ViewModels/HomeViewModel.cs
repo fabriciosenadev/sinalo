@@ -69,6 +69,7 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private bool isRaffleWorkspace;
     [ObservableProperty] private bool isWorshipTimerWorkspace;
     [ObservableProperty] private bool isLinkedVideoWorkspace;
+    [ObservableProperty] private bool isGeneralLibraryWorkspace;
     [ObservableProperty] private string linkedVideoUrl = string.Empty;
     [ObservableProperty] private string linkedVideoStatus = "Cole o link de um vídeo para consultar as qualidades MP4 disponíveis.";
     [ObservableProperty] private string linkedVideoDateText = string.Empty;
@@ -107,7 +108,7 @@ public sealed partial class HomeViewModel : ObservableObject
     public RaffleViewModel Raffle { get; }
     public WorshipTimerViewModel WorshipTimer { get; }
     public string ApplicationVersion => $"Versão {typeof(HomeViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";
-    public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace && !IsWorshipTimerWorkspace && !IsLinkedVideoWorkspace;
+    public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace && !IsWorshipTimerWorkspace && !IsLinkedVideoWorkspace && !IsGeneralLibraryWorkspace;
     public bool CanQueueLinkedVideo => !IsInspectingLinkedVideo && _inspectedLinkedVideo is not null &&
         SelectedLinkedVideoFormat is not null && SelectedLinkedVideoDestination is not null &&
         DateOnly.TryParseExact(LinkedVideoDateText, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
@@ -133,6 +134,7 @@ public sealed partial class HomeViewModel : ObservableObject
 
     partial void OnSelectedSourceChanged(string value)
     {
+        IsGeneralLibraryWorkspace = false;
         IsTimerWorkspace = false;
         IsRaffleWorkspace = false;
         IsWorshipTimerWorkspace = false;
@@ -148,15 +150,17 @@ public sealed partial class HomeViewModel : ObservableObject
     partial void OnIsRaffleWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
     partial void OnIsWorshipTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
     partial void OnIsLinkedVideoWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
+    partial void OnIsGeneralLibraryWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
+    public void SelectGeneralLibraryWorkspace() { IsTimerWorkspace = false; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; IsGeneralLibraryWorkspace = true; }
     partial void OnLinkedVideoUrlChanged(string value) { ClearInspectedLinkedVideo(); LinkedVideoStatus = "Cole o link de um vídeo para consultar as qualidades MP4 disponíveis."; OnPropertyChanged(nameof(CanInspectLinkedVideo)); }
     partial void OnLinkedVideoDateTextChanged(string value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
     partial void OnSelectedLinkedVideoDestinationChanged(LinkedVideoDestinationOption? value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
     partial void OnSelectedLinkedVideoFormatChanged(LinkedVideoFormat? value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
     partial void OnIsInspectingLinkedVideoChanged(bool value) { OnPropertyChanged(nameof(CanQueueLinkedVideo)); OnPropertyChanged(nameof(CanInspectLinkedVideo)); }
-    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
-    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
-    public void SelectWorshipTimerWorkspace() { IsWorshipTimerWorkspace = true; IsRaffleWorkspace = false; IsTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
-    public void SelectLinkedVideoWorkspace() { SelectedSource = "Todos"; IsLinkedVideoWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; }
+    public void SelectTimerWorkspace() { IsGeneralLibraryWorkspace = false; IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
+    public void SelectRaffleWorkspace() { IsGeneralLibraryWorkspace = false; IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
+    public void SelectWorshipTimerWorkspace() { IsGeneralLibraryWorkspace = false; IsWorshipTimerWorkspace = true; IsRaffleWorkspace = false; IsTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
+    public void SelectLinkedVideoWorkspace() { IsGeneralLibraryWorkspace = false; SelectedSource = "Todos"; IsLinkedVideoWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; }
     public void RestoreLinkedVideoState(HomeViewModel previous)
     {
         LinkedVideoUrl = previous.LinkedVideoUrl;

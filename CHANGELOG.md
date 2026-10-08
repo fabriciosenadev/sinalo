@@ -4,6 +4,23 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## Em desenvolvimento — ainda não publicado
+
+- Nova **Biblioteca de vídeos** reúne os vídeos dos programas e MP4 locais, com
+  pesquisa por nome/data, filtro de origem e ordenação.
+- Biblioteca organizada em **Vídeos** e **Importar vídeos**, com lista legível,
+  detalhes contextuais, seleção da tela de saída e acesso à fila de downloads.
+  A edição tem Salvar/Cancelar e protege alterações não salvas.
+- Importe arquivos ou pastas, incluindo subpastas. O padrão copia para o Sinalo;
+  opcionalmente, mantenha o arquivo no local original, que precisa continuar acessível.
+- Edite o nome exibido sem renomear arquivos; vídeos importados podem ter data
+  de uso opcional. Localize arquivos ausentes e reproduza na tela configurada.
+- Importações verificam espaço, permitem cancelamento e recuperam cópias
+  interrompidas. A limpeza automática não apaga vídeos importados.
+- Remover um importado preserva o arquivo por padrão; excluir uma cópia do
+  Sinalo exige confirmação. Arquivos originais referenciados não são apagados.
+- Entrega inicial restrita a vídeos MP4; áudio e imagens permanecem planejados.
+
 ## 1.1.0 - 04/10/2026
 
 ### Novo

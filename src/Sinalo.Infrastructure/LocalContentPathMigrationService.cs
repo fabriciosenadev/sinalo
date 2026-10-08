@@ -1,23 +1,38 @@
 using Sinalo.Application.Catalog;
 using Sinalo.Application.Storage;
+using Sinalo.Application.Library;
+using Sinalo.Application.Playback;
+using Sinalo.Domain;
 
 namespace Sinalo.Infrastructure;
 
 public sealed class LocalContentPathMigrationService(
     IContentPathConfigurationService configuration,
-    IContentCatalog catalog) : IContentPathMigrationService
+    IContentCatalog catalog, ILibraryRepository? library = null, ContentOperationGate? operations = null,
+    PlaybackActivityGate? activity = null) : IContentPathMigrationService
 {
-    public async Task MoveAsync(string newContentPath, CancellationToken cancellationToken = default)
+    public Task MoveAsync(string newContentPath, CancellationToken cancellationToken = default) => Task.Run(() => MoveCoreAsync(newContentPath, cancellationToken));
+    private async Task MoveCoreAsync(string newContentPath, CancellationToken cancellationToken)
     {
+        if (activity?.IsActive == true) throw new InvalidOperationException("Encerre a reprodução antes de mover o conteúdo.");
+        using var lease = operations is null ? null : await operations.EnterAsync(cancellationToken);
+        if (activity?.IsActive == true) throw new InvalidOperationException("Encerre a reprodução antes de mover o conteúdo.");
         var previousPath = Normalize(configuration.GetContentPath());
         var targetPath = Normalize(newContentPath);
         if (string.Equals(previousPath, targetPath, StringComparison.OrdinalIgnoreCase)) return;
         if (targetPath.StartsWith(previousPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("A nova pasta não pode ficar dentro da pasta de conteúdo atual.");
 
-        var files = Directory.Exists(previousPath)
-            ? Directory.EnumerateFiles(previousPath, "*", SearchOption.AllDirectories).ToArray()
+        var candidates = Directory.Exists(previousPath)
+            ? Directory.EnumerateFiles(previousPath, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = false }).ToArray()
             : [];
+        var files = new List<string>();
+        foreach (var file in candidates)
+        {
+            if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0 || Path.GetRelativePath(previousPath, file).Split(Path.DirectorySeparatorChar).Any(part => part is ".incoming" or ".sinalo-imports")) continue;
+            if (library is not null && await library.FindByPathAsync(file, cancellationToken) is { IsImported: true, StorageMode: MediaStorageMode.Referenced }) continue;
+            files.Add(file);
+        }
         EnsureAvailableSpace(targetPath, files);
 
         foreach (var sourcePath in files)
@@ -28,23 +43,43 @@ public sealed class LocalContentPathMigrationService(
             Directory.CreateDirectory(Path.GetDirectoryName(targetFilePath)!);
             if (File.Exists(targetFilePath))
             {
-                if (new FileInfo(sourcePath).Length != new FileInfo(targetFilePath).Length)
+                var gate = activity ?? new PlaybackActivityGate();
+                if (new FileInfo(sourcePath).Length != new FileInfo(targetFilePath).Length ||
+                    await LocalLibraryImportService.CopyVerifiedAsync(sourcePath, null, gate, cancellationToken) != await LocalLibraryImportService.CopyVerifiedAsync(targetFilePath, null, gate, cancellationToken))
                     throw new IOException($"Já existe um arquivo diferente em '{targetFilePath}'. Escolha outra pasta ou remova o arquivo conflitante.");
                 continue;
             }
 
-            await CopyAsync(sourcePath, targetFilePath, cancellationToken);
+            var temporary = targetFilePath + $".migration-{Guid.NewGuid():N}.part";
+            try
+            {
+                await LocalLibraryImportService.CopyVerifiedAsync(sourcePath, temporary, activity ?? new PlaybackActivityGate(), cancellationToken);
+                File.Move(temporary, targetFilePath, false);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
 
-        await catalog.RelocateLocalPathsAsync(previousPath, targetPath, cancellationToken);
-        configuration.SaveContentPath(targetPath);
+        try
+        {
+            await catalog.RelocateLocalPathsAsync(previousPath, targetPath, cancellationToken);
+            if (library is not null) await library.RelocateAsync(previousPath, targetPath, cancellationToken);
+            configuration.SaveContentPath(targetPath);
+        }
+        catch
+        {
+            await catalog.RelocateLocalPathsAsync(targetPath, previousPath, CancellationToken.None);
+            if (library is not null) await library.RelocateAsync(targetPath, previousPath, CancellationToken.None);
+            throw;
+        }
 
         foreach (var sourcePath in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                if (File.Exists(sourcePath)) File.Delete(sourcePath);
+                var destination = Path.Combine(targetPath, Path.GetRelativePath(previousPath, sourcePath));
+                if (File.Exists(sourcePath) && await LocalLibraryImportService.CopyVerifiedAsync(sourcePath, null, activity ?? new PlaybackActivityGate(), cancellationToken) ==
+                    await LocalLibraryImportService.CopyVerifiedAsync(destination, null, activity ?? new PlaybackActivityGate(), cancellationToken)) File.Delete(sourcePath);
             }
             catch (IOException)
             {
@@ -54,13 +89,6 @@ public sealed class LocalContentPathMigrationService(
         }
 
         DeleteEmptyDirectories(previousPath);
-    }
-
-    private static async Task CopyAsync(string sourcePath, string targetPath, CancellationToken cancellationToken)
-    {
-        await using var source = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, useAsync: true);
-        await using var target = new FileStream(targetPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, useAsync: true);
-        await source.CopyToAsync(target, cancellationToken);
     }
 
     private static void EnsureAvailableSpace(string targetPath, IReadOnlyList<string> files)
@@ -77,7 +105,7 @@ public sealed class LocalContentPathMigrationService(
     private static void DeleteEmptyDirectories(string rootPath)
     {
         if (!Directory.Exists(rootPath)) return;
-        foreach (var directory in Directory.EnumerateDirectories(rootPath, "*", SearchOption.AllDirectories).OrderByDescending(path => path.Length))
+        foreach (var directory in Directory.EnumerateDirectories(rootPath, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }).OrderByDescending(path => path.Length))
             if (!Directory.EnumerateFileSystemEntries(directory).Any()) Directory.Delete(directory);
     }
 

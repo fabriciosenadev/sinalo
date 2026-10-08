@@ -4,7 +4,7 @@ using Sinalo.Application.Storage;
 using Sinalo.Application.Synchronization;
 using Sinalo.Domain;
 namespace Sinalo.Infrastructure;
-public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloPathService paths, IContentStorageSpaceService? storageSpaceService = null) : IContentDownloadService
+public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloPathService paths, IContentStorageSpaceService? storageSpaceService = null, Sinalo.Application.Playback.PlaybackActivityGate? activity = null) : IContentDownloadService
 {
     private const long MinimumFreeBytesDuringDownload = 32L * 1024 * 1024;
     public async Task<ContentItem> DownloadAsync(ContentItem item, IProgress<DownloadProgress>? progress = null, CancellationToken cancellationToken = default)
@@ -33,6 +33,7 @@ public sealed class OfficialMediaDownloadService(HttpClient httpClient, ISinaloP
                 int count;
                 while ((count = await input.ReadAsync(buffer, cancellationToken)) > 0)
                 {
+                    if (activity is not null) await activity.WaitUntilIdleAsync(cancellationToken);
                     if (storageSpaceService is not null && !await storageSpaceService.HasMinimumFreeSpaceAsync(p.TempDownloadsPath, MinimumFreeBytesDuringDownload, cancellationToken))
                     {
                         throw new StorageSpaceCriticalException();

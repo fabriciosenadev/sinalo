@@ -7,7 +7,7 @@ namespace Sinalo.Infrastructure;
 public sealed class LocalContentCleanupService(
     IContentCatalog catalog,
     ISinaloPathService paths,
-    IContentCleanupConfigurationService configurationService) : IContentCleanupService
+    IContentCleanupConfigurationService configurationService, Sinalo.Application.Library.ILibraryRepository? library = null) : IContentCleanupService
 {
     public async Task<ContentCleanupResult> CleanIfDueAsync(DateOnly today, CancellationToken cancellationToken = default)
     {
@@ -29,6 +29,7 @@ public sealed class LocalContentCleanupService(
 
             var filePath = Path.GetFullPath(item.LocalPath);
             if (!filePath.StartsWith(root, StringComparison.OrdinalIgnoreCase)) continue;
+            if (library is not null && await library.CountPathReferencesAsync(filePath, cancellationToken) > 1) continue;
 
             if (File.Exists(filePath))
             {

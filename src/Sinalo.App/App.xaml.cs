@@ -12,6 +12,7 @@ using Sinalo.Application.WorshipTimer;
 using Sinalo.Application.Raffle;
 using Sinalo.Application.Storage;
 using Sinalo.Infrastructure;
+using Sinalo.Application.Library;
 
 namespace Sinalo.App;
 
@@ -45,7 +46,13 @@ public partial class App : System.Windows.Application
             .Select(output => new PlaybackScreenOption(output.DisplayName, output.ScreenNumber, output.IsPrimary, output.MonitorKey))
             .ToArray();
         var contentCatalog = new SqliteContentCatalog(pathService);
-        var contentCleanupService = new LocalContentCleanupService(contentCatalog, pathService, configurationService);
+        var libraryRepository = new SqliteLibraryRepository(pathService);
+        var contentOperations = new ContentOperationGate();
+        var playbackGate = new PlaybackActivityGate();
+        var mediaValidator = new Mp4LibraryValidator(playbackGate);
+        var libraryImporter = new LocalLibraryImportService(pathService, libraryRepository, mediaValidator, mediaValidator, contentOperations, playbackGate);
+        var libraryFiles = new LocalLibraryFileService(libraryRepository, pathService, mediaValidator, contentOperations, playbackGate);
+        var contentCleanupService = new LocalContentCleanupService(contentCatalog, pathService, configurationService, libraryRepository);
         try { await contentCleanupService.CleanIfDueAsync(DateOnly.FromDateTime(DateTime.Today)); }
         catch { /* A limpeza não deve impedir a abertura do Sinalo. */ }
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36");
@@ -56,24 +63,36 @@ public partial class App : System.Windows.Application
             new HealthDiscoveryConnector(_httpClient)
         ], contentCatalog);
         var storageSpaceService = new ContentStorageSpaceService(_httpClient, pathService);
-        var downloader = new OfficialMediaDownloadService(_httpClient, pathService, storageSpaceService);
+        var downloader = new OfficialMediaDownloadService(_httpClient, pathService, storageSpaceService, playbackGate);
         var synchronizationService = new ProvaiEVedeSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService);
         var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService);
 
         var mpvPlaybackLauncher = new MpvPlaybackLauncher();
-        var playbackGate = new PlaybackActivityGate();
         mpvPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
         var windowsPlaybackLauncher = new WindowsPlaybackLauncher();
         windowsPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
         var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory());
         _presentationOutputService = presentationOutputService;
-        var mainWindow = new MainWindow
+        MainWindow? mainWindow = null;
+        var launcher = new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher);
+        var libraryViewModel = new LibraryViewModel(libraryRepository, libraryImporter, libraryFiles,
+            new LibraryPlaybackService(libraryRepository, contentCatalog, launcher, mediaValidator), contentCatalog,
+            new LocalContentDeletionService(contentCatalog, pathService, playbackGate, contentOperations, libraryRepository),
+            resolveOutput: async () =>
+            {
+                if (mainWindow?.DataContext is not HomeViewModel { SelectedPlaybackScreen: { } screen }) return null;
+                var output = OutputSelectionResolver.Resolve(new PlaybackConfiguration(screen.ScreenNumber, screen.MonitorKey), await monitorService.GetOutputsAsync());
+                return output is null ? null : new PlaybackLaunchOptions(output);
+            }, presentationOpen: () => presentationOutputService.IsOpen);
+        mainWindow = new MainWindow
         {
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel, worshipTimer: worshipTimerViewModel),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
-            ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog),
+            ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog, libraryRepository, contentOperations, playbackGate),
+            Library = libraryViewModel,
+            ContentOperations = contentOperations,
             ApplicationUpdateService = new GitHubApplicationUpdateService(_httpClient, pathService),
             UpdateInstallerLauncher = new WindowsUpdateInstallerLauncher(pathService),
             ThemePreferenceService = configurationService,
@@ -89,7 +108,7 @@ public partial class App : System.Windows.Application
             RaffleConfigurationService = configurationService,
             DiscoveryService = discoveryService,
             ContentCatalog = contentCatalog,
-            ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService),
+            ContentDeletionService = new LocalContentDeletionService(contentCatalog, pathService, playbackGate, contentOperations, libraryRepository),
             ContentStorageSpaceService = storageSpaceService,
             SynchronizationDiagnosticStore = new LocalSynchronizationDiagnosticStore(pathService),
             ProvaiEVedeSynchronizationService = synchronizationService,
@@ -97,13 +116,14 @@ public partial class App : System.Windows.Application
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
             ManualSynchronizationService = new ManualContentSynchronizationService(contentCatalog, downloader, storageSpaceService),
             LinkedVideoService = new LinkedVideoService(pathService, playbackGate: playbackGate),
-            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher)),
+            PlaybackService = new PlaybackService(contentCatalog, launcher),
             PlaybackRuntime = mpvPlaybackLauncher
         };
 
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
 
         mainWindow.Show();
+        _ = Task.Run(async () => { try { await libraryImporter.RecoverAsync(); } catch { /* Retry recovery before the next import. */ } });
         _themeService.ApplyCurrentTheme();
         _ = mainWindow.CheckForUpdateAsync();
         mainWindow.StartPeriodicUpdateChecks();

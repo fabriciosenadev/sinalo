@@ -105,6 +105,32 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
         await AddColumnIfMissingAsync(connection, "playback_configuration", "fullscreen_monitor_key", "TEXT NULL", cancellationToken);
         await AddColumnIfMissingAsync(connection, "worship_timer_configuration", "selected_audio_cue", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await AddColumnIfMissingAsync(connection, "worship_timer_configuration", "audio_volume", "REAL NOT NULL DEFAULT 0.8", cancellationToken);
+        var library = connection.CreateCommand();
+        library.CommandText = """
+            CREATE TABLE IF NOT EXISTS library_media (
+                id TEXT PRIMARY KEY NOT NULL, content_item_id TEXT UNIQUE NULL,
+                display_name TEXT NULL, usage_date TEXT NULL, original_path TEXT NULL,
+                local_path TEXT NULL, storage_mode INTEGER NOT NULL DEFAULT 0,
+                availability INTEGER NOT NULL DEFAULT 0, added_at_utc TEXT NOT NULL,
+                size_bytes INTEGER NULL, sha256 TEXT NULL, play_count INTEGER NOT NULL DEFAULT 0, media_type INTEGER NOT NULL DEFAULT 0,
+                first_played_at_utc TEXT NULL, last_played_at_utc TEXT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_library_original ON library_media(original_path COLLATE NOCASE) WHERE content_item_id IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_library_local ON library_media(local_path COLLATE NOCASE);
+            INSERT OR IGNORE INTO library_media(id,content_item_id,added_at_utc)
+              SELECT id,id,updated_at_utc FROM content_items WHERE local_path IS NOT NULL;
+            DROP TRIGGER IF EXISTS library_content_insert;
+            DROP TRIGGER IF EXISTS library_content_update;
+            CREATE TRIGGER library_content_insert AFTER INSERT ON content_items
+              WHEN NEW.local_path IS NOT NULL BEGIN
+              INSERT INTO library_media(id,content_item_id,added_at_utc) SELECT NEW.id,NEW.id,NEW.updated_at_utc
+              WHERE NOT EXISTS(SELECT 1 FROM library_media WHERE id=NEW.id OR content_item_id=NEW.id); END;
+            CREATE TRIGGER library_content_update AFTER UPDATE ON content_items
+              WHEN NEW.local_path IS NOT NULL BEGIN
+              INSERT INTO library_media(id,content_item_id,added_at_utc) SELECT NEW.id,NEW.id,NEW.updated_at_utc
+              WHERE NOT EXISTS(SELECT 1 FROM library_media WHERE id=NEW.id OR content_item_id=NEW.id); END;
+            """;
+        await library.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static async Task AddColumnIfMissingAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken)
