@@ -57,6 +57,22 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 - Vídeos adicionados manualmente por link são fixados por padrão e identificados pelo programa e ID estável do vídeo para evitar download duplicado no mesmo destino. O identificador legado `health-youtube-<id>` permanece válido para Minuto de Saúde.
 - O trimestre anterior pode ser limpo somente apos sincronizacao completa do novo, respeitando o periodo de tolerancia configurado.
 
+## Biblioteca de vídeos (próxima entrega)
+
+- Vídeos importados têm ID próprio, origem local, tipo MP4, disponibilidade,
+  histórico independente e data opcional; não recebem programa ou data fictícios.
+- Vídeos sincronizados mantêm ID e histórico originais; o nome personalizado é
+  uma sobreposição de exibição, preservada quando o programa é atualizado.
+- Cópias gerenciadas ficam em `content/imported/<id>/`; referências continuam no
+  caminho original, inclusive quando a pasta gerenciada muda.
+- Caminhos repetidos não duplicam cadastros. Nomes iguais em pastas distintas
+  podem ser importados. Arquivos ausentes/inválidos não podem ser reproduzidos.
+- Limpeza automática aplica-se aos programas, nunca aos importados. Remoção de
+  cadastro preserva arquivos por padrão; exclusão explícita limita-se à cópia
+  gerenciada sem outra referência. O original referenciado não é apagado.
+- Áudio, imagens, organização em coletâneas e fila de reprodução são etapas
+  futuras, não funcionalidades desta entrega.
+
 ## Fila de sincronizacao
 
 - Um pedido pode estar `Waiting`, `Running`, `Completed`, `Failed` ou `Cancelled`.

@@ -194,6 +194,31 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
   a desconexao do monitor e verificada antes de abrir a apresentacao.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
+## Biblioteca local (implementação em branch, ainda não publicada)
+
+`LibraryMedia` é independente de `ContentSource`. `library_media` acrescenta
+metadados aos itens legados por vínculo único; caminho, histórico e fixação dos
+programas continuam em `content_items`. A migração é aditiva e idempotente.
+`ILibraryRepository`, classificador, validador e leitor de metadados têm contratos
+na Application, implementados na Infrastructure. `LibraryViewModel` é separado
+da Home e consulta páginas de 50 itens; a lista WPF é virtualizada.
+
+A biblioteca usa duas abas (Vídeos e Importar vídeos). Na consulta, detalhes
+contextuais ocupam uma coluna em áreas úteis >=1100 DIP, ou uma visão central
+nas menores. O botão de reprodução fica fixo; o conteúdo de detalhes tem altura
+útil e rolagem própria. A MainWindow libera a coluna da lateral e oculta a faixa
+de sábados somente nesse workspace, preservando o seletor de monitor existente.
+A fila segue acessível num diálogo ligado ao estado atual da Home. Layout não
+gera consultas nem hashes; edição e mensagens de importação/ações são separadas.
+
+Importação MP4 roda fora da UI, valida estrutura ISO BMFF, verifica hashes ao
+copiar e registra um diário privado para recuperar interrupções. Essa validação
+não promete decodificar todos os frames. Metadados técnicos opcionais não exigem
+FFmpeg/ffprobe. Um gate coordena importação, downloads e alterações de arquivos;
+blocos pesados aguardam a reprodução encerrar. A atualização cancela e aguarda
+a importação antes de encerrar. A reprodução usa os contratos atuais da main,
+sem importar a implementação de controle completo do MPV da outra branch.
+
 ## Fora do MVP
 
 - Login, usuarios e permissao por igreja.

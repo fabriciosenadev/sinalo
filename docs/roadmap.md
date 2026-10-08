@@ -38,6 +38,20 @@ Também estão concluídos:
 
 ## Implementado e validado — preservado em branch, sem release
 
+- **Biblioteca geral — primeira etapa implementada, validação manual pendente:**
+  branch `feat/biblioteca-geral-importacao-local`, baseada na `main`, independente
+  do controle completo do MPV. Importação MP4 por arquivo/pasta, cópia/referência,
+  pesquisa paginada, nome/data, localização de ausentes, histórico, exclusão
+  protegida, recuperação de interrupções e mudança da pasta gerenciada.
+  Testes automatizados incluem SQLite, arquivos reais e reprodução com MPV.
+  Validar temas, instalação legada, dois monitores, pendrive e computador com HD.
+  Sem release nesta etapa; áudio e imagens continuam pendentes.
+  Redesenho UX/UI implementado na mesma branch: duas abas, lista hierarquizada,
+  detalhes responsivos, edição protegida, tela de saída compartilhada e fila
+  acessível, sem ações de programa ou faixa de sábados ocupando a biblioteca.
+  Testes renderizam lista cheia nos temas claro/escuro e escalas 100/125/150%;
+  a aceitação visual do operador continua pendente.
+
 - **Controle completo do MPV:** painel de reprodução independente da navegação,
   pausa/continuação, parada, reinício, posição, volume e mudo; estado e término
   confirmados por IPC, histórico após carregamento e coordenação com apresentação.
@@ -69,7 +83,8 @@ em memória. Esses componentes serão preservados. A fila de sincronização atu
 reprodução. A evolução abaixo deve manter os vídeos existentes, as configurações
 de saída e o funcionamento offline das instalações atuais.
 
-1. **Biblioteca geral e importação local — base, prioridade alta.** Ampliar o
+1. **Biblioteca geral e importação local — vídeos implementados em branch;
+   expansão futura, prioridade alta.** Ampliar o
    catálogo para vídeos, áudios e imagens adicionados pelo operador, mantendo
    os três programas como origem/atributo dos vídeos atuais. Definir e mostrar
    se cada importação referencia o arquivo original ou copia para o conteúdo

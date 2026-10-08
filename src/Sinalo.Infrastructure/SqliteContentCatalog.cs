@@ -73,7 +73,7 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
     {
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT id, title, scheduled_date, page_url, sync_state, is_pinned, local_path, play_count, first_played_at_utc, last_played_at_utc FROM content_items WHERE source = $source ORDER BY scheduled_date;";
+        command.CommandText = "SELECT id, COALESCE((SELECT display_name FROM library_media WHERE content_item_id = content_items.id), title), scheduled_date, page_url, sync_state, is_pinned, local_path, play_count, first_played_at_utc, last_played_at_utc FROM content_items WHERE source = $source ORDER BY scheduled_date;";
         command.Parameters.AddWithValue("$source", (int)source);
         var items = new List<ContentItem>();
 
@@ -147,7 +147,7 @@ public sealed class SqliteContentCatalog(ISinaloPathService pathService) : ICont
         var newRoot = Path.GetFullPath(newContentPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         await using var connection = await OpenAsync(cancellationToken);
         var command = connection.CreateCommand();
-        command.CommandText = "UPDATE content_items SET local_path = $newRoot || substr(local_path, length($previousRoot) + 1) WHERE local_path IS NOT NULL AND substr(local_path, 1, length($previousRoot)) = $previousRoot;";
+        command.CommandText = "UPDATE content_items SET local_path = $newRoot || substr(local_path, length($previousRoot) + 1) WHERE local_path IS NOT NULL AND substr(local_path, 1, length($previousRoot) + 1) = ($previousRoot || char(92)) COLLATE NOCASE;";
         command.Parameters.AddWithValue("$previousRoot", previousRoot);
         command.Parameters.AddWithValue("$newRoot", newRoot);
         await command.ExecuteNonQueryAsync(cancellationToken);

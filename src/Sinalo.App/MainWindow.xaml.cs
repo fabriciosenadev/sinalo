@@ -55,6 +55,9 @@ public partial class MainWindow : Window
     public ILinkedVideoService? LinkedVideoService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public IAsyncDisposable? PlaybackRuntime { get; init; }
+    public ContentOperationGate? ContentOperations { get; init; }
+    public static readonly DependencyProperty LibraryProperty = DependencyProperty.Register(nameof(Library), typeof(LibraryViewModel), typeof(MainWindow));
+    public LibraryViewModel? Library { get => (LibraryViewModel?)GetValue(LibraryProperty); init => SetValue(LibraryProperty, value); }
     public SynchronizationQueue? SynchronizationQueue
     {
         get => _synchronizationQueue;
@@ -75,6 +78,7 @@ public partial class MainWindow : Window
         Closing += (_, _) => SynchronizationQueue?.CancelAll();
         Closed += (_, _) =>
         {
+            Library?.CancelImport();
             _timerRefresh.Stop();
             _updateCheckTimer.Stop();
             _updateCheckCancellation.Cancel();
@@ -165,9 +169,11 @@ public partial class MainWindow : Window
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async Task PrepareForShutdownAsync()
     {
+        Library?.CancelImport();
         _updateCheckTimer.Stop();
         _updateCheckCancellation.Cancel();
         SynchronizationQueue?.CancelAll();
+        if (Library is not null) await Library.WhenImportIdleAsync();
         if (SynchronizationQueue is not null)
         {
             try { await SynchronizationQueue.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10)); }
@@ -250,7 +256,7 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void LinkedVideoWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectLinkedVideoWorkspace();
+    private async void LinkedVideoWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectLinkedVideoWorkspace(); }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void InspectLinkedVideo_Click(object sender, RoutedEventArgs e)
@@ -344,6 +350,7 @@ public partial class MainWindow : Window
         IProgress<SynchronizationQueueProgress> queueProgress,
         CancellationToken cancellationToken)
     {
+        using var contentLease = ContentOperations is null ? null : await ContentOperations.EnterAsync(cancellationToken);
         if (DiscoveryService is null || ContentCatalog is null) throw new InvalidOperationException("Os serviços de sincronização não estão disponíveis.");
         if (request.LinkedVideo is { } linked)
         {
@@ -491,14 +498,22 @@ public partial class MainWindow : Window
         finally { SetIdle(); }
     }
 
-    private void SourceFilter_Click(object sender, RoutedEventArgs e)
+    private async void SourceFilter_Click(object sender, RoutedEventArgs e)
     {
+        if (!await CanLeaveLibraryAsync()) return;
+        if (DataContext is HomeViewModel home) home.IsGeneralLibraryWorkspace = false;
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: string filter }) viewModel.SelectedSource = filter;
+        if (ConfigurationService is not null && DataContext is HomeViewModel current)
+        {
+            try { ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), current.OperationMessage); }
+            catch (Exception exception) { current.OperationMessage = exception.Message; }
+        }
     }
 
-    private void TimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectTimerWorkspace();
-    private void WorshipTimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectWorshipTimerWorkspace();
-    private void RaffleWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectRaffleWorkspace();
+    private async void TimerWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectTimerWorkspace(); }
+    private async void WorshipTimerWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectWorshipTimerWorkspace(); }
+    private async void RaffleWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectRaffleWorkspace(); }
+    private async Task<bool> CanLeaveLibraryAsync() => DataContext is not HomeViewModel { IsGeneralLibraryWorkspace: true } || Library is null || await Library.ResolvePendingChangesAsync();
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void RaffleAction_Click(object sender, RoutedEventArgs e)
@@ -529,6 +544,7 @@ public partial class MainWindow : Window
 
     private async void PlaybackScreen_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        RefreshLibraryContext();
         if (PlaybackConfigurationService is null || DataContext is not HomeViewModel viewModel || viewModel.SelectedPlaybackScreen is null) return;
         await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey));
     }
@@ -606,6 +622,7 @@ public partial class MainWindow : Window
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void TimerRefresh_Tick(object? sender, EventArgs e)
     {
+        RefreshLibraryContext();
         if (DataContext is not HomeViewModel viewModel) return;
         viewModel.Timer.Refresh();
         PlayWorshipTimerCues(viewModel.WorshipTimer.Refresh());
@@ -908,7 +925,7 @@ public partial class MainWindow : Window
             previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber,
             timer: previous?.Timer,
             raffle: previous?.Raffle,
-            worshipTimer: previous?.WorshipTimer) { OperationMessage = message };
+            worshipTimer: previous?.WorshipTimer) { OperationMessage = message, IsBusy = previous?.IsBusy ?? false };
         RestoreFilters(viewModel, previous);
         DataContext = viewModel;
     }
@@ -920,6 +937,45 @@ public partial class MainWindow : Window
         current.SelectedAvailability = previous.SelectedAvailability;
         current.SearchQuery = previous.SearchQuery;
         current.RestoreLinkedVideoState(previous);
+        current.IsGeneralLibraryWorkspace = previous.IsGeneralLibraryWorkspace;
+    }
+
+    private async void GeneralLibrary_Click(object sender, RoutedEventArgs e)
+    {
+        (DataContext as HomeViewModel)?.SelectGeneralLibraryWorkspace();
+        RefreshLibraryContext();
+        if (Library is not null) await Library.RefreshAsync();
+    }
+
+    public void RefreshLibraryContext()
+    {
+        if (Library is null || DataContext is not HomeViewModel home) return;
+        Library.OutputScreenLabel = home.SelectedPlaybackScreen?.Label ?? "tela indisponível";
+        Library.HasOutputScreen = home.SelectedPlaybackScreen is not null;
+        Library.ContentFolder = home.ContentPath;
+        Library.PresentationIsOpen = PresentationOutputService?.IsOpen == true;
+    }
+
+    public void LibraryOutputScreenChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => PlaybackScreen_SelectionChanged(sender,e);
+
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+    public void ShowLibraryQueue()
+    {
+        var panel = new System.Windows.Controls.DockPanel { Margin = new Thickness(18) };
+        var dialog = new Window { Title = "Downloads da biblioteca", Width = 540, Height = 480, Owner = this, Content = panel, DataContext = DataContext, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        dialog.SetBinding(DataContextProperty, new System.Windows.Data.Binding("DataContext") { Source = this });
+        dialog.SetResourceReference(Window.BackgroundProperty, "Brush.Window");
+        var cancel = new System.Windows.Controls.Button { Content = "Cancelar fila", Padding = new Thickness(12,8,12,8), Margin = new Thickness(0,12,0,0) };
+        cancel.SetBinding(IsEnabledProperty, new System.Windows.Data.Binding("IsQueueActive"));
+        cancel.Click += CancelSynchronizationQueue_Click; System.Windows.Controls.DockPanel.SetDock(cancel, System.Windows.Controls.Dock.Bottom); panel.Children.Add(cancel);
+        var items = new System.Windows.Controls.ItemsControl();
+        items.SetBinding(System.Windows.Controls.ItemsControl.ItemsSourceProperty, new System.Windows.Data.Binding("SynchronizationQueueItems"));
+        items.ItemTemplate = (DataTemplate)System.Windows.Markup.XamlReader.Parse("""
+            <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"><Border Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10"><StackPanel><TextBlock Text="{Binding SourceName}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}"/><TextBlock Text="{Binding State}" Margin="0,6,0,0" Foreground="{DynamicResource Brush.TextPrimary}"/><TextBlock Text="{Binding Details}" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{DynamicResource Brush.TextSecondary}"/><Button Content="Ver detalhes" Tag="{Binding Diagnostic}" Padding="10,7" Margin="0,10,0,0" IsEnabled="{Binding HasDiagnostic}"/></StackPanel></Border></DataTemplate>
+            """);
+        items.AddHandler(System.Windows.Controls.Button.ClickEvent, new RoutedEventHandler((_, args) => { if (args.Source is System.Windows.Controls.Button button) ViewSynchronizationDiagnostic_Click(button,args); }));
+        panel.Children.Add(new System.Windows.Controls.ScrollViewer { Content = items, VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto });
+        dialog.ShowDialog();
     }
 
     private static string GetSourceName(Sinalo.Domain.ContentSource source) => source switch
