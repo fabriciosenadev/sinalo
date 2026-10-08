@@ -41,6 +41,7 @@ public sealed partial class HomeViewModel : ObservableObject
         Timer = timer ?? new TimerViewModel(new Sinalo.Application.Timer.TimerSession(), new Sinalo.Application.Timer.TimerConfiguration(Sinalo.Application.Timer.TimerDirection.CountUp, TimeSpan.FromMinutes(1), "hh:mm:ss"));
         Raffle = raffle ?? new RaffleViewModel(new Sinalo.Application.Raffle.RaffleSession(), new Sinalo.Application.Raffle.RaffleConfiguration(TimeSpan.FromSeconds(5)));
         WorshipTimer = worshipTimer ?? new WorshipTimerViewModel(new Sinalo.Application.WorshipTimer.WorshipTimerSession(), new WorshipTimerAudioPlayer());
+        ScheduleItems.CollectionChanged += (_, _) => RefreshSchedulePositions();
         ApplyFilters();
         OperationMessage = _allCatalogItems.Count == 0
             ? "Nenhum vídeo offline disponível. Escolha um programa e use Buscar e baixar."
@@ -125,7 +126,7 @@ public sealed partial class HomeViewModel : ObservableObject
     public string SelectedItemPinActionLabel => IsSelectedItemPinned ? "Remover fixação" : "Fixar vídeo";
 
     public string SelectedSourceActionLabel => SelectedSource == "Todos" ? "Selecione um programa" : SelectedSource;
-    public string UpdateAndSynchronizeSelectedSourceLabel => $"Buscar e baixar {SelectedSourceActionLabel}";
+    public string UpdateAndSynchronizeSelectedSourceLabel => "Buscar e baixar";
     public bool CanOperateSelectedSource => Sources.SingleOrDefault(source => source.Name == SelectedSource)?.Source is ContentSource.Missions or ContentSource.ProvaiEVede or ContentSource.Health;
     public bool CanQueueSelectedSource => CanOperateSelectedSource && !SynchronizationQueueItems.Any(item => item.SourceName == SelectedSource && item.IsPending);
     public bool HasSynchronizationQueueItems => SynchronizationQueueItems.Count > 0;
@@ -138,25 +139,26 @@ public sealed partial class HomeViewModel : ObservableObject
         IsWorshipTimerWorkspace = false;
         IsLinkedVideoWorkspace = false;
         ApplyFilters();
+        RefreshWorkspace();
         OnPropertyChanged(nameof(SelectedSourceActionLabel));
         OnPropertyChanged(nameof(UpdateAndSynchronizeSelectedSourceLabel));
         OnPropertyChanged(nameof(CanOperateSelectedSource));
         OnPropertyChanged(nameof(CanQueueSelectedSource));
         OnPropertyChanged(nameof(IsHealthSelected));
     }
-    partial void OnIsTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
-    partial void OnIsRaffleWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
-    partial void OnIsWorshipTimerWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
-    partial void OnIsLinkedVideoWorkspaceChanged(bool value) => OnPropertyChanged(nameof(IsLibraryWorkspace));
+    partial void OnIsTimerWorkspaceChanged(bool value) => RefreshWorkspace();
+    partial void OnIsRaffleWorkspaceChanged(bool value) => RefreshWorkspace();
+    partial void OnIsWorshipTimerWorkspaceChanged(bool value) => RefreshWorkspace();
+    partial void OnIsLinkedVideoWorkspaceChanged(bool value) => RefreshWorkspace();
     partial void OnLinkedVideoUrlChanged(string value) { ClearInspectedLinkedVideo(); LinkedVideoStatus = "Cole o link de um vídeo para consultar as qualidades MP4 disponíveis."; OnPropertyChanged(nameof(CanInspectLinkedVideo)); }
-    partial void OnLinkedVideoDateTextChanged(string value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
-    partial void OnSelectedLinkedVideoDestinationChanged(LinkedVideoDestinationOption? value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
-    partial void OnSelectedLinkedVideoFormatChanged(LinkedVideoFormat? value) => OnPropertyChanged(nameof(CanQueueLinkedVideo));
+    partial void OnLinkedVideoDateTextChanged(string value) { OnPropertyChanged(nameof(CanQueueLinkedVideo)); OnPropertyChanged(nameof(LinkedVideoSummary)); }
+    partial void OnSelectedLinkedVideoDestinationChanged(LinkedVideoDestinationOption? value) { OnPropertyChanged(nameof(CanQueueLinkedVideo)); OnPropertyChanged(nameof(LinkedVideoSummary)); }
+    partial void OnSelectedLinkedVideoFormatChanged(LinkedVideoFormat? value) { OnPropertyChanged(nameof(CanQueueLinkedVideo)); OnPropertyChanged(nameof(LinkedVideoSummary)); }
     partial void OnIsInspectingLinkedVideoChanged(bool value) { OnPropertyChanged(nameof(CanQueueLinkedVideo)); OnPropertyChanged(nameof(CanInspectLinkedVideo)); }
-    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
-    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
-    public void SelectWorshipTimerWorkspace() { IsWorshipTimerWorkspace = true; IsRaffleWorkspace = false; IsTimerWorkspace = false; IsLinkedVideoWorkspace = false; }
-    public void SelectLinkedVideoWorkspace() { SelectedSource = "Todos"; IsLinkedVideoWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; }
+    public void SelectTimerWorkspace() { IsTimerWorkspace = true; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; OperationMessage = Timer.StateLabel; }
+    public void SelectRaffleWorkspace() { IsRaffleWorkspace = true; IsTimerWorkspace = false; IsWorshipTimerWorkspace = false; IsLinkedVideoWorkspace = false; OperationMessage = Raffle.StatusLabel; }
+    public void SelectWorshipTimerWorkspace() { IsWorshipTimerWorkspace = true; IsRaffleWorkspace = false; IsTimerWorkspace = false; IsLinkedVideoWorkspace = false; OperationMessage = WorshipTimer.StateLabel; }
+    public void SelectLinkedVideoWorkspace() { SelectedSource = "Todos"; IsLinkedVideoWorkspace = true; IsTimerWorkspace = false; IsRaffleWorkspace = false; IsWorshipTimerWorkspace = false; OperationMessage = LinkedVideoStatus; }
     public void RestoreLinkedVideoState(HomeViewModel previous)
     {
         LinkedVideoUrl = previous.LinkedVideoUrl;
@@ -180,12 +182,16 @@ public sealed partial class HomeViewModel : ObservableObject
         OnPropertyChanged(nameof(LinkedVideoTitle));
         OnPropertyChanged(nameof(LinkedVideoPublishedDate));
         OnPropertyChanged(nameof(CanQueueLinkedVideo));
+        OnPropertyChanged(nameof(HasLinkedVideo));
+        OnPropertyChanged(nameof(LinkedVideoSummary));
     }
     public void ClearInspectedLinkedVideo()
     {
         _inspectedLinkedVideo = null;
         SelectedLinkedVideoFormat = null;
         LinkedVideoFormats.Clear();
+        OnPropertyChanged(nameof(HasLinkedVideo));
+        OnPropertyChanged(nameof(LinkedVideoSummary));
         OnPropertyChanged(nameof(LinkedVideoTitle));
         OnPropertyChanged(nameof(LinkedVideoPublishedDate));
         OnPropertyChanged(nameof(CanQueueLinkedVideo));
@@ -207,6 +213,9 @@ public sealed partial class HomeViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSelectedItem));
         OnPropertyChanged(nameof(IsSelectedItemPinned));
         OnPropertyChanged(nameof(SelectedItemPinActionLabel));
+        DetailsOpen = value is not null;
+        OnPropertyChanged(nameof(ShowCatalogDetails));
+        OnPropertyChanged(nameof(SelectedPlaybackLabel));
     }
 
     public void AddSelectedToSchedule()
@@ -234,11 +243,13 @@ public sealed partial class HomeViewModel : ObservableObject
 
     public void ReportDownloadProgress(Sinalo.Application.Synchronization.DownloadProgress progress)
     {
+        IsSynchronizationIndeterminate = progress.Percentage is null;
         SyncProgressPercent = progress.Percentage ?? 0;
         SyncProgressLabel = progress.Percentage is { } percentage
             ? $"{progress.Item.Title}: {progress.Stage} ({percentage:0.0}%)"
             : $"{progress.Item.Title}: {progress.Stage}";
-        OperationMessage = SyncProgressLabel;
+        SynchronizationMessage = SyncProgressLabel;
+        if (IsLibraryWorkspace) OperationMessage = SyncProgressLabel;
         if (progress.Item.SyncState == SyncState.Ready) MarkItemAsReady(progress.Item);
     }
 
@@ -253,32 +264,41 @@ public sealed partial class HomeViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(HasSynchronizationQueueItems));
+        OnPropertyChanged(nameof(DownloadsLabel));
 
         var active = snapshot.Entries.FirstOrDefault(entry => entry.State == SynchronizationQueueState.Running);
         if (active is not null)
         {
             IsBusy = true;
             SyncProgressPercent = active.Percentage ?? 0;
+            IsSynchronizationIndeterminate = active.Percentage is null;
             SyncProgressLabel = active.Message;
-            OperationMessage = $"{active.SourceName}: {active.Message}";
+            SynchronizationMessage = $"{active.SourceName}: {active.Message}";
+            if (IsLibraryWorkspace) OperationMessage = SynchronizationMessage;
         }
         else
         {
             IsBusy = false;
+            IsSynchronizationIndeterminate = false;
             var last = snapshot.Entries.LastOrDefault();
-            if (last is not null) OperationMessage = $"{last.SourceName}: {last.Message}";
+            if (last is not null) { SynchronizationMessage = $"{last.SourceName}: {last.Message}"; if (IsLibraryWorkspace) OperationMessage = SynchronizationMessage; }
         }
         OnPropertyChanged(nameof(CanQueueSelectedSource));
     }
 
     public void MarkItemAsReady(ContentItem item)
     {
+        var hadSelection = SelectedCatalogItem is not null;
         var index = _allCatalogItems.FindIndex(card => card.Id == item.Id);
         var card = MapItem(item);
         if (index >= 0) _allCatalogItems[index] = card;
         else _allCatalogItems.Add(card);
         ApplyFilters();
-        SelectedCatalogItem = card;
+        if (!hadSelection && CatalogItems.Contains(card))
+        {
+            SelectedCatalogItem = card;
+            DetailsOpen = false;
+        }
     }
 
     public void MarkItemAsPlayed(ContentItem item)
@@ -346,9 +366,13 @@ public sealed partial class HomeViewModel : ObservableObject
              item.Title.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ||
              item.ScheduledDate.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)));
 
+        var selectedId = SelectedCatalogItem?.Id;
         CatalogItems.Clear();
         foreach (var item in filtered) CatalogItems.Add(item);
-        if (SelectedCatalogItem is not null && !CatalogItems.Contains(SelectedCatalogItem)) SelectedCatalogItem = null;
+        SelectedCatalogItem = CatalogItems.FirstOrDefault(item => item.Id == selectedId);
+        OnPropertyChanged(nameof(CatalogSummary));
+        OnPropertyChanged(nameof(IsCatalogEmpty));
+        OnPropertyChanged(nameof(CatalogEmptyMessage));
     }
 
     private static CatalogCard MapItem(ContentItem item) => new(
@@ -387,14 +411,30 @@ public sealed partial class HomeViewModel : ObservableObject
     };
 }
 
-public sealed record SourceCard(ContentSource Source, string Name, string SyncPolicy, string Status);
+public sealed partial class SourceCard(ContentSource source, string name, string syncPolicy, string status) : ObservableObject
+{
+    public ContentSource Source { get; } = source;
+    public string Name { get; } = name;
+    public string SyncPolicy { get; } = syncPolicy;
+    public string Status { get; } = status;
+    [ObservableProperty] private bool isSelected;
+}
 public sealed record LinkedVideoDestinationOption(ContentSource Source, string Label);
 public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph, string PlaybackLabel = "", bool IsPinned = false)
 {
     // Compatibilidade com consumidores que já exibiam a coluna "Source" da lista anterior.
     public string Source => SourceName;
 }
-public sealed record ScheduleCard(string Id, string Title, string SourceName, string Status);
+public sealed partial class ScheduleCard(string id, string title, string sourceName, string status) : ObservableObject
+{
+    public string Id { get; } = id;
+    public string Title { get; } = title;
+    public string SourceName { get; } = sourceName;
+    public string Status { get; } = status;
+    [ObservableProperty] private int position;
+    [ObservableProperty] private bool canMoveUp;
+    [ObservableProperty] private bool canMoveDown;
+}
 public sealed record PlaybackScreenOption(string Label, int ScreenNumber, bool IsPrimary = false, string MonitorKey = "");
 public sealed record SynchronizationQueueCard(string SourceName, string State, string Details, bool IsPending, SynchronizationDiagnostic? Diagnostic = null)
 {

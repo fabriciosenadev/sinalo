@@ -10,6 +10,7 @@ using Sinalo.Infrastructure;
 
 namespace Sinalo.Tests.EndToEnd;
 
+[Collection(WpfInterfaceCollection.Name)]
 public sealed class PresentationWorkflowTests
 {
     private static readonly OutputProfile Output = new(@"\\.\DISPLAY2", "Tela 2", 2, 1920, 0, 1920, 1080, false);

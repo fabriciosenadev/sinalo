@@ -4,6 +4,7 @@ using Sinalo.Application.Presentation;
 
 namespace Sinalo.Tests.EndToEnd;
 
+[Collection(WpfInterfaceCollection.Name)]
 public sealed class UpdateShutdownWorkflowTests
 {
     [Fact]
