@@ -25,6 +25,7 @@ public sealed class LibraryLayoutTests
     [InlineData(false,1280,720,1.25)]
     [InlineData(true,1280,720,1.5)]
     [InlineData(true,960,580,1.0)]
+    [InlineData(true,1024,768,1.5)]
     public async Task FullLibraryWithRowsDetailsAndImportFitsOperatorViewport(bool dark,int width,int height,double scale)
     {
         var repository = new LibraryPreviewRepository();
@@ -45,7 +46,7 @@ public sealed class LibraryLayoutTests
                 home.SelectGeneralLibraryWorkspace();
                 var window=new MainWindow { Library=model, DataContext=home, Width=width, Height=height, Resources=resources };
                 var frame=(FrameworkElement)window.Content; frame.LayoutTransform=new ScaleTransform(scale,scale);
-                window.Show(); window.UpdateLayout();
+                window.Show(); window.Width=width; window.Height=height; window.UpdateLayout();
                 try
                 {
                     var view=(LibraryView)window.FindName("GeneralLibraryWorkspace");
@@ -56,6 +57,18 @@ public sealed class LibraryLayoutTests
                     Assert.Equal(40,list.Items.Count);
                     Save(window,root,dark,width,scale,"videos");
                     Assert.True(list.ActualHeight>65,$"List height {list.ActualHeight}");
+                    if (width == 1024 && scale == 1.5)
+                    {
+                        var filters = (Expander)view.FindName("FilterOptions");
+                        var output = (Expander)view.FindName("OutputOptions");
+                        Assert.False(filters.IsExpanded);
+                        Assert.False(output.IsExpanded);
+                        filters.IsExpanded = true; output.IsExpanded = true; window.UpdateLayout();
+                        Assert.True(((TextBox)view.FindName("SearchInput")).IsVisible);
+                        Assert.True(((ComboBox)view.FindName("LibraryOutputScreen")).IsVisible);
+                        filters.IsExpanded = false; output.IsExpanded = false; window.UpdateLayout();
+                        Assert.True(list.ActualHeight>65);
+                    }
                     Assert.Equal(home.SelectedPlaybackScreen!.Label,model.OutputScreenLabel);
 
                     model.Selected=model.Items[0]; model.DetailsOpen=true; window.UpdateLayout();

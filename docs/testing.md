@@ -16,6 +16,16 @@ Os testes ficam em `tests/Sinalo.Tests/Unit`, `Integration` e `EndToEnd`. Cada t
 
 ## Execução local
 
+Em um checkout novo, execute `.\eng\prepare-video-download-tools.ps1` antes
+de compilar/testar. O CI também prepara os executáveis fixados e verificados
+por SHA-256. Testes de reprodução geram vídeos sintéticos com FFmpeg e usam
+o MPV distribuído no repositório, sem baixar vídeos externos.
+
+Testes de layout restauram o tamanho solicitado depois de abrir a janela:
+o Windows pode ajustar automaticamente uma janela à área útil do runner.
+A Biblioteca também deve manter a lista utilizável em espaços compactos,
+sem depender da resolução física da máquina de desenvolvimento.
+
 ```powershell
 .\eng\test-coverage.ps1
 ```

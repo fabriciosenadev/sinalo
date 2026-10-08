@@ -27,6 +27,10 @@ jobs:
       - name: Restore
         run: dotnet restore Sinalo.slnx
 
+      - name: Prepare pinned media tools
+        shell: pwsh
+        run: .\eng\prepare-video-download-tools.ps1
+
       - name: Test and validate coverage
         shell: pwsh
         run: .\eng\test-coverage.ps1 -Configuration Release

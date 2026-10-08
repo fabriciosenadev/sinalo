@@ -13,6 +13,7 @@ public partial class LibraryView : System.Windows.Controls.UserControl
 {
     private LibraryViewModel? _model;
     private bool _selecting;
+    private bool? _compactLayout;
     public LibraryView()
     {
         InitializeComponent();
@@ -47,6 +48,15 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         Grid.SetColumnSpan(DetailsRegion, wide ? 1 : 2);
         VideoListRegion.Margin = wide && _model.ShowDetails ? new Thickness(0,0,16,0) : new Thickness(0);
         var shortViewport = ActualHeight < 500;
+        var compact = ActualHeight < 430 || ActualWidth < 650;
+        if (_compactLayout != compact)
+        {
+            _compactLayout = compact;
+            FilterOptions.IsExpanded = !compact;
+            OutputOptions.IsExpanded = !compact;
+        }
+        LibraryTitle.FontSize = compact ? 20 : 26;
+        DetailsRegion.Padding = new Thickness(compact ? 12 : 18);
         LibraryHeader.Margin = new Thickness(0,0,0,shortViewport ? 8 : 14);
         TabBar.Margin = new Thickness(0,0,0,shortViewport ? 8 : 16);
         FilterBar.Margin = new Thickness(0,0,0,shortViewport ? 8 : 14);
