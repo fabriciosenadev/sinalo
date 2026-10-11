@@ -684,7 +684,15 @@
         Grid.Row="2"
         Text="{Binding OperationMessage}"
         Foreground="{DynamicResource Brush.TextSecondary}"
-        Margin="0,12,0,0" />
+        ToolTip="{Binding OperationMessage}"
+        Margin="0,12,0,0">
+        <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Style.Triggers>
+          <DataTrigger Binding="{Binding IsCompactWorkspace}" Value="True">
+            <Setter Property="TextWrapping" Value="NoWrap" /><Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="FontSize" Value="12" /><Setter Property="Margin" Value="0,8,0,0" />
+          </DataTrigger>
+        </Style.Triggers></Style></TextBlock.Style>
+      </TextBlock>
     </Grid>
     <Border Grid.Row="3" Grid.ColumnSpan="2" Margin="0,8,0,0" Padding="8"
             Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
