@@ -1,124 +1,86 @@
+using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.IO;
-using System.Diagnostics.CodeAnalysis;
+using System.Windows.Data;
+using System.Windows.Markup;
 using Sinalo.Domain;
 using Button = System.Windows.Controls.Button;
-using Brush = System.Windows.Media.Brush;
-using CheckBox = System.Windows.Controls.CheckBox;
-using Orientation = System.Windows.Controls.Orientation;
-using HorizontalAlignment = System.Windows.HorizontalAlignment;
-
+using TextBox = System.Windows.Controls.TextBox;
+using ListBox = System.Windows.Controls.ListBox;
 namespace Sinalo.App;
 
-/// <summary>Diálogo temporário: descobrir não altera o catálogo offline; só a confirmação cria a solicitação da fila.</summary>
-[ExcludeFromCodeCoverage]
 public sealed class ManualVideoSelectionWindow : Window
 {
     private readonly List<ManualVideoSelectionItem> _items;
     private readonly TextBlock _summary = new();
     private readonly Button _download = new();
-
-    public IReadOnlyList<string> SelectedItemIds => _items.Where(item => item.IsSelected && item.CanDownload).Select(item => item.Item.Id).ToArray();
+    private readonly ListBox _list = new();
+    public IReadOnlyList<string> SelectedItemIds => _items.Where(item=>item.IsSelected && item.CanDownload).Select(item=>item.Item.Id).ToArray();
 
     public ManualVideoSelectionWindow(string sourceName, IReadOnlyList<ManualVideoSelectionItem> items, SystemThemeService? themeService)
     {
-        _items = items.ToList();
-        Title = "Selecionar vídeos para baixar";
-        Width = 760;
-        Height = 620;
-        MinWidth = 560;
-        MinHeight = 420;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Background = Brush("Brush.Window");
-        SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
-
-        var root = new Grid { Margin = new Thickness(20) };
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-        var heading = new StackPanel();
-        heading.Children.Add(Text("Selecionar vídeos para baixar", 24, FontWeights.SemiBold, "Brush.TextPrimary"));
-        heading.Children.Add(Text(sourceName, 13, FontWeights.Normal, "Brush.TextSecondary", new Thickness(0, 4, 0, 2)));
-        heading.Children.Add(Text("Marque somente os vídeos que deseja baixar. Itens já disponíveis offline não serão baixados novamente.", 12, FontWeights.Normal, "Brush.TextSecondary", new Thickness(0, 0, 0, 16)));
-        root.Children.Add(heading);
-
-        var list = new StackPanel();
-        foreach (var item in _items) list.Children.Add(CreateRow(item));
-        if (_items.Count == 0) list.Children.Add(Text("Nenhum vídeo publicado foi encontrado para este programa.", 14, FontWeights.Normal, "Brush.TextSecondary", new Thickness(8)));
-        var scroll = new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Padding = new Thickness(0, 0, 10, 0) };
-        Grid.SetRow(scroll, 1);
-        root.Children.Add(scroll);
-
-        var footer = new DockPanel { Margin = new Thickness(0, 16, 0, 0) };
-        _summary.Foreground = Brush("Brush.TextSecondary");
-        _summary.VerticalAlignment = VerticalAlignment.Center;
-        DockPanel.SetDock(_summary, Dock.Left);
-        footer.Children.Add(_summary);
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var cancel = new Button { Content = "Cancelar", IsCancel = true, Padding = new Thickness(16, 8, 16, 8), Margin = new Thickness(8, 0, 0, 0) };
-        _download.Content = "Baixar selecionados";
-        _download.IsDefault = true;
-        _download.Padding = new Thickness(16, 8, 16, 8);
-        _download.Margin = new Thickness(8, 0, 0, 0);
-        _download.Click += (_, _) => DialogResult = true;
-        _download.SetResourceReference(FrameworkElement.StyleProperty, "Button.Primary");
-        actions.Children.Add(cancel);
-        actions.Children.Add(_download);
-        footer.Children.Add(actions);
-        Grid.SetRow(footer, 2);
-        root.Children.Add(footer);
-        Content = root;
+        _items=items.ToList(); Title="Escolher vídeos para baixar";Width=780;Height=620;MinWidth=520;MinHeight=400;
+        WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        SetResourceReference(StyleProperty,typeof(Window));
+        SetResourceReference(BackgroundProperty,"Brush.Window");
+        SourceInitialized+=(_,_)=>SystemThemeService.ApplyTitleBar(this,themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
+        Loaded+=(_,_)=>MaxHeight=SystemParameters.WorkArea.Height;
+        var grid=new Grid{Margin=new Thickness(24)};
+        grid.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        grid.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+        grid.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        var header=new StackPanel();
+        header.Children.Add(new TextBlock{Text=Title,FontSize=24,FontWeight=FontWeights.SemiBold});
+        header.Children.Add(new TextBlock{Text=sourceName,Margin=new Thickness(0,4,0,12)});
+        header.Children.Add(new TextBlock{Text="Selecione arquivos disponíveis. Vídeos já locais não serão baixados novamente.",TextWrapping=TextWrapping.Wrap});
+        var search=new TextBox{Margin=new Thickness(0,12,0,12),ToolTip="Pesquisar por título ou data"};
+        System.Windows.Automation.AutomationProperties.SetName(search,"Pesquisar vídeos por título ou data");
+        header.Children.Add(new TextBlock{Text="Pesquisar por título ou data",Margin=new Thickness(0,12,0,0)});
+        header.Children.Add(search);
+        search.TextChanged+=(_,_)=>_list.ItemsSource=_items.Where(item=>string.IsNullOrWhiteSpace(search.Text) || item.Item.Title.Contains(search.Text,StringComparison.OrdinalIgnoreCase) || item.Item.ScheduledDate.ToString("dd/MM/yyyy").Contains(search.Text));
+        var choices=new WrapPanel();
+        var all=new Button{Content="Selecionar disponíveis"};all.Click+=(_,_)=>{foreach(var item in _items.Where(item=>item.CanDownload))item.IsSelected=true;};
+        var clear=new Button{Content="Limpar seleção"};clear.Click+=(_,_)=>{foreach(var item in _items)item.IsSelected=false;};
+        choices.Children.Add(all);choices.Children.Add(clear);header.Children.Add(choices);grid.Children.Add(header);
+        _list.ItemsSource=_items;_list.HorizontalContentAlignment=System.Windows.HorizontalAlignment.Stretch;
+        _list.SetResourceReference(BackgroundProperty,"Brush.Surface");
+        _list.SetResourceReference(BorderBrushProperty,"Brush.Border");
+        ScrollViewer.SetHorizontalScrollBarVisibility(_list,ScrollBarVisibility.Disabled);
+        VirtualizingPanel.SetIsVirtualizing(_list,true);VirtualizingPanel.SetVirtualizationMode(_list,VirtualizationMode.Recycling);
+        _list.ItemTemplate=(DataTemplate)XamlReader.Parse("""
+<DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"><Border Padding="12" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Border}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanDownload}" AutomationProperties.Name="{Binding Item.Title}" Margin="0,0,12,0"/><StackPanel Grid.Column="1"><TextBlock Text="{Binding Item.Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding Item.ScheduledDate, StringFormat=dd/MM/yyyy}" Margin="0,6,0,0"/><TextBlock Text="{Binding Status}"/><TextBlock Text="{Binding SizeLabel}" Foreground="{DynamicResource Brush.TextSecondary}"/></StackPanel></Grid></Border></DataTemplate>
+""");
+        Grid.SetRow(_list,1);grid.Children.Add(_list);
+        var footer=new StackPanel{Margin=new Thickness(0,16,0,0)};
+        _summary.TextWrapping=TextWrapping.Wrap;footer.Children.Add(_summary);
+        var actions=new WrapPanel{HorizontalAlignment=System.Windows.HorizontalAlignment.Right,Margin=new Thickness(0,12,0,0)};
+        actions.Children.Add(new Button{Content="Cancelar",IsCancel=true});
+        _download.Content="Adicionar selecionados à fila";_download.IsDefault=true;
+        _download.SetResourceReference(StyleProperty,"Button.Primary");_download.Click+=(_,_)=>DialogResult=true;actions.Children.Add(_download);footer.Children.Add(actions);
+        Grid.SetRow(footer,2);grid.Children.Add(footer);Content=grid;
+        foreach(var item in _items)item.PropertyChanged+=(_,_)=>UpdateSummary();
         UpdateSummary();
     }
-
-    private Border CreateRow(ManualVideoSelectionItem selection)
-    {
-        var border = new Border { Background = Brush("Brush.SurfaceRaised"), BorderBrush = Brush("Brush.Border"), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(12), Margin = new Thickness(0, 0, 0, 8) };
-        var panel = new Grid();
-        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var check = new CheckBox { IsChecked = selection.IsSelected, IsEnabled = selection.CanDownload, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 2, 12, 0) };
-        check.Checked += (_, _) => { selection.IsSelected = true; UpdateSummary(); };
-        check.Unchecked += (_, _) => { selection.IsSelected = false; UpdateSummary(); };
-        panel.Children.Add(check);
-        var details = new StackPanel();
-        details.Children.Add(Text(selection.Item.Title, 14, FontWeights.SemiBold, "Brush.TextPrimary"));
-        details.Children.Add(Text($"{selection.Item.ScheduledDate:dd/MM/yyyy}  •  {selection.Status}", 12, FontWeights.Normal, selection.CanDownload ? "Brush.TextSecondary" : "Brush.TextSecondary", new Thickness(0, 3, 0, 0)));
-        details.Children.Add(Text(selection.SizeLabel, 11, FontWeights.Normal, "Brush.TextSecondary", new Thickness(0, 3, 0, 0)));
-        Grid.SetColumn(details, 1);
-        panel.Children.Add(details);
-        border.Child = panel;
-        return border;
-    }
-
     private void UpdateSummary()
     {
-        var selected = _items.Where(item => item.IsSelected && item.CanDownload).ToArray();
-        var bytes = selected.Sum(item => item.Item.Assets.FirstOrDefault()?.ExpectedSizeBytes ?? 0);
-        var unknown = selected.Count(item => item.Item.Assets.FirstOrDefault()?.ExpectedSizeBytes is null);
-        _summary.Text = selected.Length == 0
-            ? "Nenhum vídeo selecionado"
-            : $"{selected.Length} vídeo(s) selecionado(s) • {FormatBytes(bytes)}{(unknown > 0 ? " + tamanhos não informados" : string.Empty)}";
-        _download.IsEnabled = selected.Length > 0;
+        var selected=_items.Where(item=>item.IsSelected && item.CanDownload).ToArray();
+        var size=selected.Sum(item=>item.Item.Assets.FirstOrDefault()?.ExpectedSizeBytes ?? 0);
+        var unknown=selected.Any(item=>item.Item.Assets.FirstOrDefault()?.ExpectedSizeBytes is null);
+        _summary.Text=_items.Count==0?"Nenhum vídeo publicado foi encontrado.":selected.Length==0?"Nenhum vídeo selecionado":$"{selected.Length} vídeo(s) · {size/1024d/1024:0} MB conhecidos{(unknown?" + tamanhos não informados":"")}";
+        _download.IsEnabled=selected.Length>0;
     }
-
-    private Brush Brush(string key) => (Brush)System.Windows.Application.Current.Resources[key];
-    private TextBlock Text(string value, double size, FontWeight weight, string brush, Thickness? margin = null) => new() { Text = value, FontSize = size, FontWeight = weight, Foreground = Brush(brush), TextWrapping = TextWrapping.Wrap, Margin = margin ?? new Thickness() };
-    private static string FormatBytes(long bytes) => bytes >= 1024L * 1024 * 1024 ? $"{bytes / 1024d / 1024 / 1024:0.0} GB" : $"{bytes / 1024d / 1024:0} MB";
 }
 
-[ExcludeFromCodeCoverage]
-public sealed class ManualVideoSelectionItem(ContentItem item, bool isSelected)
+public sealed class ManualVideoSelectionItem(ContentItem item, bool isSelected) : INotifyPropertyChanged
 {
-    public ContentItem Item { get; } = item;
-    public bool IsSelected { get; set; } = isSelected;
-    public bool IsOffline => Item.IsReadyOffline && !string.IsNullOrWhiteSpace(Item.LocalPath) && File.Exists(Item.LocalPath);
-    public bool HasOfficialFile => Item.Assets.Count > 0;
-    public bool CanDownload => HasOfficialFile && !IsOffline;
-    public string Status => IsOffline ? "Já disponível offline" : HasOfficialFile ? "Disponível para baixar" : "Arquivo oficial não identificado";
-    public string SizeLabel => Item.Assets.FirstOrDefault()?.ExpectedSizeBytes is { } bytes ? $"Tamanho estimado: {FormatBytes(bytes)}" : HasOfficialFile ? "Tamanho será confirmado antes do download" : "Não disponível para download";
-    private static string FormatBytes(long bytes) => bytes >= 1024L * 1024 * 1024 ? $"{bytes / 1024d / 1024 / 1024:0.0} GB" : $"{bytes / 1024d / 1024:0} MB";
+    private bool _isSelected=isSelected;
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public ContentItem Item {get;}=item;
+    public bool IsSelected {get=>_isSelected;set{if(_isSelected==value)return;_isSelected=value;PropertyChanged?.Invoke(this,new(nameof(IsSelected)));}}
+    public bool IsOffline=>Item.IsReadyOffline && !string.IsNullOrWhiteSpace(Item.LocalPath) && File.Exists(Item.LocalPath);
+    public bool HasOfficialFile=>Item.Assets.Count>0;
+    public bool CanDownload=>HasOfficialFile && !IsOffline;
+    public string Status=>IsOffline?"Já disponível offline":HasOfficialFile?"Disponível para baixar":"Arquivo oficial não identificado";
+    public string SizeLabel=>Item.Assets.FirstOrDefault()?.ExpectedSizeBytes is {} bytes?$"Tamanho estimado: {bytes/1024d/1024:0} MB":HasOfficialFile?"Tamanho será confirmado antes do download":"Não disponível para download";
 }

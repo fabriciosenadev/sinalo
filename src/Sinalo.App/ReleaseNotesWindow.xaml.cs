@@ -11,7 +11,8 @@ public partial class ReleaseNotesWindow : Window
     {
         _themeService = themeService;
         InitializeComponent();
-        DataContext = ReleaseNotesLoader.Load();
+        DataContext = new ReleaseNotesViewModel(ReleaseNotesLoader.Load(), typeof(ReleaseNotesWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
+        Loaded += (_,_) => MaxHeight = SystemParameters.WorkArea.Height;
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, _themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
     }
 }

@@ -75,6 +75,12 @@ public sealed partial class WorshipTimerViewModel : ObservableObject
         OnPropertyChanged(nameof(CanEditDuration));
     }
     partial void OnAudioVolumeChanged(double value) => _audioPlayer.SetVolume(value);
+    partial void OnIsAudioPlayingChanged(bool value) => OnPropertyChanged(nameof(CanControlAudio));
+    partial void OnIsAudioPausedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanControlAudio));
+        OnPropertyChanged(nameof(PauseResumeAudioLabel));
+    }
 
     public WorshipTimerConfiguration Configuration => BuildConfiguration();
 
