@@ -1,7 +1,7 @@
 # Roadmap do Sinalo
 
 **Versão atual:** 1.1.0 — série estável
-**Revisado em:** 07/10/2026
+**Revisado em:** 08/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
@@ -59,6 +59,27 @@ Também estão concluídos:
   teste informado. Spec: `Sinalo-specs/controle-completo-mpv.md`.
 
 ## Melhorias futuras
+
+### Experiência e identidade visual de todo o aplicativo — implementada em branch, aceite manual pendente
+
+- Branch `feat/experiencia-usuario`, criada da `main` local (`4291646`), sem
+  dependência ou integração das branches da Biblioteca e do controle completo MPV.
+- Análise estática individual das telas e fluxos existentes: programas, vídeo
+  por link, cronômetros, áudio, sorteio, configurações, seleção manual, downloads,
+  diagnósticos, apresentação, novidades, atualização, programação e confirmações.
+- [Índice dos planejamentos UX/UI](ux-ui/README.md), com criticidade, carga,
+  ordem de execução e critérios por tela; [identidade visual comum](ux-ui/00-identidade-visual.md).
+- Implementação grande, por ciclos: componentes e navegação primeiro, depois
+  tarefas contextuais. Preservar marca, temas, monitor compartilhado, operação
+  offline, compatibilidade das configurações e segurança dos arquivos.
+- Planos 00–17 implementados: componentes comuns, navegação, tarefas contextuais,
+  diálogos dedicados, configurações por categoria e saída do público separada.
+  [Registro de execução e validação](ux-ui/execucao.md).
+- Testes automatizados e renderizações cobrem temas, janela mínima, escalas
+  simuladas, estados e controles. O aceite manual do operador, incluindo HD,
+  projetor e DPI real, permanece pendente; não declarar release entregue.
+- Documentação, guia do site e changelog em desenvolvimento preparados nesta
+  branch. Sem versão nova, commit ou publicação automática nesta atividade.
 
 ### Organização e reprodução completas inspiradas no MidiaDeck — implementação grande, por etapas
 

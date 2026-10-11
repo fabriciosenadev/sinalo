@@ -8,6 +8,7 @@ using System.Windows.Input;
 
 namespace Sinalo.Tests.Unit;
 
+[Collection(Sinalo.Tests.EndToEnd.WpfInterfaceCollection.Name)]
 public sealed class PresentationOutputServiceTests
 {
     private static readonly OutputProfile Output = new(@"\\.\DISPLAY2", "Tela 2", 2, 1920, 0, 1920, 1080, false);

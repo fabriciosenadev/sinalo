@@ -114,13 +114,13 @@ public sealed class SystemThemeService(System.Windows.Application application) :
     {
         ["Brush.Window"] = "#F4F7FA", ["Brush.Surface"] = "#FFFFFF", ["Brush.SurfaceRaised"] = "#F8FAFC", ["Brush.Border"] = "#DCE4EB",
         ["Brush.TextPrimary"] = "#16324F", ["Brush.TextSecondary"] = "#506273", ["Brush.Accent"] = "#0F766E", ["Brush.AccentStrong"] = "#0F766E", ["Brush.AccentText"] = "#FFFFFF", ["Brush.Focus"] = "#14B8A6",
-        ["Brush.Button"] = "#E7EDF3", ["Brush.ButtonBorder"] = "#B9C6D3", ["Brush.ButtonHover"] = "#D5E3EE", ["Brush.ButtonPressed"] = "#C0D5E5", ["Brush.Input"] = "#FFFFFF", ["Brush.Header"] = "#16324F", ["Brush.HeaderBorder"] = "#244B72", ["Brush.HeaderLabel"] = "#C8D8E8", ["Brush.Warning"] = "#9A6B1B", ["Brush.Thumbnail"] = "#E6EEF5", ["Brush.ProgressTrack"] = "#D5E3EE"
+        ["Brush.Button"] = "#E7EDF3", ["Brush.ButtonBorder"] = "#B9C6D3", ["Brush.ButtonHover"] = "#D5E3EE", ["Brush.ButtonPressed"] = "#C0D5E5", ["Brush.Input"] = "#FFFFFF", ["Brush.Header"] = "#16324F", ["Brush.HeaderBorder"] = "#244B72", ["Brush.HeaderText"] = "#FFFFFF", ["Brush.HeaderStatus"] = "#E1EDF6", ["Brush.Success"] = "#166534", ["Brush.Error"] = "#B42318", ["Brush.Selection"] = "#DDF2EF", ["Brush.HeaderLabel"] = "#C8D8E8", ["Brush.Warning"] = "#9A6B1B", ["Brush.Thumbnail"] = "#E6EEF5", ["Brush.ProgressTrack"] = "#D5E3EE"
     };
 
     private static readonly IReadOnlyDictionary<string, string> DarkPalette = new Dictionary<string, string>
     {
         ["Brush.Window"] = "#0F172A", ["Brush.Surface"] = "#172033", ["Brush.SurfaceRaised"] = "#1F2937", ["Brush.Border"] = "#334155",
         ["Brush.TextPrimary"] = "#F8FAFC", ["Brush.TextSecondary"] = "#CBD5E1", ["Brush.Accent"] = "#2DD4BF", ["Brush.AccentStrong"] = "#0F766E", ["Brush.AccentText"] = "#ECFEFF", ["Brush.Focus"] = "#5EEAD4",
-        ["Brush.Button"] = "#25344A", ["Brush.ButtonBorder"] = "#475569", ["Brush.ButtonHover"] = "#2D4660", ["Brush.ButtonPressed"] = "#162438", ["Brush.Input"] = "#0F172A", ["Brush.Header"] = "#111C2D", ["Brush.HeaderBorder"] = "#2A405A", ["Brush.HeaderLabel"] = "#94A3B8", ["Brush.Warning"] = "#FBBF24", ["Brush.Thumbnail"] = "#0F172A", ["Brush.ProgressTrack"] = "#334155"
+        ["Brush.Button"] = "#25344A", ["Brush.ButtonBorder"] = "#475569", ["Brush.ButtonHover"] = "#2D4660", ["Brush.ButtonPressed"] = "#162438", ["Brush.Input"] = "#0F172A", ["Brush.Header"] = "#111C2D", ["Brush.HeaderBorder"] = "#2A405A", ["Brush.HeaderText"] = "#F8FAFC", ["Brush.HeaderStatus"] = "#CBD5E1", ["Brush.Success"] = "#86EFAC", ["Brush.Error"] = "#FDA29B", ["Brush.Selection"] = "#214640", ["Brush.HeaderLabel"] = "#94A3B8", ["Brush.Warning"] = "#FBBF24", ["Brush.Thumbnail"] = "#0F172A", ["Brush.ProgressTrack"] = "#334155"
     };
 }

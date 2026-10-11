@@ -16,12 +16,15 @@ using Sinalo.Tests.Unit;
 
 namespace Sinalo.Tests.EndToEnd;
 
+[Collection(WpfInterfaceCollection.Name)]
 public sealed class PlaybackPanelTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ControlsKeepTheirSessionAcrossNavigationAndUseTheTheme(bool dark)
+    [InlineData(false,1280,720,1.0)]
+    [InlineData(true,1280,720,1.0)]
+    [InlineData(true,1280,720,1.5)]
+    [InlineData(false,940,580,1.0)]
+    public void ControlsKeepTheirSessionAcrossNavigationAndUseTheTheme(bool dark,double width,double height,double scale)
     {
         Exception? failure = null;
         var thread = new Thread(() =>
@@ -30,21 +33,24 @@ public sealed class PlaybackPanelTests
             try
             {
                 var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-                var document = XDocument.Load(Path.Combine(root, "src/Sinalo.App/App.xaml"));
-                XNamespace ui = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
-                var dictionary = new XElement(ui + "ResourceDictionary", new XAttribute(XNamespace.Xmlns + "x", "http://schemas.microsoft.com/winfx/2006/xaml"), document.Root!.Element(ui + "Application.Resources")!.Elements());
-                var resources = (ResourceDictionary)XamlReader.Parse(dictionary.ToString());
+                var resources = new ResourceDictionary();
                 SystemThemeService.ApplyToResources(resources, dark);
                 var controller = new RecordingPlaybackController();
                 controller.Update(PlaybackControllerTests.Active());
                 var panel = new PlaybackViewModel(controller, new PlaybackService(new Catalog(), controller));
-                window = new MainWindow { Resources = resources, Playback = panel, DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []) };
+                window = new MainWindow { Width=width,Height=height,Resources = resources, Playback = panel, DataContext = new HomeViewModel(new SaturdayWindowService(), new LocalSinaloPathService(), []) };
+                resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/Sinalo.App;component/VisualIdentity.xaml",UriKind.Relative) });
+                ((FrameworkElement)window.Content).LayoutTransform = new ScaleTransform(scale,scale);
                 window.Show();
+                window.Width=width; window.Height=height;
                 window.UpdateLayout();
                 var host = (StackPanel)window.FindName("PlaybackPanel");
+                var details = (Expander)window.FindName("PlaybackDetails");
+                details.IsExpanded = true; window.UpdateLayout();
                 var seek = (Slider)window.FindName("VideoSeekSlider");
                 var volume = (Slider)window.FindName("VideoVolumeSlider");
                 Assert.Same(panel, host.DataContext);
+                Assert.True(host.IsVisible);
                 Assert.True(seek.IsEnabled);
                 Assert.Equal(60, seek.Maximum);
                 Assert.Equal(12, seek.Value);
@@ -69,15 +75,17 @@ public sealed class PlaybackPanelTests
                 Assert.Contains("externo", panel.Message);
                 controller.Update(PlaybackControllerTests.Active());
                 host.BringIntoView();
+                if (((HomeViewModel)window.DataContext).IsCompactWorkspace) details.IsExpanded=false;
                 window.UpdateLayout();
                 var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render(window);
                 var encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                var destination = Path.Combine(root, "TestResults", $"playback-panel-{(dark ? "dark" : "light")}.png");
+                var destination = Path.Combine(root, "TestResults", $"playback-panel-{(dark ? "dark" : "light")}-{width}-{scale}.png");
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 using var output = File.Create(destination);
                 encoder.Save(output);
+                Assert.True(((ListBox)window.FindName("CatalogList")).ActualHeight>60, $"Lista: {((ListBox)window.FindName("CatalogList")).ActualHeight}");
             }
             catch (Exception exception) { failure = exception; }
             finally { window?.Close(); }

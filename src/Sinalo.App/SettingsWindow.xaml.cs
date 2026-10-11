@@ -30,6 +30,7 @@ public partial class SettingsWindow : Window
         _themeService = themeService;
         _cleanupConfigurationService = cleanupConfigurationService;
         InitializeComponent();
+        InitializeSettingsUi();
         ContentPathText.Text = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, _themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
         Loaded += LoadConfigurationAsync;
@@ -63,12 +64,14 @@ public partial class SettingsWindow : Window
         {
             _loading = false;
             RefreshQuarterlyAvailability();
+            SyncDownloadModes();
+            _initialSettings = CaptureSettings();
         }
     }
 
     private void SaturdaySelection_Changed(object sender, RoutedEventArgs e)
     {
-        if (!_loading) RefreshQuarterlyAvailability();
+        if (!_loading) { RefreshQuarterlyAvailability(); SyncDownloadModes(); }
     }
 
     private void QuarterlySelection_Unchecked(object sender, RoutedEventArgs e)
@@ -110,40 +113,45 @@ public partial class SettingsWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
+        if (_saving || _loading) return;
+        SettingsFeedback.Text = "";
+        if (!ValidateSettings()) return;
+        var oldPath = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
+        var moving = !string.Equals(System.IO.Path.TrimEndingDirectorySeparator(oldPath), System.IO.Path.TrimEndingDirectorySeparator(ContentPathText.Text), StringComparison.OrdinalIgnoreCase);
+        if (moving && !UiDialog.Confirm(this, "Transferir vídeos?", $"Pasta atual: {oldPath}\nNova pasta: {ContentPathText.Text}\nOs vídeos existentes serão transferidos. Aguarde a conclusão antes de fechar.", "Transferir e salvar")) return;
+        _saving = true; SettingsCategories.IsEnabled = false; SaveSettingsButton.IsEnabled = false; CancelSettingsButton.IsEnabled = false;
+        SettingsFeedback.Text = moving ? "Transferindo vídeos e salvando configurações..." : "Salvando configurações...";
+        var pathSaved = false;
         try
         {
             if (_contentPathMigrationService is not null) await _contentPathMigrationService.MoveAsync(ContentPathText.Text);
             else _contentPathConfigurationService?.SaveContentPath(ContentPathText.Text);
+            pathSaved = moving;
+            var missionsSelection = ReadSelection(MissionsPreviousSaturday, MissionsCurrentSaturday, MissionsNextSaturday);
+            var provaiSelection = ReadSelection(ProvaiPreviousSaturday, ProvaiCurrentSaturday, ProvaiNextSaturday);
+            var healthSelection = ReadSelection(HealthPreviousSaturday, HealthCurrentSaturday, HealthNextSaturday);
+            await _service.SaveSourcesAsync([
+                new(ContentSource.Missions, "Informativo das Missões", MissionsUrl.Text, PolicyFrom(missionsSelection), missionsSelection),
+                new(ContentSource.ProvaiEVede, "Provai e Vede", ProvaiUrl.Text, PolicyFrom(provaiSelection), provaiSelection),
+                new(ContentSource.Health, "Minuto de Saúde", HealthUrl.Text, PolicyFrom(healthSelection), healthSelection)]);
+            if (_cleanupConfigurationService is not null)
+            {
+                var months = CleanupRetentionMonths.SelectedItem is System.Windows.Controls.ComboBoxItem { Tag: string tag } && int.TryParse(tag, out var selectedMonths) ? selectedMonths : 3;
+                await _cleanupConfigurationService.SaveAsync(new ContentCleanupConfiguration(CleanupEnabled.IsChecked == true, months, int.Parse(CleanupGracePeriodDays.Text), _cleanupConfiguration.LastRunDate));
+            }
+            if (_themePreferenceService is not null)
+            {
+                var preference = (ThemePreference)Math.Clamp(ThemePreferenceCombo.SelectedIndex, 0, 2);
+                await _themePreferenceService.SaveAsync(preference); _themeService?.SetPreference(preference);
+            }
+            Saved = true; _saving = false; DialogResult = true;
         }
         catch (Exception exception)
         {
-            System.Windows.MessageBox.Show(this, $"Não foi possível usar essa pasta para o conteúdo local.\n\n{exception.Message}", "Configurações", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            var recovery = exception is UnauthorizedAccessException ? "Verifique a permissão de acesso à pasta." : exception is System.IO.IOException ? "Verifique o espaço livre e o acesso à pasta." : "Confira os campos e tente salvar novamente. Se persistir, procure suporte.";
+            SettingsFeedback.Text = (pathSaved ? "A pasta foi transferida, mas outras configurações não foram concluídas. " : "Não foi possível concluir o salvamento. ") + recovery;
         }
-
-        var missionsSelection = ReadSelection(MissionsPreviousSaturday, MissionsCurrentSaturday, MissionsNextSaturday);
-        var provaiSelection = ReadSelection(ProvaiPreviousSaturday, ProvaiCurrentSaturday, ProvaiNextSaturday);
-        var healthSelection = ReadSelection(HealthPreviousSaturday, HealthCurrentSaturday, HealthNextSaturday);
-        await _service.SaveSourcesAsync(
-        [
-            new(ContentSource.Missions, "Informativo das Missões", MissionsUrl.Text, PolicyFrom(missionsSelection), missionsSelection),
-            new(ContentSource.ProvaiEVede, "Provai e Vede", ProvaiUrl.Text, PolicyFrom(provaiSelection), provaiSelection),
-            new(ContentSource.Health, "Minuto de Saúde", HealthUrl.Text, PolicyFrom(healthSelection), healthSelection)
-        ]);
-        if (_cleanupConfigurationService is not null)
-        {
-            var months = CleanupRetentionMonths.SelectedItem is System.Windows.Controls.ComboBoxItem { Tag: string tag } && int.TryParse(tag, out var selectedMonths) ? selectedMonths : 3;
-            var grace = int.TryParse(CleanupGracePeriodDays.Text, out var selectedGrace) ? selectedGrace : 30;
-            await _cleanupConfigurationService.SaveAsync(new ContentCleanupConfiguration(CleanupEnabled.IsChecked == true, months, grace, _cleanupConfiguration.LastRunDate));
-        }
-        if (_themePreferenceService is not null)
-        {
-            var preference = (ThemePreference)Math.Clamp(ThemePreferenceCombo.SelectedIndex, (int)ThemePreference.System, (int)ThemePreference.Dark);
-            await _themePreferenceService.SaveAsync(preference);
-            _themeService?.SetPreference(preference);
-        }
-        Saved = true;
-        DialogResult = true;
+        finally { _saving = false; SettingsCategories.IsEnabled = true; SaveSettingsButton.IsEnabled = true; CancelSettingsButton.IsEnabled = true; }
     }
 
     private void ChooseContentPath_Click(object sender, RoutedEventArgs e)

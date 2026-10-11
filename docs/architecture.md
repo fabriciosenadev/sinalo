@@ -179,6 +179,10 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 
 - A tela principal e uma biblioteca de uso rapido: `Hoje`, `Proximo Sabado`, fontes e busca.
 - Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; em falha de inicializacao/conexao, o Sinalo usa VLC e depois o player padrao do Windows. Erros da midia e falhas durante uma sessao nao abrem outro player automaticamente.
+
+- A tela principal oferece os programas, pesquisa por título/data, seleção de
+  vídeo e detalhes contextuais. A Biblioteca geral permanece em outra branch.
+- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; na falha dele, o Sinalo usa VLC e depois o player padrao do Windows.
 - O MPV permanece ocioso entre vídeos e recebe a troca de arquivo por IPC, reduzindo a espera em computadores com HD. Ele pode abrir em tela cheia no monitor selecionado pelo operador.
 - A UI exige uma tela de saida para a reproducao. Uma configuracao de tela
   existente e preservada; instalacoes legadas sem tela definida usam a tela
@@ -227,3 +231,24 @@ de esquema SQLite, retomada de posição gravada ou persistência de volume.
 ## Premissa para sincronizacao offline
 
 O Sinalo so marca um item como offline depois de validar um arquivo local completo. A busca no site configurado e o download manual de um link do YouTube são caminhos distintos: um item ausente no site pode ser adicionado pelo operador por link. Esse download conserva arquivos parciais para retomada quando a origem permitir e não torna o vídeo pronto antes da validação.
+
+## Remodelagem de experiência — branch feat/experiencia-usuario
+
+A camada App compartilha tokens e templates em `VisualIdentity.xaml`, com cores
+semânticas atualizadas por `SystemThemeService`. `MainWindow` contém navegação,
+workspace contextual, escolha de saída e indicadores globais; as ferramentas
+estão em `Views`, sem duplicar os serviços de domínio.
+
+`HomeWorkspaceState` guarda apenas estado de interface. Recarregar o catálogo
+preserva ferramenta ativa, seleção por ID, programação em memória, consulta
+por link, downloads e atualização. Configuração de monitor e regras existentes
+continuam nos serviços originais; não houve mudança de banco ou de formato
+persistido. Escolhas trimestrais legadas continuam representadas por ausência
+de sábados, agora com escolha explícita no formulário.
+
+Downloads, programação, atualização e diagnósticos têm superfícies dedicadas.
+A apresentação mantém a ferramenta que abriu sua cena, não a página atual do
+operador, e usa fundo escuro de alto contraste independente do tema.
+
+A branch não contém Biblioteca geral nem controles novos de MPV. Ver
+[registro de execução](ux-ui/execucao.md) e pendências de validação física.

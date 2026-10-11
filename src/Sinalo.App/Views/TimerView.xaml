@@ -1,0 +1,113 @@
+<UserControl
+  x:Class="Sinalo.App.Views.TimerView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter
+      x:Key="BooleanToVisibilityConverter" />
+  </UserControl.Resources>
+  <ScrollViewer
+    VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled"
+    Padding="0,0,12,0">
+    <StackPanel>
+      <TextBlock
+        Text="Controle a apresentação da programação."
+        Foreground="{DynamicResource Brush.TextSecondary}"
+        Margin="0,4,0,24" />
+      <Border
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="1"
+        CornerRadius="12"
+        Padding="20">
+        <StackPanel>
+          <TextBlock
+            Text="{Binding Timer.DisplayTime}"
+            FontSize="72"
+            FontWeight="SemiBold"
+            Foreground="{DynamicResource Brush.Accent}"
+            HorizontalAlignment="Center" />
+          <TextBlock
+            Text="{Binding Timer.StateLabel}"
+            Foreground="{DynamicResource Brush.TextSecondary}"
+            HorizontalAlignment="Center"
+            Margin="0,4,0,20" />
+          <WrapPanel
+            Orientation="Horizontal"
+            HorizontalAlignment="Center">
+            <Button
+              Content="{Binding Timer.StartPauseLabel}"
+              Click="TimerStartPause_Click"
+              Style="{DynamicResource Button.Primary}"
+              Margin="0,0,8,8"
+              VerticalAlignment="Center" />
+            <Button
+              Content="Zerar"
+              ToolTip="Volta o cronômetro ao valor inicial"
+              Click="TimerReset_Click"
+              Margin="0,0,8,8"
+              VerticalAlignment="Center" />
+          </WrapPanel>
+          <TextBlock
+            Text="Direção"
+            Foreground="{DynamicResource Brush.TextSecondary}"
+            Margin="0,24,0,4" />
+          <ComboBox
+            ItemsSource="{Binding Timer.Directions}"
+            SelectedItem="{Binding Timer.SelectedDirection}"
+            SelectionChanged="TimerConfiguration_SelectionChanged"
+            Padding="8">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock
+                  Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock
+            Visibility="{Binding Timer.IsCountdown, Converter={StaticResource BooleanToVisibilityConverter}}"
+            Text="Duração regressiva (HH:MM:SS)"
+            Foreground="{DynamicResource Brush.TextSecondary}"
+            Margin="0,12,0,4" />
+          <TextBox
+            Visibility="{Binding Timer.IsCountdown, Converter={StaticResource BooleanToVisibilityConverter}}"
+            Text="{Binding Timer.CountdownDurationText, UpdateSourceTrigger=PropertyChanged}"
+            LostFocus="TimerConfiguration_Changed"
+            IsEnabled="{Binding Timer.IsCountdown}"
+            Padding="8" />
+          <TextBlock
+            Text="Formato"
+            Foreground="{DynamicResource Brush.TextSecondary}"
+            Margin="0,12,0,4" />
+          <ComboBox
+            ItemsSource="{Binding Timer.DisplayFormats}"
+            SelectedItem="{Binding Timer.SelectedFormat}"
+            SelectionChanged="TimerConfiguration_SelectionChanged"
+            Padding="8">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock
+                  Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <WrapPanel
+            Margin="0,24,0,0">
+            <Button
+              Content="Abrir apresentação do cronômetro"
+              Click="OpenTimerPresentation_Click"
+              Style="{DynamicResource Button.Primary}"
+              Margin="0,0,8,8"
+              VerticalAlignment="Center" />
+            <Button
+              Content="Fechar apresentação"
+              Click="CloseTimerPresentation_Click"
+              Margin="0,0,8,8"
+              VerticalAlignment="Center" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
