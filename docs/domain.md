@@ -57,7 +57,7 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 - Vídeos adicionados manualmente por link são fixados por padrão e identificados pelo programa e ID estável do vídeo para evitar download duplicado no mesmo destino. O identificador legado `health-youtube-<id>` permanece válido para Minuto de Saúde.
 - O trimestre anterior pode ser limpo somente apos sincronizacao completa do novo, respeitando o periodo de tolerancia configurado.
 
-## Biblioteca de vídeos (próxima entrega)
+## Biblioteca de vídeos (entrega 1.2.0)
 
 - Vídeos importados têm ID próprio, origem local, tipo MP4, disponibilidade,
   histórico independente e data opcional; não recebem programa ou data fictícios.

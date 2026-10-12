@@ -1,6 +1,6 @@
 # Roadmap do Sinalo
 
-**Versão atual:** 1.1.0 — série estável
+**Versão atual:** 1.2.0 — série estável
 **Revisado em:** 11/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
@@ -36,7 +36,7 @@ Também estão concluídos:
   programas, data de uso, qualidades MP4, fila única de downloads e retomada de
   arquivos parciais.
 
-## Integração para a próxima entrega — ainda sem release
+## Entrega 1.2.0
 
 - **Controle completo do MPV:** pausar/continuar, parar, reiniciar, posição,
   volume e mudo com estado confirmado por IPC; painel global comum a programas,
@@ -48,12 +48,16 @@ Também estão concluídos:
   Componentes, monitor, confirmações e downloads compartilhados; ajustes para
   janelas compactas e escala de 150%, inclusive com vídeo ativo.
 - [Revisão integrada por tela](ux-ui/revisao-integrada.md). As três entregas
-  estão integradas e validadas na main local. Não há incremento de versão,
-  tag ou instalador. PR #22 integrado no GitHub; conclusão remota
-  de #20/#21 depende do envio dos ajustes e do CI final.
+  estão integradas na main local e os commits já foram enviados ao GitHub
+  (377094b). A entrega **1.2.0** é minor por acrescentar funcionalidades
+  compatíveis. CI da integração aprovado; publicação pelo workflow de release.
+- **Acabamento para 1.2.0:** rolagem suave e rápida na roda do mouse, com barra
+  direta e virtualização preservada; programação acessível pela navegação.
+  Novo teste manual do scroll aprovado pelo operador em 11/10/2026,
+  com autorização para publicar a versão.
 - Os testes isolados e renders não substituem o aceite conjunto em instalação
-  legada, projetor, DPI real e computador com HD. Confirmar esses cenários
-  antes de autorizar release.
+  legada, projetor, DPI real e computador com HD. Esses cenários permanecem
+  no roteiro de validação operacional; a aprovação do scroll não presume todos eles.
 
 ## Melhorias futuras
 
@@ -66,7 +70,7 @@ em memória. Esses componentes serão preservados. A fila de sincronização atu
 reprodução. A evolução abaixo deve manter os vídeos existentes, as configurações
 de saída e o funcionamento offline das instalações atuais.
 
-1. **Biblioteca geral e importação local — vídeos integrados ao conjunto em revisão;
+1. **Biblioteca geral e importação local — vídeos entregues na 1.2.0;
    expansão futura, prioridade alta.** Ampliar o
    catálogo para vídeos, áudios e imagens adicionados pelo operador, mantendo
    os três programas como origem/atributo dos vídeos atuais. Definir e mostrar
@@ -81,9 +85,8 @@ de saída e o funcionamento offline das instalações atuais.
    filtros e ordenação. Criar uma operação global e ordenável de itens preparados,
    admitindo o mesmo vídeo mais de uma vez. Migrar a programação atual, hoje
    apenas em memória, para esse modelo sem duplicar os arquivos físicos.
-3. **Controle completo do player — implementado e revisado em conjunto.**
-   Base para evoluções futuras. A integração remota e a publicação seguem
-   os pré-requisitos da seção de integração acima.
+3. **Controle completo do player — entregue na 1.2.0.**
+   Base para evoluções futuras, sem fila automática de reprodução.
 4. **Fila de reprodução separada — prioridade alta, depende do player.** Ao
    implementar, usar a base integrada e confirmar seu estado remoto antes de
    criar outra branch; não repetir o desenvolvimento dos contratos. Salvar

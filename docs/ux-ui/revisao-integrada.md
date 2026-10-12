@@ -1,7 +1,8 @@
 # Revisão integrada de UX/UI — MPV, Biblioteca e experiência
 
-Data: 11/10/2026. A versão publicada continua 1.1.0. Este documento não é uma
-aprovação de release nem substitui o teste operacional da instalação.
+Data: 11/10/2026. Revisão da entrega 1.2.0. O operador aprovou o teste manual
+da rolagem e autorizou a publicação. Isso não substitui os testes físicos
+específicos de instalação, projetor e computador com HD.
 
 ## Objetivo e critérios
 
@@ -29,7 +30,7 @@ Marca, configurações existentes, banco legado e arquivos devem ser preservados
 | Downloads e seleção manual | Superfícies comuns para todo o aplicativo; progresso indeterminado explícito, seleção elegível e cancelamento seguro. |
 | Diagnósticos e confirmações | Biblioteca usa os diálogos tematizados, com escolha segura e proteção de edição; não introduz MessageBox visualmente diferente. |
 | Apresentação | A cena mantém a ferramenta que a abriu; monitor e coordenação com vídeo preservados. Tela pública não ganha controles do operador. |
-| Novidades, atualização e programação | Identidade comum e comportamento da entrega de UX mantidos. Não houve mudança de versão, tag ou instalador nesta revisão. |
+| Novidades, atualização e programação | Identidade comum e comportamento da entrega de UX mantidos. Programação acessível pela navegação, sem prometer reprodução automática. |
 
 ## Ajustes efetivamente aplicados na integração
 
@@ -41,6 +42,14 @@ Marca, configurações existentes, banco legado e arquivos devem ser preservados
   recolhíveis, sem alterar a seleção ou os dados ao abrir/fechar.
 - Mensagens vazias não consomem uma seção. Status compacto não ocupa várias
   linhas; o texto completo permanece disponível no tooltip.
+- Listas usam rolagem por pixels em vez de saltos por item, com atualização
+  durante o arraste da barra. Virtualização e reciclagem permanecem ativas;
+  a roda usa uma transição de 110 ms com resposta no primeiro frame e destino
+  acumulado. Inverter a direção descarta o destino anterior. Barra e teclado
+  interrompem a transição; o evento de renderização só fica inscrito durante
+  o movimento e é desligado ao concluir ou ocultar/descarregar a região.
+  A preferência de animações do Windows é respeitada. Não há I/O de arquivos.
+- Programação desta sessão ganhou acesso permanente pela navegação.
 - A abertura da Biblioteca carrega dados em segundo plano. Navegar entre
   programas carrega o catálogo local, mantendo ferramentas e seleção ao atualizar.
 - Replay de importados, proteção da apresentação e histórico usam os serviços
@@ -48,8 +57,10 @@ Marca, configurações existentes, banco legado e arquivos devem ser preservados
 
 ## Validação
 
-Validação final local: **348 testes aprovados**, **88,06% de linhas** e
-**77,28% de ramificações**, com limiar mantido em 75% para ambas as métricas.
+Validação local final da 1.2.0: **353 testes aprovados**, **88,38% de linhas** e
+**77,17% de ramificações**, com limiar mantido em 75% para ambas as métricas.
+Inclui testes da resposta inicial, acumulação e inversão do scroll, limites,
+cancelamento e áreas aninhadas. A rolagem foi aprovada manualmente pelo operador.
 
 Testes renderizam temas claro/escuro em 1280×720, 1920×1080, janelas menores e
 escalas simuladas 100%, 125% e 150%. Há cenários com lista cheia, detalhes,
@@ -66,9 +77,8 @@ Validar também instalação legada, importação interrompida e atualização i
 
 ## Publicação
 
-O PR #22 foi integrado no GitHub. Os ajustes combinados de #20 e #21 foram
-validados e integrados na **main local**. O envio remoto dos commits de #20/#21
-ficou pendente por falha de conexão local com o GitHub; o conector alternativo
-não possui permissão de escrita. Confirmar o envio e o CI final da main.
-Não remover os avisos de prévia do site nem anunciar uma nova versão antes
-do ciclo de release autorizado e da validação do conjunto.
+As três entregas e os ajustes combinados commitados foram enviados à main
+do GitHub em 11/10/2026 (377094b); PRs #20/#21/#22 mesclados e CI aprovado.
+O operador aprovou manualmente a rolagem em 11/10/2026 e autorizou a publicação
+da 1.2.0. Ajustes finais, changelog e guia acompanham o commit da versão;
+confirmar CI final, tag e instalador pelo workflow antes de comunicar sucesso.

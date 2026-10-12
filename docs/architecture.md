@@ -195,7 +195,7 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
   a desconexao do monitor e verificada antes de abrir a apresentacao.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
-## Biblioteca local (integrada ao conjunto, ainda não publicada)
+## Biblioteca local (entrega 1.2.0)
 
 `LibraryMedia` é independente de `ContentSource`. `library_media` acrescenta
 metadados aos itens legados por vínculo único; caminho, histórico e fixação dos
@@ -220,7 +220,7 @@ blocos pesados aguardam a reprodução encerrar. A atualização cancela e aguar
 a importação antes de encerrar. A reprodução usa os contratos atuais da main,
 sem importar a implementação de controle completo do MPV da outra branch.
 
-### Controle de reprodução implementado localmente
+### Controle de reprodução (entrega 1.2.0)
 
 `IPlaybackController` publica snapshots imutáveis por sessão com mídia, saída,
 player, estado, posição, duração, volume, mudo e capacidades. Comandos só são
@@ -278,3 +278,13 @@ A Biblioteca compartilha shell, monitor, tema, downloads e confirmações. O pla
 atribui ID/título aos importados e valida arquivos antes do replay; o painel
 recebe a estratégia de replay sem depender da camada Infrastructure.
 Ver [revisão integrada](ux-ui/revisao-integrada.md) e pendências de validação física.
+
+### Rolagem da interface
+
+Listas continuam virtualizadas com reciclagem e unidade em pixels.
+`SmoothScroll` interpola somente a roda do mouse por 110 ms usando o relógio
+real e os frames do WPF, sem timer permanente, I/O ou consultas ao banco.
+Gestos sucessivos acumulam o destino; inverter descarta o destino anterior.
+Arraste da barra e teclado interrompem a interpolação e seguem nativos.
+Áreas aninhadas não rolam juntas, e o evento de renderização é desligado ao
+concluir/descarregar. Animações desativadas no Windows mantêm deslocamento direto.

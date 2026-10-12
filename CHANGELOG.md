@@ -4,7 +4,9 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
-## Em desenvolvimento — ainda não publicado
+## 1.2.0 - 11/10/2026
+
+### Biblioteca de vídeos
 
 - Nova **Biblioteca de vídeos** reúne os vídeos dos programas e MP4 locais, com
   pesquisa por nome/data, filtro de origem e ordenação.
@@ -40,6 +42,10 @@ direto na instalação ou no uso do aplicativo.
 
 ### Melhorias
 
+- Rolagem por pixels com transição curta na roda do mouse, evitando saltos
+  por item e mantendo virtualização. Arrastar a barra e usar o teclado continua
+  direto; a preferência do Windows por desativar animações é respeitada.
+
 - Navegação com identificação da tela ativa e espaço central dedicado à tarefa.
   As ferramentas deixam de competir com uma lateral de ações de vídeos.
 - Programas com pesquisa identificada, títulos legíveis e detalhes contextuais;
@@ -56,12 +62,11 @@ direto na instalação ou no uso do aplicativo.
 - Confirmação antes de transferir conteúdo, descartar alterações, reiniciar
   sorteio ou remover participantes; feedback de validação no formulário.
 - Programação desta sessão em painel próprio, com posições e ações nomeadas.
+  Acesso permanente pela navegação, sem precisar procurar em Mais opções.
   Continua apenas em memória, sem reprodução automática.
 - Temas claro e escuro consistentes em listas, controles, rolagem e diálogos;
   Novidades destaca a versão instalada e recolhe o histórico anterior.
 
-A interface, a Biblioteca e o player foram revisados em conjunto. A integração
-não altera a versão publicada 1.1.0; ainda não há nova tag ou instalador.
 - A Biblioteca usa o monitor, os diálogos e o painel de downloads compartilhados.
 - Vídeos importados aparecem na sessão global e podem ser reproduzidos novamente
   pelo serviço da Biblioteca, mantendo seu histórico e validando o arquivo.

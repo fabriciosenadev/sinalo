@@ -68,3 +68,12 @@ Conferir em uso real: DPI do Windows, teclado/leitor de tela, monitor principal
 e projetor, atualização instalada e máquina com HD. Ver roteiro em
 [execução UX/UI](ux-ui/execucao.md). Não transformar testes simulados em aceite
 manual nem reduzir a meta de 75% para acomodar o redesign.
+
+Para o candidato 1.2.0, `WheelScrollMotionTests` valida resposta no primeiro
+frame, término em 110 ms, movimentos acumulados, inversão e limites.
+Os testes de interface verificam pixels, virtualização, barra arrastável e
+áreas aninhadas, além de descarregar uma região com transição ativa.
+Antes do commit da versão, o operador deve testar novamente a sensação do
+scroll na Biblioteca, programas e Configurações, com roda e barra, nos dois
+temas. Esse gate foi aprovado pelo operador em 11/10/2026 e está registrado
+na [entrega da 1.2.0](release-1.2.0.md); não presume os demais cenários físicos.

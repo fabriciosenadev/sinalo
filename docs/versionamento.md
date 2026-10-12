@@ -32,8 +32,10 @@ preservados sempre que possível.
 3. O processo executa os testes, exige pelo menos 75% de cobertura de linhas e
    ramificações, publica para `win-x64` e gera o instalador Inno Setup.
 4. Revise o instalador em `.release/installer`, o checksum e os arquivos
-   alterados. A versão explícita precisa estar registrada em
-   `src/Sinalo.App/Sinalo.App.csproj` antes da geração.
+   alterados. `-Version` aplica a versão ao pacote, mas não a grava no projeto:
+   depois da geração bem-sucedida, alinhe `src/Sinalo.App/Sinalo.App.csproj`
+   antes do commit. `-NextPatch` grava a versão depois do sucesso.
+   Se houver um teste manual pendente, pare antes de commitar ou publicar.
 5. Faça o commit, envie o branch `main` e crie a tag anotada `vX.Y.Z` com a
    mesma versão do projeto.
 6. A tag aciona o GitHub Actions, que gera o instalador e publica a release
