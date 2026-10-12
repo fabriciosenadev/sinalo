@@ -16,6 +16,7 @@ using System.IO;
 
 namespace Sinalo.Tests.EndToEnd;
 
+[Collection(WpfInterfaceCollection.Name)]
 public sealed class HomeWorkflowTests
 {
     [Fact]

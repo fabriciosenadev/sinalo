@@ -1,7 +1,7 @@
 # Roadmap do Sinalo
 
 **Versão atual:** 1.1.0 — série estável
-**Revisado em:** 07/10/2026
+**Revisado em:** 11/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
@@ -36,41 +36,23 @@ Também estão concluídos:
   programas, data de uso, qualidades MP4, fila única de downloads e retomada de
   arquivos parciais.
 
-## Implementado e validado — preservado em branch, sem release
+## Integração para a próxima entrega — ainda sem release
 
-- **Biblioteca geral — primeira etapa implementada, validação manual pendente:**
-  branch `feat/biblioteca-geral-importacao-local`, baseada na `main`, independente
-  do controle completo do MPV. Importação MP4 por arquivo/pasta, cópia/referência,
-  pesquisa paginada, nome/data, localização de ausentes, histórico, exclusão
-  protegida, recuperação de interrupções e mudança da pasta gerenciada.
-  Testes automatizados incluem SQLite, arquivos reais e reprodução com MPV.
-  Validar temas, instalação legada, dois monitores, pendrive e computador com HD.
-  Sem release nesta etapa; áudio e imagens continuam pendentes.
-  Redesenho UX/UI implementado na mesma branch: duas abas, lista hierarquizada,
-  detalhes responsivos, edição protegida, tela de saída compartilhada e fila
-  acessível, sem ações de programa ou faixa de sábados ocupando a biblioteca.
-  Testes renderizam lista cheia nos temas claro/escuro e escalas 100/125/150%;
-  a aceitação visual do operador continua pendente.
-
-- **Controle completo do MPV:** painel de reprodução independente da navegação,
-  pausa/continuação, parada, reinício, posição, volume e mudo; estado e término
-  confirmados por IPC, histórico após carregamento e coordenação com apresentação.
-  A base da fila foi entregue, mas a fila automática continua fora desta etapa.
-  O usuário confirmou em 07/10/2026 que o teste realizado funcionou. A validação
-  automatizada passou com 288 testes, 86,28% de linhas e 75,72% de branches.
-  Implementação, testes, notas em desenvolvimento e ajustes do guia estão na
-  branch [`feat/controle-completo-mpv`](https://github.com/fabriciosenadev/sinalo/tree/feat/controle-completo-mpv).
-  **Envio remoto pendente:** a branch e os commits estão salvos localmente.
-  Em 07/10/2026, o GitHub rejeitou os pushes da branch e do roadmap da `main`
-  com `Internal Server Error`; repetir os envios sem force push quando o serviço
-  aceitar novamente. O link acima identifica o destino remoto planejado.
-  Por decisão do usuário, a publicação foi adiada, sem nova versão definida.
-  O código não foi integrado à `main`; nesta branch principal permanece apenas
-  este registro do roadmap. Não criar tag/release nem incluir o recurso em
-  versões da `main` até autorização para integrar a branch.
-  Antes da publicação futura, confirmar os cenários de dois monitores,
-  computador com HD e instalação/atualização que não tenham sido cobertos pelo
-  teste informado. Spec: `Sinalo-specs/controle-completo-mpv.md`.
+- **Controle completo do MPV:** pausar/continuar, parar, reiniciar, posição,
+  volume e mudo com estado confirmado por IPC; painel global comum a programas,
+  Biblioteca e ferramentas. Não inclui fila automática de reprodução.
+- **Biblioteca geral — vídeos MP4:** importação por arquivo/pasta com cópia ou
+  referência, pesquisa, detalhes, edição protegida, localização de ausentes,
+  histórico e remoção segura. Áudio e imagens continuam futuros.
+- **UX/UI:** planos 00–17 executados e revisados com MPV e Biblioteca.
+  Componentes, monitor, confirmações e downloads compartilhados; ajustes para
+  janelas compactas e escala de 150%, inclusive com vídeo ativo.
+- [Revisão integrada por tela](ux-ui/revisao-integrada.md). Não há incremento
+  de versão, tag ou instalador. PR #22 integrado no GitHub; conclusão remota
+  de #20/#21 depende do envio dos ajustes e do CI final.
+- Os testes isolados e renders não substituem o aceite conjunto em instalação
+  legada, projetor, DPI real e computador com HD. Confirmar esses cenários
+  antes de autorizar release.
 
 ## Melhorias futuras
 
@@ -83,7 +65,7 @@ em memória. Esses componentes serão preservados. A fila de sincronização atu
 reprodução. A evolução abaixo deve manter os vídeos existentes, as configurações
 de saída e o funcionamento offline das instalações atuais.
 
-1. **Biblioteca geral e importação local — vídeos implementados em branch;
+1. **Biblioteca geral e importação local — vídeos integrados ao conjunto em revisão;
    expansão futura, prioridade alta.** Ampliar o
    catálogo para vídeos, áudios e imagens adicionados pelo operador, mantendo
    os três programas como origem/atributo dos vídeos atuais. Definir e mostrar
@@ -98,12 +80,12 @@ de saída e o funcionamento offline das instalações atuais.
    filtros e ordenação. Criar uma operação global e ordenável de itens preparados,
    admitindo o mesmo vídeo mais de uma vez. Migrar a programação atual, hoje
    apenas em memória, para esse modelo sem duplicar os arquivos físicos.
-3. **Controle completo do player — implementado e validado em branch.** Base de
-   controle concluída em `feat/controle-completo-mpv`; integração e publicação
-   adiadas por decisão do usuário, conforme seção acima.
+3. **Controle completo do player — implementado e revisado em conjunto.**
+   Base para evoluções futuras. A integração remota e a publicação seguem
+   os pré-requisitos da seção de integração acima.
 4. **Fila de reprodução separada — prioridade alta, depende do player.** Ao
-   implementar, trabalhar sobre a branch do controle ou integrar essa base com
-   autorização; os contratos novos ainda não estão disponíveis na `main`. Salvar
+   implementar, usar a base integrada e confirmar seu estado remoto antes de
+   criar outra branch; não repetir o desenvolvimento dos contratos. Salvar
    ordem, destino, item atual e estado da fila; oferecer modo manual e automático.
    Avançar automaticamente apenas após término confirmado de mídia iniciada pela
    fila. Validar o arquivo local antes de cada reprodução; imagens devem ficar

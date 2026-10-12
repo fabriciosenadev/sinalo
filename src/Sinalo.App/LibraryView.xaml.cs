@@ -30,8 +30,8 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         UpdateWorkspaceLayout();
     }
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private LibraryEditDecision ConfirmChanges() => MessageBox.Show("Salvar as alterações deste vídeo antes de continuar?\nSim: salvar. Não: descartar. Cancelar: continuar editando.", "Alterações não salvas", MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
-    { MessageBoxResult.Yes => LibraryEditDecision.Save, MessageBoxResult.No => LibraryEditDecision.Discard, _ => LibraryEditDecision.Cancel };
+    private LibraryEditDecision ConfirmChanges() => UiDialog.ChooseUnsavedChanges(Window.GetWindow(this)) switch
+    { UiDialog.UnsavedChoice.Save => LibraryEditDecision.Save, UiDialog.UnsavedChoice.Discard => LibraryEditDecision.Discard, _ => LibraryEditDecision.Cancel };
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(LibraryViewModel.ShowDetails) or nameof(LibraryViewModel.IsWideLayout)) UpdateWorkspaceLayout();
@@ -49,16 +49,19 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         VideoListRegion.Margin = wide && _model.ShowDetails ? new Thickness(0,0,16,0) : new Thickness(0);
         var shortViewport = ActualHeight < 500;
         var compact = ActualHeight < 430 || ActualWidth < 650;
+        LibraryHeader.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        VideosTab.Padding = ImportTab.Padding = compact ? new Thickness(12,6,12,6) : new Thickness(18,12,18,12);
+        FilterOptions.Margin = new Thickness(0,0,0,compact ? 4 : 8);
         if (_compactLayout != compact)
         {
             _compactLayout = compact;
             FilterOptions.IsExpanded = !compact;
-            OutputOptions.IsExpanded = !compact;
         }
-        LibraryTitle.FontSize = compact ? 20 : 26;
-        DetailsRegion.Padding = new Thickness(compact ? 12 : 18);
+        DetailsRegion.Padding = new Thickness(compact ? 8 : 18);
+        LibraryBackButton.Margin = new Thickness(0,0,0,compact ? 4 : 12);
+        LibraryPlayButton.Margin = new Thickness(0,compact ? 4 : 12,0,0);
         LibraryHeader.Margin = new Thickness(0,0,0,shortViewport ? 8 : 14);
-        TabBar.Margin = new Thickness(0,0,0,shortViewport ? 8 : 16);
+        TabBar.Margin = new Thickness(0,0,0,compact ? 4 : shortViewport ? 8 : 16);
         FilterBar.Margin = new Thickness(0,0,0,shortViewport ? 8 : 14);
         ListFooter.Margin = new Thickness(0,shortViewport ? 8 : 12,0,0);
     }
@@ -73,7 +76,6 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         }
         finally { _selecting = false; }
     }
-    private void OutputScreen_SelectionChanged(object sender, SelectionChangedEventArgs e) => (Window.GetWindow(this) as MainWindow)?.LibraryOutputScreenChanged(sender,e);
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private void Queue_Click(object sender, RoutedEventArgs e) => (Window.GetWindow(this) as MainWindow)?.ShowLibraryQueue();
     private async void ClosePresentation_Click(object sender, RoutedEventArgs e)
@@ -100,7 +102,7 @@ public partial class LibraryView : System.Windows.Controls.UserControl
     {
         if (DataContext is not LibraryViewModel { HasSelection: true } model) return;
         var picker = new OpenFileDialog { Filter = "Vídeos MP4|*.mp4", CheckFileExists = true };
-        if (picker.ShowDialog(Window.GetWindow(this)) == true && MessageBox.Show("Validar e usar este arquivo para o cadastro selecionado?", "Localizar arquivo", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+        if (picker.ShowDialog(Window.GetWindow(this)) == true && UiDialog.Confirm(Window.GetWindow(this), "Localizar arquivo", "Validar e usar este arquivo para o cadastro selecionado?", "Validar arquivo"))
             await model.LocateAsync(picker.FileName);
     }
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -111,6 +113,6 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         var message = selected.IsImported
             ? model.DeleteCopy ? "Remover o cadastro e excluir a cópia do Sinalo? O original será preservado." : "Remover somente o cadastro? A cópia e o original ficarão no disco."
             : "Excluir o vídeo baixado? Ele poderá ser baixado novamente pela configuração do programa.";
-        if (MessageBox.Show(message, "Sinalo", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) await model.RemoveAsync();
+        if (UiDialog.Confirm(Window.GetWindow(this), "Remover vídeo", message, model.RemoveLabel)) await model.RemoveAsync();
     }
 }

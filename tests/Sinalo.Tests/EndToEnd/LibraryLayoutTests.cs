@@ -14,19 +14,21 @@ using Sinalo.Infrastructure;
 
 namespace Sinalo.Tests.EndToEnd;
 
-[Collection(Sinalo.Tests.Integration.SqliteIntegrationCollection.Name)]
+[Collection(WpfInterfaceCollection.Name)]
 public sealed class LibraryLayoutTests
 {
     [Theory]
-    [InlineData(false,1280,720,1.0)]
-    [InlineData(true,1280,720,1.0)]
-    [InlineData(false,1920,1080,1.0)]
-    [InlineData(true,1920,1080,1.0)]
-    [InlineData(false,1280,720,1.25)]
-    [InlineData(true,1280,720,1.5)]
-    [InlineData(true,960,580,1.0)]
-    [InlineData(true,1024,768,1.5)]
-    public async Task FullLibraryWithRowsDetailsAndImportFitsOperatorViewport(bool dark,int width,int height,double scale)
+    [InlineData(false,1280,720,1.0,false)]
+    [InlineData(true,1280,720,1.0,false)]
+    [InlineData(false,1920,1080,1.0,false)]
+    [InlineData(true,1920,1080,1.0,false)]
+    [InlineData(false,1280,720,1.25,false)]
+    [InlineData(true,1280,720,1.5,false)]
+    [InlineData(true,960,580,1.0,false)]
+    [InlineData(true,1024,768,1.5,false)]
+    [InlineData(true,1280,720,1.5,true)]
+    [InlineData(false,1024,768,1.5,true)]
+    public async Task FullLibraryWithRowsDetailsAndImportFitsOperatorViewport(bool dark,int width,int height,double scale,bool active)
     {
         var repository = new LibraryPreviewRepository();
         var model = new LibraryViewModel(repository,null!,null!,null!,null!,null!);
@@ -37,14 +39,18 @@ public sealed class LibraryLayoutTests
             try
             {
                 var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../"));
-                XNamespace ns="http://schemas.microsoft.com/winfx/2006/xaml/presentation";
-                var source=XDocument.Load(Path.Combine(root,"src/Sinalo.App/App.xaml"));
-                var dictionary=new XElement(ns+"ResourceDictionary",new XAttribute(XNamespace.Xmlns+"x","http://schemas.microsoft.com/winfx/2006/xaml"),source.Root!.Element(ns+"Application.Resources")!.Elements());
-                var resources=(ResourceDictionary)XamlReader.Parse(dictionary.ToString());
+                var resources=new ResourceDictionary();
                 SystemThemeService.ApplyToResources(resources,dark);
                 var home=new HomeViewModel(new SaturdayWindowService(),new LocalSinaloPathService(rootPath:Path.Combine(Path.GetTempPath(),"Sinalo.Layout")),[]);
                 home.SelectGeneralLibraryWorkspace();
                 var window=new MainWindow { Library=model, DataContext=home, Width=width, Height=height, Resources=resources };
+                resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/Sinalo.App;component/VisualIdentity.xaml",UriKind.Relative) });
+                if (active)
+                {
+                    var controller = new Sinalo.Tests.Unit.RecordingPlaybackController();
+                    controller.Update(Sinalo.Tests.Unit.PlaybackControllerTests.Active());
+                    window.SetValue(MainWindow.PlaybackProperty,new PlaybackViewModel(controller,new Sinalo.Application.Playback.PlaybackService(null!,controller)));
+                }
                 var frame=(FrameworkElement)window.Content; frame.LayoutTransform=new ScaleTransform(scale,scale);
                 window.Show(); window.Width=width; window.Height=height; window.UpdateLayout();
                 try
@@ -52,21 +58,19 @@ public sealed class LibraryLayoutTests
                     var view=(LibraryView)window.FindName("GeneralLibraryWorkspace");
                     var list=(ListBox)view.FindName("MediaList");
                     Assert.Equal(Visibility.Collapsed,((FrameworkElement)window.FindName("SaturdayHeader")).Visibility);
-                    Assert.Equal(Visibility.Collapsed,((FrameworkElement)window.FindName("GlobalActionsSidebar")).Visibility);
-                    Assert.Equal(2,Grid.GetColumnSpan((FrameworkElement)window.FindName("WorkspaceRegion")));
+                    Assert.Equal(Visibility.Collapsed,((FrameworkElement)window.FindName("ProgramWorkspace")).Visibility);
+                    Assert.Equal("Biblioteca de vídeos",home.WorkspaceTitle);
                     Assert.Equal(40,list.Items.Count);
                     Save(window,root,dark,width,scale,"videos");
                     Assert.True(list.ActualHeight>65,$"List height {list.ActualHeight}");
                     if (width == 1024 && scale == 1.5)
                     {
                         var filters = (Expander)view.FindName("FilterOptions");
-                        var output = (Expander)view.FindName("OutputOptions");
                         Assert.False(filters.IsExpanded);
-                        Assert.False(output.IsExpanded);
-                        filters.IsExpanded = true; output.IsExpanded = true; window.UpdateLayout();
+                        filters.IsExpanded = true; window.UpdateLayout();
                         Assert.True(((TextBox)view.FindName("SearchInput")).IsVisible);
-                        Assert.True(((ComboBox)view.FindName("LibraryOutputScreen")).IsVisible);
-                        filters.IsExpanded = false; output.IsExpanded = false; window.UpdateLayout();
+                        Assert.Contains(home.PlaybackScreens,screen => screen.Label == model.OutputScreenLabel);
+                        filters.IsExpanded = false; window.UpdateLayout();
                         Assert.True(list.ActualHeight>65);
                     }
                     Assert.Equal(home.SelectedPlaybackScreen!.Label,model.OutputScreenLabel);
@@ -93,9 +97,8 @@ public sealed class LibraryLayoutTests
                     Assert.True(model.IsEditing); Assert.Equal("Nome editado sem perder a seleção",model.EditName);
                     model.CancelEditingCommand.Execute(null);
                     home.SelectTimerWorkspace(); window.UpdateLayout();
-                    Assert.Equal(Visibility.Visible,((FrameworkElement)window.FindName("SaturdayHeader")).Visibility);
-                    Assert.Equal(Visibility.Visible,((FrameworkElement)window.FindName("GlobalActionsSidebar")).Visibility);
-                    Assert.Equal(1,Grid.GetColumnSpan((FrameworkElement)window.FindName("WorkspaceRegion")));
+                    Assert.Equal(Visibility.Collapsed,view.Visibility);
+                    Assert.Equal("Cronômetro",home.WorkspaceTitle);
                 }
                 finally { window.Close(); }
             }

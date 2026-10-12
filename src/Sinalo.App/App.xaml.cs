@@ -22,6 +22,7 @@ public partial class App : System.Windows.Application
     private SystemThemeService? _themeService;
     private MpvPlaybackLauncher? _mpvPlaybackLauncher;
     private IPresentationOutputService? _presentationOutputService;
+    private FallbackPlaybackLauncher? _playbackController;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -68,16 +69,33 @@ public partial class App : System.Windows.Application
         var missionsSynchronizationService = new MissionsSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService);
 
         var mpvPlaybackLauncher = new MpvPlaybackLauncher();
-        mpvPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
         var windowsPlaybackLauncher = new WindowsPlaybackLauncher();
-        windowsPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
+        var playbackController = new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher);
+        _playbackController = playbackController;
+        playbackController.Changed += snapshot => playbackGate.SetActive(snapshot.IsActive);
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
-        var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory());
-        _presentationOutputService = presentationOutputService;
+        var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory(), new PlaybackOutputCoordinator(playbackController));
+        var playbackService = new PlaybackService(contentCatalog, playbackController, presentationOutputService);
+        var libraryPlayback = new LibraryPlaybackService(libraryRepository, contentCatalog, playbackController, mediaValidator, presentationOutputService);
         MainWindow? mainWindow = null;
-        var launcher = new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher);
+        var playbackViewModel = new PlaybackViewModel(playbackController, playbackService,
+            action => Dispatcher.BeginInvoke(action),
+            resolveReplayOutput: async () =>
+            {
+                if (mainWindow?.DataContext is not HomeViewModel { SelectedPlaybackScreen: { } screen }) return null;
+                var output = OutputSelectionResolver.Resolve(new PlaybackConfiguration(screen.ScreenNumber, screen.MonitorKey), await monitorService.GetOutputsAsync());
+                return output is null ? null : new PlaybackLaunchOptions(output);
+            },
+            replayed: item => (mainWindow?.DataContext as HomeViewModel)?.MarkItemAsPlayed(item),
+            replay: async (id, output) =>
+            {
+                var result = await libraryPlayback.PlayAsync(id, output);
+                if (mainWindow?.Library is { } library) await library.RefreshAsync();
+                return result;
+            });
+        _presentationOutputService = presentationOutputService;
         var libraryViewModel = new LibraryViewModel(libraryRepository, libraryImporter, libraryFiles,
-            new LibraryPlaybackService(libraryRepository, contentCatalog, launcher, mediaValidator), contentCatalog,
+            libraryPlayback, contentCatalog,
             new LocalContentDeletionService(contentCatalog, pathService, playbackGate, contentOperations, libraryRepository),
             resolveOutput: async () =>
             {
@@ -116,18 +134,22 @@ public partial class App : System.Windows.Application
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
             ManualSynchronizationService = new ManualContentSynchronizationService(contentCatalog, downloader, storageSpaceService),
             LinkedVideoService = new LinkedVideoService(pathService, playbackGate: playbackGate),
-            PlaybackService = new PlaybackService(contentCatalog, launcher),
+            PlaybackService = playbackService,
+            Playback = playbackViewModel,
             PlaybackRuntime = mpvPlaybackLauncher
         };
 
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
 
+        ((HomeViewModel)mainWindow.DataContext).SelectGeneralLibraryWorkspace();
         mainWindow.Show();
+        mainWindow.RefreshLibraryContext();
+        _ = libraryViewModel.RefreshAsync();
         _ = Task.Run(async () => { try { await libraryImporter.RecoverAsync(); } catch { /* Retry recovery before the next import. */ } });
         _themeService.ApplyCurrentTheme();
         _ = mainWindow.CheckForUpdateAsync();
         mainWindow.StartPeriodicUpdateChecks();
-        _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
+        _ = Task.Run(async () => { try { await mpvPlaybackLauncher.WarmAsync(); } catch { /* A contingência é resolvida ao solicitar reprodução. */ } });
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -137,6 +159,7 @@ public partial class App : System.Windows.Application
         _themeService?.Dispose();
         try { _mpvPlaybackLauncher?.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
         catch { }
+        _playbackController?.Dispose();
         _httpClient.Dispose();
         base.OnExit(e);
     }

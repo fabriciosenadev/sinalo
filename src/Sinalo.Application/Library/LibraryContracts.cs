@@ -37,15 +37,16 @@ public interface ILibraryFileService
     Task RemoveAsync(string id, bool deleteManagedCopy, CancellationToken token = default);
 }
 public sealed class LibraryPlaybackService(ILibraryRepository library, Sinalo.Application.Catalog.IContentCatalog catalog,
-    IPlaybackLauncher launcher, ILocalMediaValidator validator)
+    IPlaybackLauncher launcher, ILocalMediaValidator validator, Sinalo.Application.Presentation.IPresentationOutputService? presentation = null)
 {
     public async Task<PlaybackResult> PlayAsync(string id, PlaybackLaunchOptions options, CancellationToken token = default)
     {
+        if (presentation?.IsOpen == true) return new(false, "Feche a tela de apresentação antes de reproduzir um vídeo nesta saída.");
         var media = await library.FindAsync(id, token);
         if (media is null || !media.CanPlay) return new(false, "Localize e valide o arquivo antes de reproduzir.");
         await Task.Run(() => validator.ValidateAsync(media.LocalPath!, token), token);
         if (media.ContentItemId is { } linked) return await new PlaybackService(catalog, launcher).PlayAsync(linked, options, token);
-        var result = await launcher.LaunchAsync(media.LocalPath!, options, token);
+        var result = await launcher.LaunchAsync(media.LocalPath!, options with { ContentId = media.Id, Title = media.Name }, token);
         if (result.Started) await library.RecordPlaybackAsync(id, token);
         return new(result.Started, result.Message);
     }

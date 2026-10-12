@@ -1,0 +1,310 @@
+<UserControl
+  x:Class="Sinalo.App.Views.WorshipTimerView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter
+      x:Key="BooleanToVisibilityConverter" />
+  </UserControl.Resources>
+  <ScrollViewer
+    VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled"
+    Padding="0,0,12,0">
+    <StackPanel>
+      <TextBlock
+        Text="Controle por horário ou duração, com ajustes e avisos sonoros."
+        Foreground="{DynamicResource Brush.TextSecondary}"
+        Margin="0,4,0,24" />
+      <Grid
+        x:Name="CultLayout">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition
+            Width="*" />
+          <ColumnDefinition
+            x:Name="AudioColumn"
+            Width="0" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition
+            Height="Auto" />
+          <RowDefinition
+            Height="Auto" />
+        </Grid.RowDefinitions>
+        <Border
+          x:Name="ClockPanel"
+          Background="{DynamicResource Brush.Surface}"
+          BorderBrush="{DynamicResource Brush.Border}"
+          BorderThickness="1"
+          CornerRadius="12"
+          Padding="20">
+          <StackPanel>
+            <TextBlock
+              Text="{Binding WorshipTimer.RemainingTime}"
+              FontSize="72"
+              FontWeight="SemiBold"
+              Foreground="{DynamicResource Brush.Accent}"
+              HorizontalAlignment="Center" />
+            <TextBlock
+              Text="{Binding WorshipTimer.TargetTimeLabel}"
+              Foreground="{DynamicResource Brush.TextSecondary}"
+              HorizontalAlignment="Center"
+              Margin="0,4,0,12" />
+            <ProgressBar
+              Value="{Binding WorshipTimer.ProgressValue}"
+              Maximum="{Binding WorshipTimer.ProgressMaximum}"
+              Height="8"
+              Margin="0,0,0,18" />
+            <WrapPanel
+              Orientation="Horizontal"
+              HorizontalAlignment="Center">
+              <Button
+                Content="{Binding WorshipTimer.StartStopLabel}"
+                Click="WorshipTimerStartStop_Click"
+                Style="{DynamicResource Button.Primary}"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="-10 min"
+                Tag="-10"
+                Click="WorshipTimerAdjust_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="-5 min"
+                Tag="-5"
+                Click="WorshipTimerAdjust_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="-1 min"
+                Tag="-1"
+                Click="WorshipTimerAdjust_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="+1 min"
+                Tag="1"
+                Click="WorshipTimerAdjust_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="+5 min"
+                Tag="5"
+                Click="WorshipTimerAdjust_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="+10 min"
+                Tag="10"
+                Click="WorshipTimerAdjust_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+            </WrapPanel>
+            <Expander
+              Header="Configurar contagem e alertas"
+              IsExpanded="False"
+              Margin="0,20,0,0">
+              <StackPanel>
+                <TextBlock
+                  Text="Modo"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  Margin="0,24,0,4" />
+                <ComboBox
+                  ItemsSource="{Binding WorshipTimer.Modes}"
+                  SelectedItem="{Binding WorshipTimer.SelectedMode}"
+                  SelectionChanged="WorshipTimerConfiguration_SelectionChanged"
+                  IsEnabled="{Binding WorshipTimer.IsConfigurationEditable}"
+                  Padding="8">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock
+                        Text="{Binding Label}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock
+                  Visibility="{Binding WorshipTimer.IsTargetTimeMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Text="Hora de término (HH:MM)"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  Margin="0,12,0,4" />
+                <TextBox
+                  Visibility="{Binding WorshipTimer.IsTargetTimeMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Text="{Binding WorshipTimer.TargetTimeText, UpdateSourceTrigger=PropertyChanged}"
+                  LostFocus="WorshipTimerConfiguration_Changed"
+                  IsEnabled="{Binding WorshipTimer.CanEditTargetTime}"
+                  Padding="8" />
+                <TextBlock
+                  Visibility="{Binding WorshipTimer.IsDurationMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Text="Duração (minutos)"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  Margin="0,12,0,4" />
+                <TextBox
+                  Visibility="{Binding WorshipTimer.IsDurationMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Text="{Binding WorshipTimer.DurationMinutesText, UpdateSourceTrigger=PropertyChanged}"
+                  LostFocus="WorshipTimerConfiguration_Changed"
+                  IsEnabled="{Binding WorshipTimer.CanEditDuration}"
+                  Padding="8" />
+                <CheckBox
+                  Content="Parar em zero"
+                  IsChecked="{Binding WorshipTimer.StopAtZero}"
+                  Checked="WorshipTimerConfiguration_Changed"
+                  Unchecked="WorshipTimerConfiguration_Changed"
+                  IsEnabled="{Binding WorshipTimer.IsConfigurationEditable}"
+                  Margin="0,16,0,0" />
+                <TextBlock
+                  Text="Alertas sonoros"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  Margin="0,16,0,4" />
+                <CheckBox
+                  Content="Abertura"
+                  IsChecked="{Binding WorshipTimer.PlayOpening}"
+                  Checked="WorshipTimerConfiguration_Changed"
+                  Unchecked="WorshipTimerConfiguration_Changed"
+                  IsEnabled="{Binding WorshipTimer.IsConfigurationEditable}" />
+                <CheckBox
+                  Content="5 minutos"
+                  IsChecked="{Binding WorshipTimer.PlayFiveMinutes}"
+                  Checked="WorshipTimerConfiguration_Changed"
+                  Unchecked="WorshipTimerConfiguration_Changed"
+                  IsEnabled="{Binding WorshipTimer.IsConfigurationEditable}" />
+                <CheckBox
+                  Content="1 minuto"
+                  IsChecked="{Binding WorshipTimer.PlayOneMinute}"
+                  Checked="WorshipTimerConfiguration_Changed"
+                  Unchecked="WorshipTimerConfiguration_Changed"
+                  IsEnabled="{Binding WorshipTimer.IsConfigurationEditable}" />
+              </StackPanel>
+            </Expander>
+            <WrapPanel
+              Orientation="Horizontal"
+              Margin="0,22,0,0">
+              <Button
+                Content="Abrir tela de apresentação"
+                Click="OpenWorshipTimerPresentation_Click"
+                Style="{DynamicResource Button.Primary}"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="Fechar tela de apresentação"
+                Click="CloseWorshipTimerPresentation_Click"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+        <Border
+          x:Name="AudioPanel"
+          Grid.Row="1"
+          Background="{DynamicResource Brush.SurfaceRaised}"
+          BorderBrush="{DynamicResource Brush.Border}"
+          BorderThickness="1"
+          CornerRadius="8"
+          Padding="18"
+          Margin="0,24,0,0">
+          <StackPanel>
+            <TextBlock
+              Text="Áudio do culto"
+              FontSize="18"
+              FontWeight="SemiBold"
+              Foreground="{DynamicResource Brush.TextPrimary}" />
+            <TextBlock
+              Text="Teste os alertas e controle a reprodução sem interromper o cronômetro."
+              Foreground="{DynamicResource Brush.TextSecondary}"
+              Margin="0,4,0,14" />
+            <TextBlock
+              Text="Áudio para teste"
+              Foreground="{DynamicResource Brush.TextSecondary}"
+              Margin="0,0,0,4" />
+            <ComboBox
+              ItemsSource="{Binding WorshipTimer.AudioCues}"
+              SelectedItem="{Binding WorshipTimer.SelectedAudioCue}"
+              SelectionChanged="WorshipTimerAudioConfiguration_SelectionChanged"
+              Padding="8">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock
+                    Text="{Binding Label}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Grid
+              Margin="0,14,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                  Width="*" />
+                <ColumnDefinition
+                  Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock
+                Text="{Binding WorshipTimer.AudioOriginLabel}"
+                Foreground="{DynamicResource Brush.TextSecondary}"
+                VerticalAlignment="Center" />
+              <TextBlock
+                Grid.Column="1"
+                Text="{Binding WorshipTimer.AudioStateLabel}"
+                FontWeight="SemiBold"
+                Foreground="{DynamicResource Brush.Accent}" />
+            </Grid>
+            <Slider
+              Minimum="0"
+              Maximum="{Binding WorshipTimer.AudioDurationSeconds}"
+              Value="{Binding WorshipTimer.AudioPositionSeconds}"
+              ValueChanged="WorshipTimerAudioSeek_ValueChanged"
+              IsEnabled="{Binding WorshipTimer.CanControlAudio}"
+              Margin="0,8,0,0" />
+            <Grid
+              Margin="0,2,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition
+                  Width="*" />
+                <ColumnDefinition
+                  Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBlock
+                Text="{Binding WorshipTimer.AudioPositionLabel}"
+                Foreground="{DynamicResource Brush.TextSecondary}"
+                FontSize="13" />
+              <TextBlock
+                Grid.Column="1"
+                Text="{Binding WorshipTimer.AudioDurationLabel}"
+                Foreground="{DynamicResource Brush.TextSecondary}"
+                FontSize="13"
+                HorizontalAlignment="Right" />
+            </Grid>
+            <WrapPanel
+              Orientation="Horizontal"
+              Margin="0,16,0,0">
+              <Button
+                Content="Tocar aviso"
+                Click="PlayWorshipTimerAudio_Click"
+                Style="{DynamicResource Button.Primary}"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="{Binding WorshipTimer.PauseResumeAudioLabel}"
+                Click="PauseResumeWorshipTimerAudio_Click"
+                IsEnabled="{Binding WorshipTimer.CanControlAudio}"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+              <Button
+                Content="Parar áudio"
+                Click="StopWorshipTimerAudio_Click"
+                IsEnabled="{Binding WorshipTimer.CanControlAudio}"
+                Margin="0,0,8,8"
+                VerticalAlignment="Center" />
+            </WrapPanel>
+            <TextBlock
+              Text="Volume"
+              Foreground="{DynamicResource Brush.TextSecondary}"
+              Margin="0,18,0,4" />
+            <Slider
+              Minimum="0"
+              Maximum="1"
+              Value="{Binding WorshipTimer.AudioVolume}"
+              ValueChanged="WorshipTimerAudioConfiguration_Changed" />
+          </StackPanel>
+        </Border>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

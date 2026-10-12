@@ -58,6 +58,8 @@ public partial class MainWindow : Window
     public ContentOperationGate? ContentOperations { get; init; }
     public static readonly DependencyProperty LibraryProperty = DependencyProperty.Register(nameof(Library), typeof(LibraryViewModel), typeof(MainWindow));
     public LibraryViewModel? Library { get => (LibraryViewModel?)GetValue(LibraryProperty); init => SetValue(LibraryProperty, value); }
+    public static readonly DependencyProperty PlaybackProperty = DependencyProperty.Register(nameof(Playback), typeof(PlaybackViewModel), typeof(MainWindow));
+    public PlaybackViewModel? Playback { get => (PlaybackViewModel?)GetValue(PlaybackProperty); init => SetValue(PlaybackProperty, value); }
     public SynchronizationQueue? SynchronizationQueue
     {
         get => _synchronizationQueue;
@@ -71,6 +73,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeWorkspaceUi();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, SystemThemeService.IsWindowsDarkTheme());
         _timerRefresh.Tick += TimerRefresh_Tick;
         _updateCheckTimer.Tick += PeriodicUpdateCheck_Tick;
@@ -83,6 +86,7 @@ public partial class MainWindow : Window
             _updateCheckTimer.Stop();
             _updateCheckCancellation.Cancel();
             WorshipTimerAudioPlayer?.Stop();
+            Playback?.Dispose();
         };
     }
 
@@ -90,6 +94,7 @@ public partial class MainWindow : Window
     {
         if (ConfigurationService is null) return;
         var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService, ContentCleanupConfigurationService) { Owner = this };
+        if (sender is System.Windows.Controls.MenuItem { Tag: "ProgramSearchRules" }) window.ShowProgramSettings();
         window.ShowDialog();
         if (window.Saved)
         {
@@ -150,9 +155,10 @@ public partial class MainWindow : Window
     private async void PeriodicUpdateCheck_Tick(object? sender, EventArgs e) => await CheckForUpdateAsync(_updateCheckCancellation.Token);
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void InstallUpdate_Click(object sender, RoutedEventArgs e)
+    internal async void InstallUpdate_Click(object sender, RoutedEventArgs e)
     {
-        if (_downloadedUpdate is null || UpdateInstallerLauncher is null) return;
+        if (_downloadedUpdate is null || UpdateInstallerLauncher is null || (DataContext as HomeViewModel)?.IsInstallingUpdate == true) return;
+        if (DataContext is HomeViewModel installing) { installing.IsInstallingUpdate = true; installing.IsUpdateReady = false; }
         try
         {
             if (DataContext is HomeViewModel viewModel) viewModel.UpdateMessage = "Preparando atualização. Encerrando reprodução e sincronizações...";
@@ -162,7 +168,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            if (DataContext is HomeViewModel viewModel) viewModel.UpdateMessage = $"Não foi possível iniciar a atualização: {exception.Message}";
+            if (DataContext is HomeViewModel viewModel) { viewModel.UpdateMessage = $"Não foi possível iniciar a atualização: {exception.Message}"; viewModel.IsInstallingUpdate = false; viewModel.IsUpdateReady = true; }
         }
     }
 
@@ -259,7 +265,7 @@ public partial class MainWindow : Window
     private async void LinkedVideoWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectLinkedVideoWorkspace(); }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void InspectLinkedVideo_Click(object sender, RoutedEventArgs e)
+    internal async void InspectLinkedVideo_Click(object sender, RoutedEventArgs e)
     {
         if (LinkedVideoService is null || DataContext is not HomeViewModel viewModel || !viewModel.CanInspectLinkedVideo) return;
         var url = viewModel.LinkedVideoUrl;
@@ -276,7 +282,7 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void QueueLinkedVideo_Click(object sender, RoutedEventArgs e)
+    internal async void QueueLinkedVideo_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigurationService is null || ContentCatalog is null || SynchronizationQueue is null || DataContext is not HomeViewModel viewModel || !viewModel.CanQueueLinkedVideo) return;
         try
@@ -296,7 +302,7 @@ public partial class MainWindow : Window
         catch (Exception exception) { viewModel.LinkedVideoStatus = $"Não foi possível adicionar o vídeo à fila: {exception.Message}"; }
     }
 
-    private async void CancelSynchronizationQueue_Click(object sender, RoutedEventArgs e)
+    internal async void CancelSynchronizationQueue_Click(object sender, RoutedEventArgs e)
     {
         SynchronizationQueue?.CancelAll();
         await Task.CompletedTask;
@@ -428,7 +434,7 @@ public partial class MainWindow : Window
         : $"{bytes / 1024d / 1024:0} MB";
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void ViewSynchronizationDiagnostic_Click(object sender, RoutedEventArgs e)
+    internal void ViewSynchronizationDiagnostic_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { Tag: SynchronizationDiagnostic diagnostic }) return;
         new SynchronizationDiagnosticWindow(diagnostic, ThemeService) { Owner = this }.ShowDialog();
@@ -453,7 +459,7 @@ public partial class MainWindow : Window
         }
         catch (HttpRequestException)
         {
-            System.Windows.MessageBox.Show(this, $"Não foi possível atualizar {sourceName}. Verifique sua conexão e a URL configurada.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            UiDialog.Inform(this, "Não foi possível concluir", $"Não foi possível atualizar {sourceName}. Verifique sua conexão e a URL configurada.");
             return false;
         }
         finally { SetIdle(); }
@@ -493,20 +499,19 @@ public partial class MainWindow : Window
                 : $"Nenhum vídeo novo de {sourceName} estava disponível para sincronizar.";
             ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), message);
         }
-        catch (HttpRequestException) { System.Windows.MessageBox.Show(this, $"Não foi possível sincronizar {sourceName}. Verifique sua conexão.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
-        catch (IOException) { System.Windows.MessageBox.Show(this, "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        catch (HttpRequestException) { UiDialog.Inform(this, "Não foi possível concluir", $"Não foi possível sincronizar {sourceName}. Verifique sua conexão."); }
+        catch (IOException) { UiDialog.Inform(this, "Não foi possível concluir", "Não foi possível gravar o vídeo. Verifique o espaço e a pasta de conteúdo."); }
         finally { SetIdle(); }
     }
 
     private async void SourceFilter_Click(object sender, RoutedEventArgs e)
     {
         if (!await CanLeaveLibraryAsync()) return;
-        if (DataContext is HomeViewModel home) home.IsGeneralLibraryWorkspace = false;
-        if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: string filter }) viewModel.SelectedSource = filter;
-        if (ConfigurationService is not null && DataContext is HomeViewModel current)
+        if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: string filter }) viewModel.SelectProgram(filter);
+        if (ConfigurationService is not null && ContentCatalog is not null)
         {
-            try { ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), current.OperationMessage); }
-            catch (Exception exception) { current.OperationMessage = exception.Message; }
+            try { ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), (DataContext as HomeViewModel)?.OperationMessage ?? ""); }
+            catch { if (DataContext is HomeViewModel current) current.OperationMessage="Não foi possível ler os vídeos locais. Tente abrir o programa novamente."; }
         }
     }
 
@@ -516,7 +521,7 @@ public partial class MainWindow : Window
     private async Task<bool> CanLeaveLibraryAsync() => DataContext is not HomeViewModel { IsGeneralLibraryWorkspace: true } || Library is null || await Library.ResolvePendingChangesAsync();
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void RaffleAction_Click(object sender, RoutedEventArgs e)
+    internal async void RaffleAction_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: string action }) return;
         try
@@ -525,8 +530,8 @@ public partial class MainWindow : Window
             else if (action == "range") viewModel.Raffle.AddRange();
             else if (action == "start") { viewModel.Raffle.Start(); if (RaffleConfigurationService is not null) await RaffleConfigurationService.SaveAsync(viewModel.Raffle.Configuration); }
             else if (action == "display") viewModel.Raffle.ResetDisplay();
-            else if (action == "restart") viewModel.Raffle.Restart();
-            else if (action == "clear") viewModel.Raffle.Clear();
+            else if (action == "restart" && UiDialog.Confirm(this, "Reiniciar sorteio?", "Todos os participantes voltarão a estar disponíveis.", "Reiniciar")) viewModel.Raffle.Restart();
+            else if (action == "clear" && UiDialog.Confirm(this, "Remover participantes?", "Todos os participantes e o resultado serão removidos.", "Remover")) viewModel.Raffle.Clear();
             viewModel.OperationMessage = viewModel.Raffle.StatusLabel;
         }
         catch (Exception exception) when (exception is FormatException or InvalidOperationException) { viewModel.OperationMessage = exception.Message; }
@@ -549,9 +554,21 @@ public partial class MainWindow : Window
         await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey));
     }
 
+    private void VideoSeek_Begin(object sender, System.Windows.Input.MouseButtonEventArgs e) => Playback?.BeginSeek();
+    private async void VideoSeek_Commit(object sender, System.Windows.Input.MouseButtonEventArgs e) { if (Playback is not null) await Playback.CommitSeekAsync(); }
+    private void VideoSeek_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) { if (IsPlaybackAdjustmentKey(e.Key)) Playback?.BeginSeek(); }
+    private async void VideoSeek_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) { if (Playback is not null && IsPlaybackAdjustmentKey(e.Key)) await Playback.CommitSeekAsync(); }
+    private async void VideoVolume_Commit(object sender, System.Windows.Input.MouseButtonEventArgs e) { if (Playback is not null) await Playback.CommitVolumeAsync(); }
+    private void VideoVolume_Begin(object sender, System.Windows.Input.MouseButtonEventArgs e) => Playback?.BeginVolume();
+    private void VideoVolume_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) { if (IsPlaybackAdjustmentKey(e.Key)) Playback?.BeginVolume(); }
+    private async void VideoVolume_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) { if (Playback is not null && IsPlaybackAdjustmentKey(e.Key)) await Playback.CommitVolumeAsync(); }
+    private static bool IsPlaybackAdjustmentKey(System.Windows.Input.Key key) => key is System.Windows.Input.Key.Left or System.Windows.Input.Key.Right or System.Windows.Input.Key.Up or System.Windows.Input.Key.Down or System.Windows.Input.Key.Home or System.Windows.Input.Key.End or System.Windows.Input.Key.PageUp or System.Windows.Input.Key.PageDown;
+
     private async void CatalogItem_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (PlaybackService is null || DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: CatalogCard item }) return;
+        if (PlaybackService is null || DataContext is not HomeViewModel viewModel) return;
+        var item = (sender as FrameworkElement)?.Tag as CatalogCard ?? viewModel.SelectedCatalogItem;
+        if (item is null) return;
         if (viewModel.SelectedPlaybackScreen is null)
         {
             viewModel.OperationMessage = "Nenhuma tela de saída foi encontrada. Conecte ou habilite uma tela no Windows.";
@@ -583,9 +600,14 @@ public partial class MainWindow : Window
             launchOptions = new PlaybackLaunchOptions(output);
         }
 
-        var result = await PlaybackService.PlayAsync(item.Id, launchOptions);
-        viewModel.OperationMessage = result.Message;
-        if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
+        try
+        {
+            var result = await PlaybackService.PlayAsync(item.Id, launchOptions);
+            viewModel.OperationMessage = result.Message;
+            if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
+        }
+        catch (OperationCanceledException) { viewModel.OperationMessage = "Reprodução cancelada."; }
+        catch (Exception exception) { viewModel.OperationMessage = $"Não foi possível reproduzir o vídeo: {exception.Message}"; }
     }
 
     private async void TestPresentation_Click(object sender, RoutedEventArgs e)
@@ -607,8 +629,10 @@ public partial class MainWindow : Window
         }
 
         var result = await PresentationOutputService.ShowAsync(
-            new PresentationScene("Sinalo", "Tela de apresentação pronta", "Cronômetro e sorteio usarão esta saída."),
+            new PresentationScene("Sinalo", output.DisplayName, "Tela de saída conferida. Abra a apresentação pela ferramenta desejada."),
             output);
+        _presentationSceneKind = "conference";
+        viewModel.IsPresentationOpen = result.Succeeded;
         viewModel.OperationMessage = result.Message;
     }
 
@@ -623,6 +647,7 @@ public partial class MainWindow : Window
     private async void TimerRefresh_Tick(object? sender, EventArgs e)
     {
         RefreshLibraryContext();
+        if (DataContext is HomeViewModel presentationState) presentationState.IsPresentationOpen = PresentationOutputService?.IsOpen == true;
         if (DataContext is not HomeViewModel viewModel) return;
         viewModel.Timer.Refresh();
         PlayWorshipTimerCues(viewModel.WorshipTimer.Refresh());
@@ -631,30 +656,36 @@ public partial class MainWindow : Window
             viewModel.Raffle.Tick();
             viewModel.OperationMessage = viewModel.Raffle.StatusLabel;
         }
-        if (PresentationOutputService?.IsOpen == true)
-            await PresentationOutputService.UpdateAsync(viewModel.IsRaffleWorkspace
+        if (PresentationOutputService?.IsOpen == true && _presentationSceneKind != "conference")
+            await PresentationOutputService.UpdateAsync(_presentationSceneKind == "raffle"
                 ? new PresentationScene("Sorteio", viewModel.Raffle.CurrentWinner, viewModel.Raffle.StatusLabel)
-                : viewModel.IsWorshipTimerWorkspace
+                : _presentationSceneKind == "worship"
                     ? CreateWorshipTimerScene(viewModel.WorshipTimer)
                     : CreateTimerScene(viewModel.Timer));
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void TimerStartPause_Click(object sender, RoutedEventArgs e)
+    internal async void TimerStartPause_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
-        viewModel.Timer.StartOrPause();
-        await SaveTimerConfigurationAsync(viewModel.Timer);
+        try
+        {
+            if (!viewModel.Timer.IsRunning) _ = viewModel.Timer.Configuration;
+            viewModel.Timer.StartOrPause();
+            viewModel.OperationMessage = viewModel.Timer.StateLabel;
+            await SaveTimerConfigurationAsync(viewModel.Timer);
+        }
+        catch (FormatException exception) { viewModel.OperationMessage = exception.Message; }
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void TimerReset_Click(object sender, RoutedEventArgs e)
+    internal void TimerReset_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel) viewModel.Timer.Reset();
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void TimerConfiguration_Changed(object sender, RoutedEventArgs e)
+    internal async void TimerConfiguration_Changed(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
         try
@@ -669,10 +700,10 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void TimerConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => TimerConfiguration_Changed(sender, e);
+    internal void TimerConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => TimerConfiguration_Changed(sender, e);
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void OpenTimerPresentation_Click(object sender, RoutedEventArgs e)
+    internal async void OpenTimerPresentation_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel || MonitorService is null || PresentationOutputService is null) return;
         if (viewModel.SelectedPlaybackScreen is null)
@@ -689,11 +720,13 @@ public partial class MainWindow : Window
             return;
         }
         var result = await PresentationOutputService.ShowAsync(CreateTimerScene(viewModel.Timer), output);
+        _presentationSceneKind = "timer";
+        viewModel.IsPresentationOpen = result.Succeeded;
         viewModel.OperationMessage = result.Message;
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void CloseTimerPresentation_Click(object sender, RoutedEventArgs e)
+    internal async void CloseTimerPresentation_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel || PresentationOutputService is null) return;
         await PresentationOutputService.CloseAsync();
@@ -714,7 +747,7 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void WorshipTimerStartStop_Click(object sender, RoutedEventArgs e)
+    internal void WorshipTimerStartStop_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
         try
@@ -732,7 +765,7 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void WorshipTimerAdjust_Click(object sender, RoutedEventArgs e)
+    internal void WorshipTimerAdjust_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel || sender is not FrameworkElement { Tag: string tag } || !int.TryParse(tag, out var minutes)) return;
         PlayWorshipTimerCues(viewModel.WorshipTimer.AdjustMinutes(minutes));
@@ -740,14 +773,14 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void StopWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
+    internal void StopWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
     {
         (DataContext as HomeViewModel)?.WorshipTimer.StopAudio();
         if (DataContext is HomeViewModel viewModel) viewModel.OperationMessage = "Alerta sonoro interrompido.";
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void PlayWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
+    internal void PlayWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
         viewModel.WorshipTimer.PlaySelectedAudio();
@@ -755,19 +788,19 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void PauseResumeWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
+    internal void PauseResumeWorshipTimerAudio_Click(object sender, RoutedEventArgs e)
     {
         (DataContext as HomeViewModel)?.WorshipTimer.PauseOrResumeAudio();
     }
 
-    private void WorshipTimerAudioSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    internal void WorshipTimerAudioSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (sender is not System.Windows.Controls.Slider { IsMouseCaptureWithin: true }) return;
         (DataContext as HomeViewModel)?.WorshipTimer.SeekAudio(e.NewValue);
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void WorshipTimerConfiguration_Changed(object sender, RoutedEventArgs e)
+    internal async void WorshipTimerConfiguration_Changed(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel) return;
         try
@@ -787,19 +820,19 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void WorshipTimerConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => WorshipTimerConfiguration_Changed(sender, e);
+    internal void WorshipTimerConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => WorshipTimerConfiguration_Changed(sender, e);
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void WorshipTimerAudioConfiguration_Changed(object sender, RoutedEventArgs e)
+    internal async void WorshipTimerAudioConfiguration_Changed(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel) await SaveWorshipTimerConfigurationAsync(viewModel.WorshipTimer);
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void WorshipTimerAudioConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => WorshipTimerAudioConfiguration_Changed(sender, e);
+    internal void WorshipTimerAudioConfiguration_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => WorshipTimerAudioConfiguration_Changed(sender, e);
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void OpenWorshipTimerPresentation_Click(object sender, RoutedEventArgs e)
+    internal async void OpenWorshipTimerPresentation_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel || MonitorService is null || PresentationOutputService is null) return;
         if (viewModel.SelectedPlaybackScreen is null)
@@ -816,11 +849,13 @@ public partial class MainWindow : Window
             return;
         }
         var result = await PresentationOutputService.ShowAsync(CreateWorshipTimerScene(viewModel.WorshipTimer), output);
+        _presentationSceneKind = "worship";
+        viewModel.IsPresentationOpen = result.Succeeded;
         viewModel.OperationMessage = result.Message;
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private async void CloseWorshipTimerPresentation_Click(object sender, RoutedEventArgs e)
+    internal async void CloseWorshipTimerPresentation_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not HomeViewModel viewModel || PresentationOutputService is null) return;
         await PresentationOutputService.CloseAsync();
@@ -849,8 +884,7 @@ public partial class MainWindow : Window
     private async void DeleteSelectedVideo_Click(object sender, RoutedEventArgs e)
     {
         if (ContentDeletionService is null || DataContext is not HomeViewModel { SelectedCatalogItem: { } selected }) return;
-        var confirmation = System.Windows.MessageBox.Show(this, $"Excluir o vídeo '{selected.Title}' do computador?", "Sinalo", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-        if (confirmation != MessageBoxResult.Yes) return;
+        if (!UiDialog.Confirm(this, "Excluir vídeo do computador?", $"O arquivo de '{selected.Title}' será excluído. Ele poderá ser baixado novamente conforme a configuração do programa.", "Excluir arquivo")) return;
 
         SetBusy($"Excluindo {selected.Title}...");
         try
@@ -864,11 +898,11 @@ public partial class MainWindow : Window
         }
         catch (IOException)
         {
-            System.Windows.MessageBox.Show(this, "Não foi possível excluir o vídeo. Feche o VLC ou outro programa que esteja usando o arquivo e tente novamente.", "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            UiDialog.Inform(this, "Não foi possível concluir", "Não foi possível excluir o vídeo. Feche o VLC ou outro programa que esteja usando o arquivo e tente novamente.");
         }
         catch (InvalidOperationException exception)
         {
-            System.Windows.MessageBox.Show(this, exception.Message, "Sinalo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            UiDialog.Inform(this, "Não foi possível concluir", exception.Message);
         }
         finally { SetIdle(); }
     }
@@ -886,15 +920,15 @@ public partial class MainWindow : Window
             viewModel.OperationMessage = updated.IsPinned ? $"{updated.Title} foi fixado e não será removido automaticamente." : $"{updated.Title} poderá ser removido pela limpeza automática quando ficar antigo.";
         }
     }
-    private void RemoveSchedule_Click(object sender, RoutedEventArgs e)
+    internal void RemoveSchedule_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: ScheduleCard item }) viewModel.RemoveFromSchedule(item);
     }
-    private void MoveScheduleUp_Click(object sender, RoutedEventArgs e)
+    internal void MoveScheduleUp_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: ScheduleCard item }) viewModel.MoveScheduleItem(item, -1);
     }
-    private void MoveScheduleDown_Click(object sender, RoutedEventArgs e)
+    internal void MoveScheduleDown_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: ScheduleCard item }) viewModel.MoveScheduleItem(item, 1);
     }
@@ -937,6 +971,7 @@ public partial class MainWindow : Window
         current.SelectedAvailability = previous.SelectedAvailability;
         current.SearchQuery = previous.SearchQuery;
         current.RestoreLinkedVideoState(previous);
+        current.RestoreWorkspaceState(previous);
         current.IsGeneralLibraryWorkspace = previous.IsGeneralLibraryWorkspace;
     }
 
@@ -958,25 +993,7 @@ public partial class MainWindow : Window
 
     public void LibraryOutputScreenChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => PlaybackScreen_SelectionChanged(sender,e);
 
-    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    public void ShowLibraryQueue()
-    {
-        var panel = new System.Windows.Controls.DockPanel { Margin = new Thickness(18) };
-        var dialog = new Window { Title = "Downloads da biblioteca", Width = 540, Height = 480, Owner = this, Content = panel, DataContext = DataContext, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        dialog.SetBinding(DataContextProperty, new System.Windows.Data.Binding("DataContext") { Source = this });
-        dialog.SetResourceReference(Window.BackgroundProperty, "Brush.Window");
-        var cancel = new System.Windows.Controls.Button { Content = "Cancelar fila", Padding = new Thickness(12,8,12,8), Margin = new Thickness(0,12,0,0) };
-        cancel.SetBinding(IsEnabledProperty, new System.Windows.Data.Binding("IsQueueActive"));
-        cancel.Click += CancelSynchronizationQueue_Click; System.Windows.Controls.DockPanel.SetDock(cancel, System.Windows.Controls.Dock.Bottom); panel.Children.Add(cancel);
-        var items = new System.Windows.Controls.ItemsControl();
-        items.SetBinding(System.Windows.Controls.ItemsControl.ItemsSourceProperty, new System.Windows.Data.Binding("SynchronizationQueueItems"));
-        items.ItemTemplate = (DataTemplate)System.Windows.Markup.XamlReader.Parse("""
-            <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"><Border Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,10"><StackPanel><TextBlock Text="{Binding SourceName}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}"/><TextBlock Text="{Binding State}" Margin="0,6,0,0" Foreground="{DynamicResource Brush.TextPrimary}"/><TextBlock Text="{Binding Details}" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{DynamicResource Brush.TextSecondary}"/><Button Content="Ver detalhes" Tag="{Binding Diagnostic}" Padding="10,7" Margin="0,10,0,0" IsEnabled="{Binding HasDiagnostic}"/></StackPanel></Border></DataTemplate>
-            """);
-        items.AddHandler(System.Windows.Controls.Button.ClickEvent, new RoutedEventHandler((_, args) => { if (args.Source is System.Windows.Controls.Button button) ViewSynchronizationDiagnostic_Click(button,args); }));
-        panel.Children.Add(new System.Windows.Controls.ScrollViewer { Content = items, VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto });
-        dialog.ShowDialog();
-    }
+    public void ShowLibraryQueue() => new DownloadsWindow(this).ShowDialog();
 
     private static string GetSourceName(Sinalo.Domain.ContentSource source) => source switch
     {

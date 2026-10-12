@@ -75,6 +75,35 @@ public sealed class LibraryWorkflowTests
         await new LocalContentCleanupService(catalog,paths,configuration,library).CleanIfDueAsync(new(2026,10,7));
         Assert.True(File.Exists(imported.LocalPath)); Assert.Null(await catalog.FindByIdAsync(item.Id)); Assert.NotNull(await library.FindAsync(imported.Id));
     }
+    [Fact]
+    public async Task ImportedVideoUsesGlobalPlaybackSessionAndReplaysThroughLibrary()
+    {
+        using var fixture=new LibraryIntegrationTests(); await fixture.InitializeAsync();
+        var paths=new LocalSinaloPathService(rootPath:fixture.Root);
+        var library=new SqliteLibraryRepository(paths); var catalog=new SqliteContentCatalog(paths);
+        var validator=new Mp4LibraryValidator(); var activity=new PlaybackActivityGate();
+        var original=fixture.Video("imported-session.mp4");
+        await new LocalLibraryImportService(paths,library,validator,validator,new(),activity).ImportAsync(new([original]));
+        var media=Assert.Single((await library.QueryAsync(new())).Items);
+        var launcher=new Launcher();
+        var playback=new LibraryPlaybackService(library,catalog,launcher,validator);
+        Assert.True((await playback.PlayAsync(media.Id,new(2))).Started);
+        Assert.Equal(media.Id,launcher.Output!.ContentId); Assert.Equal(media.Name,launcher.Output.Title);
+        var controller=new Sinalo.Tests.Unit.RecordingPlaybackController();
+        controller.Update(Sinalo.Tests.Unit.PlaybackControllerTests.Active() with { ContentId=media.Id,Title=media.Name,State=PlaybackState.Ended });
+        using var panel=new PlaybackViewModel(controller,new(catalog,controller),replay:(id,output)=>playback.PlayAsync(id,output));
+        await panel.PlayPauseCommand.ExecuteAsync(null);
+        Assert.Equal(2,(await library.FindAsync(media.Id))!.PlayCount);
+        Assert.Empty(panel.Message);
+        Assert.True(File.Exists(original));
+        var blocked = await new LibraryPlaybackService(library,catalog,launcher,validator,new OpenPresentation()).PlayAsync(media.Id,new(2));
+        Assert.False(blocked.Started); Assert.Contains("apresentação",blocked.Message);
+        Assert.Equal(2,launcher.Launches);
+        File.Delete(media.LocalPath!);
+        await panel.PlayPauseCommand.ExecuteAsync(null);
+        Assert.Contains("Localize",panel.Message);
+        Assert.Equal(2,(await library.FindAsync(media.Id))!.PlayCount);
+    }
     internal sealed class Launcher : IPlaybackLauncher
     {
         public bool Success {get;set;}=true;
@@ -82,5 +111,12 @@ public sealed class LibraryWorkflowTests
         public PlaybackLaunchOptions? Output {get;private set;}
         public Task<PlaybackLaunchResult> LaunchAsync(string filePath,PlaybackLaunchOptions options,CancellationToken cancellationToken=default)
         { Launches++; Output=options; return Task.FromResult(new PlaybackLaunchResult(Success,"MPV",Success ? "Aberto" : "Falhou")); }
+    }
+    private sealed class OpenPresentation : Sinalo.Application.Presentation.IPresentationOutputService
+    {
+        public bool IsOpen => true;
+        public Task<Sinalo.Application.Presentation.PresentationOutputResult> ShowAsync(Sinalo.Application.Presentation.PresentationScene scene,Sinalo.Application.Monitors.OutputProfile requestedOutput,CancellationToken cancellationToken=default) => Task.FromResult(new Sinalo.Application.Presentation.PresentationOutputResult(true,""));
+        public Task UpdateAsync(Sinalo.Application.Presentation.PresentationScene scene,CancellationToken cancellationToken=default) => Task.CompletedTask;
+        public Task CloseAsync(CancellationToken cancellationToken=default) => Task.CompletedTask;
     }
 }

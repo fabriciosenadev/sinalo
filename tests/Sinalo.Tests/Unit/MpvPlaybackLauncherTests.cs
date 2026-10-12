@@ -41,8 +41,8 @@ public sealed class MpvPlaybackLauncherTests
     [Fact]
     public async Task WarmAsync_ShouldKeepTheBundledPlayerReadyAndAcceptConsecutiveFileReplacements()
     {
-        var videoPath = Path.Combine(Path.GetTempPath(), $"Sinalo-mpv-{Guid.NewGuid():N}.mp4");
-        await File.WriteAllBytesAsync(videoPath, []);
+        using var fixture = await Sinalo.Tests.Integration.PlaybackVideoFixture.CreateAsync();
+        var videoPath = fixture.Path;
         try
         {
             await using var launcher = new MpvPlaybackLauncher();

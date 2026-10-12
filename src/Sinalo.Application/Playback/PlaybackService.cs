@@ -5,16 +5,17 @@ namespace Sinalo.Application.Playback;
 
 public sealed record PlaybackResult(bool Started, string Message, ContentItem? Item = null);
 
-public sealed class PlaybackService(IContentCatalog catalog, IPlaybackLauncher launcher)
+public sealed class PlaybackService(IContentCatalog catalog, IPlaybackLauncher launcher, Sinalo.Application.Presentation.IPresentationOutputService? presentation = null)
 {
     public async Task<PlaybackResult> PlayAsync(string contentItemId, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
     {
+        if (presentation?.IsOpen == true) return new(false, "Feche a tela de apresentação antes de reproduzir um vídeo nesta saída.");
         var item = await catalog.FindByIdAsync(contentItemId, cancellationToken);
         if (item is null) return new(false, "O conteúdo não foi encontrado no catálogo local.");
         if (!item.IsReadyOffline || string.IsNullOrWhiteSpace(item.LocalPath)) return new(false, "Este vídeo ainda não está pronto para reprodução offline.", item);
         if (!File.Exists(item.LocalPath)) return new(false, "O arquivo local do vídeo não foi encontrado.", item);
 
-        var launch = await launcher.LaunchAsync(item.LocalPath, options, cancellationToken);
+        var launch = await launcher.LaunchAsync(item.LocalPath, options with { ContentId = item.Id, Title = item.Title }, cancellationToken);
         if (!launch.Started) return new(false, launch.Message, item);
 
         var playedAt = DateTimeOffset.UtcNow;

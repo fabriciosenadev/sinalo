@@ -177,8 +177,9 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 
 ## Reproducao e telas
 
-- A tela principal e uma biblioteca de uso rapido: `Hoje`, `Proximo Sabado`, fontes e busca.
-- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; na falha dele, o Sinalo usa VLC e depois o player padrao do Windows.
+- A tela principal abre a Biblioteca geral; programas e ferramentas têm workspaces próprios.
+- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; em falha de inicializacao/conexao, o Sinalo usa VLC e depois o player padrao do Windows. Erros da midia e falhas durante uma sessao nao abrem outro player automaticamente.
+
 - O MPV permanece ocioso entre vídeos e recebe a troca de arquivo por IPC, reduzindo a espera em computadores com HD. Ele pode abrir em tela cheia no monitor selecionado pelo operador.
 - A UI exige uma tela de saida para a reproducao. Uma configuracao de tela
   existente e preservada; instalacoes legadas sem tela definida usam a tela
@@ -194,7 +195,7 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
   a desconexao do monitor e verificada antes de abrir a apresentacao.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
 
-## Biblioteca local (implementação em branch, ainda não publicada)
+## Biblioteca local (integrada ao conjunto, ainda não publicada)
 
 `LibraryMedia` é independente de `ContentSource`. `library_media` acrescenta
 metadados aos itens legados por vínculo único; caminho, histórico e fixação dos
@@ -219,6 +220,28 @@ blocos pesados aguardam a reprodução encerrar. A atualização cancela e aguar
 a importação antes de encerrar. A reprodução usa os contratos atuais da main,
 sem importar a implementação de controle completo do MPV da outra branch.
 
+### Controle de reprodução implementado localmente
+
+`IPlaybackController` publica snapshots imutáveis por sessão com mídia, saída,
+player, estado, posição, duração, volume, mudo e capacidades. Comandos só são
+confirmados após a resposta do MPV. `MpvIpcConnection` tem um leitor exclusivo,
+escritas serializadas, correlação por `request_id`, cancelamento e timeout.
+Eventos de término distinguem fim natural, parada, substituição, erro, fechamento
+externo e encerramento do aplicativo, sem implementar ainda uma fila automática.
+
+`PlaybackViewModel` permanece independente do filtro de catálogo e da navegação.
+A posição é atualizada no máximo quatro vezes por segundo; a busca é enviada ao
+soltar o controle ou concluir uma ação de teclado. O histórico só é registrado
+após `file-loaded`; pausa, busca e reinício da sessão não incrementam a contagem.
+Carregamento, reprodução e pausa mantêm downloads suspensos, sem liberar o gate
+entre arquivos durante a substituição.
+
+`PlaybackOutputCoordinator` é consultado centralmente antes da apresentação:
+interrompe MPV na mesma saída e bloqueia sobreposição se um player externo não
+oferece parada integrada. Os controles indisponíveis no player externo ficam
+desabilitados. A seleção de monitor existente é preservada. Não há alteração
+de esquema SQLite, retomada de posição gravada ou persistência de volume.
+
 ## Fora do MVP
 
 - Login, usuarios e permissao por igreja.
@@ -230,3 +253,28 @@ sem importar a implementação de controle completo do MPV da outra branch.
 ## Premissa para sincronizacao offline
 
 O Sinalo so marca um item como offline depois de validar um arquivo local completo. A busca no site configurado e o download manual de um link do YouTube são caminhos distintos: um item ausente no site pode ser adicionado pelo operador por link. Esse download conserva arquivos parciais para retomada quando a origem permitir e não torna o vídeo pronto antes da validação.
+
+## Experiência integrada
+
+A camada App compartilha tokens e templates em `VisualIdentity.xaml`, com cores
+semânticas atualizadas por `SystemThemeService`. `MainWindow` contém navegação,
+workspace contextual, escolha de saída e indicadores globais; as ferramentas
+estão em `Views`, sem duplicar os serviços de domínio.
+
+`HomeWorkspaceState` guarda apenas estado de interface. Recarregar o catálogo
+preserva ferramenta ativa, seleção por ID, programação em memória, consulta
+por link, downloads e atualização. Configuração de monitor e regras existentes
+continuam nos serviços originais. A revisão visual não exige reconfiguração;
+a Biblioteca acrescenta metadados com migração aditiva descrita acima.
+Escolhas trimestrais legadas continuam representadas por ausência
+de sábados, agora com escolha explícita no formulário.
+
+Downloads, programação, atualização e diagnósticos têm superfícies dedicadas.
+A apresentação mantém a ferramenta que abriu sua cena, não a página atual do
+operador, e usa fundo escuro de alto contraste independente do tema.
+
+A Biblioteca compartilha shell, monitor, tema, downloads e confirmações. O player
+é uma sessão global, não a seleção atual da lista. `LibraryPlaybackService`
+atribui ID/título aos importados e valida arquivos antes do replay; o painel
+recebe a estratégia de replay sem depender da camada Infrastructure.
+Ver [revisão integrada](ux-ui/revisao-integrada.md) e pendências de validação física.

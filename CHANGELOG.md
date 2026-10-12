@@ -21,6 +21,53 @@ direto na instalação ou no uso do aplicativo.
   Sinalo exige confirmação. Arquivos originais referenciados não são apagados.
 - Entrega inicial restrita a vídeos MP4; áudio e imagens permanecem planejados.
 
+### Reprodução
+
+- Controle de vídeos na área **Reprodução**: pausar/continuar, parar, reiniciar,
+  avançar para uma posição, ajustar volume e silenciar, com título, tempo e tela
+  do vídeo que está efetivamente em reprodução.
+- O painel acompanha o estado confirmado pelo MPV, inclusive encerramento e
+  falhas. Pausar, buscar e reiniciar não contam como novas reproduções.
+- Abrir a apresentação na mesma saída interrompe o vídeo pelo MPV. Quando um
+  player externo estiver ativo, o Sinalo informa a necessidade de fechá-lo.
+
+### Player e operação
+
+- Comandos por IPC confirmados e encerramento limitado no tempo. O MPV continua
+  aquecido entre vídeos; a contingência para VLC permanece para falhas de início,
+  sem abrir outro player em resposta a erros do arquivo ou durante a reprodução.
+- Controles e barras de posição/volume compatíveis com os temas claro e escuro.
+
+### Melhorias
+
+- Navegação com identificação da tela ativa e espaço central dedicado à tarefa.
+  As ferramentas deixam de competir com uma lateral de ações de vídeos.
+- Programas com pesquisa identificada, títulos legíveis e detalhes contextuais;
+  reprodução explícita informa a tela de saída. Ações secundárias ficam em
+  **Mais opções**; em janelas compactas, a escolha de saída pode ser expandida.
+- **Downloads** acompanha pedidos e diagnósticos em qualquer tela. Progresso
+  desconhecido não é apresentado como uma porcentagem de download.
+- Vídeo por link organizado em consulta, qualidade e destino, com ação final
+  acessível sem esticar a janela.
+- Cronômetros e sorteio reorganizados; áudio ativo oferece **Parar áudio**
+  mesmo ao mudar de tela. A apresentação mantém a cena aberta ao navegar.
+- Configurações separadas em Aparência, Armazenamento e Programas de vídeo,
+  com modos de busca explícitos e manutenção das escolhas antigas.
+- Confirmação antes de transferir conteúdo, descartar alterações, reiniciar
+  sorteio ou remover participantes; feedback de validação no formulário.
+- Programação desta sessão em painel próprio, com posições e ações nomeadas.
+  Continua apenas em memória, sem reprodução automática.
+- Temas claro e escuro consistentes em listas, controles, rolagem e diálogos;
+  Novidades destaca a versão instalada e recolhe o histórico anterior.
+
+A interface, a Biblioteca e o player foram revisados em conjunto. A integração
+não altera a versão publicada 1.1.0; ainda não há nova tag ou instalador.
+- A Biblioteca usa o monitor, os diálogos e o painel de downloads compartilhados.
+- Vídeos importados aparecem na sessão global e podem ser reproduzidos novamente
+  pelo serviço da Biblioteca, mantendo seu histórico e validando o arquivo.
+- A abertura carrega a Biblioteca local em segundo plano; navegar nos programas
+  lê o catálogo local sem precisar buscar vídeos na internet.
+
 ## 1.1.0 - 04/10/2026
 
 ### Novo

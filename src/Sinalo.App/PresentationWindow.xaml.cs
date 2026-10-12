@@ -32,11 +32,13 @@ public partial class PresentationWindow : Window, IPresentationWindowHost
     {
         InitializeComponent();
         SourceInitialized += (_, _) => PositionOnOutput();
+        SizeChanged += (_,_) => PresentationSafeArea.Margin = new Thickness(Math.Clamp(ActualWidth * 0.04, 24, 80));
     }
 
     public void Display(PresentationScene scene, OutputProfile output)
     {
         DataContext = scene;
+        EscapeInstruction.Visibility = scene.Title == "Sinalo" ? Visibility.Visible : Visibility.Collapsed;
         _output = output;
         if (!IsVisible) Show();
         PositionOnOutput();

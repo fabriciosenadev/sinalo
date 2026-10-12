@@ -5,6 +5,7 @@ using Sinalo.Application.Appearance;
 
 namespace Sinalo.Tests.Unit;
 
+[Collection(Sinalo.Tests.EndToEnd.WpfInterfaceCollection.Name)]
 public sealed class SystemThemeServiceTests
 {
     [Fact]

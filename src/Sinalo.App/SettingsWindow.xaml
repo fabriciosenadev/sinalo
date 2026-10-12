@@ -1,134 +1,498 @@
-<Window x:Class="Sinalo.App.SettingsWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Configurações"
-        Width="660"
-        Height="800"
-        MinHeight="560"
-        WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource Brush.Window}">
-    <Border Margin="18" Padding="24" Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="10">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
+<Window
+  Style="{DynamicResource {x:Type Window}}"
+  x:Class="Sinalo.App.SettingsWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Title="Configurações"
+  Width="780"
+  Height="680"
+  MinWidth="580"
+  MinHeight="420"
+  WindowStartupLocation="CenterOwner"
+  Background="{DynamicResource Brush.Window}">
+  <Grid
+    Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition
+        Height="Auto" />
+      <RowDefinition
+        Height="*" />
+      <RowDefinition
+        Height="Auto" />
+      <RowDefinition
+        Height="Auto" />
+    </Grid.RowDefinitions>
+    <StackPanel>
+      <TextBlock
+        x:Name="SettingsHeading"
+        Text="Configurações"
+        Style="{DynamicResource Text.Heading}" />
+      <TextBlock
+        x:Name="SettingsDescription"
+        Text="Aparência, armazenamento e busca dos programas."
+        Margin="0,0,0,16" />
+    </StackPanel>
+    <TabControl
+      x:Name="SettingsCategories"
+      Grid.Row="1"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      Foreground="{DynamicResource Brush.TextPrimary}">
+      <TabItem
+        Header="Aparência">
+        <ScrollViewer
+          VerticalScrollBarVisibility="Auto"
+          Padding="16,16,28,16">
+          <Border
+            Background="{DynamicResource Brush.SurfaceRaised}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1"
+            CornerRadius="7"
+            Padding="12"
+            Margin="0,0,0,16">
             <StackPanel>
-                <TextBlock Text="Configurações" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                <TextBlock Text="Informe o site oficial e a regra de download de cada programa." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,16" />
-                <Border Background="{DynamicResource Brush.ButtonHover}" BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
-                    <StackPanel>
-                        <TextBlock Text="Importante" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                        <TextBlock Text="A configuração define quais vídeos serão procurados. O download só acontece quando o programa disponibilizar um vídeo publicado com arquivo oficial disponível." Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,3,0,0" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
-                    <StackPanel>
-                        <TextBlock Text="Tema do aplicativo" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                        <TextBlock Text="Escolha uma aparência fixa ou acompanhe a preferência do Windows." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,8" TextWrapping="Wrap" />
-                        <ComboBox x:Name="ThemePreferenceCombo" SelectedIndex="0" Padding="8">
-                            <ComboBoxItem Content="Mesmo tema do Windows" />
-                            <ComboBoxItem Content="Tema claro" />
-                            <ComboBoxItem Content="Tema escuro" />
-                        </ComboBox>
-                    </StackPanel>
-                </Border>
-                <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12" Margin="0,0,0,16">
-                    <StackPanel>
-                        <TextBlock Text="Conteúdo local" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                        <TextBlock Text="Ao salvar, os vídeos existentes serão transferidos para a pasta escolhida." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,8" TextWrapping="Wrap" />
-                        <Grid>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <TextBox x:Name="ContentPathText" IsReadOnly="True" Padding="8" Margin="0,0,8,0" />
-                            <Button Grid.Column="1" Content="Escolher pasta" Click="ChooseContentPath_Click" Padding="12,8" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
+              <TextBlock
+                Text="Tema do aplicativo"
+                FontWeight="SemiBold"
+                Foreground="{DynamicResource Brush.TextPrimary}" />
+              <TextBlock
+                Text="Escolha uma aparência fixa ou acompanhe a preferência do Windows."
+                Foreground="{DynamicResource Brush.TextSecondary}"
+                Margin="0,3,0,8"
+                TextWrapping="Wrap" />
+              <ComboBox
+                x:Name="ThemePreferenceCombo"
+                AutomationProperties.Name="Tema do aplicativo"
+                SelectedIndex="0"
+                Padding="8">
+                <ComboBoxItem
+                  Content="Mesmo tema do Windows" />
+                <ComboBoxItem
+                  Content="Tema claro" />
+                <ComboBoxItem
+                  Content="Tema escuro" />
+              </ComboBox>
             </StackPanel>
-
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,16">
-                <StackPanel>
-                    <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                        <StackPanel>
-                            <TextBlock Text="Limpeza automática" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Remove apenas vídeos antigos que não estejam fixados. A limpeza acontece uma vez por mês, antes de uma sincronização." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,9" TextWrapping="Wrap" />
-                            <CheckBox x:Name="CleanupEnabled" Content="Ativar limpeza automática de vídeos antigos" />
-                            <TextBlock Text="Manter vídeos dos últimos meses" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,12,0,4" />
-                            <ComboBox x:Name="CleanupRetentionMonths" Padding="8" SelectedIndex="1">
-                                <ComboBoxItem Content="1 mês" Tag="1" />
-                                <ComboBoxItem Content="3 meses" Tag="3" />
-                                <ComboBoxItem Content="6 meses" Tag="6" />
-                                <ComboBoxItem Content="12 meses" Tag="12" />
-                            </ComboBox>
-                            <TextBlock Text="Tolerância após esse período (dias)" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,12,0,4" />
-                            <TextBox x:Name="CleanupGracePeriodDays" Padding="8" />
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                        <StackPanel>
-                            <TextBlock Text="Informativo das Missões" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
-                            <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBox x:Name="MissionsUrl" Padding="8" Margin="0,0,8,0" />
-                                <Button Grid.Column="1" Content="Restaurar endereço oficial" Click="RestoreOfficialUrl_Click" Tag="Missions" Padding="10,8" ToolTip="Usar novamente o endereço oficial padrão" />
-                            </Grid>
-                            <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
-                            <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
-                            <TextBlock Text="Marque os sábados desejados. Sem seleção, o trimestre inteiro será baixado." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" TextWrapping="Wrap" />
-                            <CheckBox x:Name="MissionsPreviousSaturday" Content="Sábado anterior" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="MissionsCurrentSaturday" Content="Sábado atual" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="MissionsNextSaturday" Content="Próximo sábado" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="MissionsQuarterly" Content="Trimestre inteiro" IsChecked="True" Unchecked="QuarterlySelection_Unchecked" Margin="0,7,0,0" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                        <StackPanel>
-                            <TextBlock Text="Provai e Vede" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
-                            <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBox x:Name="ProvaiUrl" Padding="8" Margin="0,0,8,0" />
-                                <Button Grid.Column="1" Content="Restaurar endereço oficial" Click="RestoreOfficialUrl_Click" Tag="ProvaiEVede" Padding="10,8" ToolTip="Usar novamente o endereço oficial padrão" />
-                            </Grid>
-                            <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
-                            <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
-                            <TextBlock Text="Marque os sábados desejados. Sem seleção, o trimestre inteiro será baixado." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" TextWrapping="Wrap" />
-                            <CheckBox x:Name="ProvaiPreviousSaturday" Content="Sábado anterior" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="ProvaiCurrentSaturday" Content="Sábado atual" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="ProvaiNextSaturday" Content="Próximo sábado" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="ProvaiQuarterly" Content="Trimestre inteiro" IsChecked="True" Unchecked="QuarterlySelection_Unchecked" Margin="0,7,0,0" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16">
-                        <StackPanel>
-                            <TextBlock Text="Minuto de Saúde" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" />
-                            <TextBlock Text="Site oficial do programa" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" />
-                            <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                <TextBox x:Name="HealthUrl" Padding="8" Margin="0,0,8,0" />
-                                <Button Grid.Column="1" Content="Restaurar endereço oficial" Click="RestoreOfficialUrl_Click" Tag="Health" Padding="10,8" ToolTip="Usar novamente o endereço oficial padrão" />
-                            </Grid>
-                            <Separator Margin="0,14,0,12" Background="{DynamicResource Brush.Border}" />
-                            <TextBlock Text="Vídeos a baixar" Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" />
-                            <TextBlock Text="Marque os sábados desejados. Sem seleção, o trimestre inteiro será baixado." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,3,0,6" TextWrapping="Wrap" />
-                            <CheckBox x:Name="HealthPreviousSaturday" Content="Sábado anterior" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="HealthCurrentSaturday" Content="Sábado atual" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="HealthNextSaturday" Content="Próximo sábado" Checked="SaturdaySelection_Changed" Unchecked="SaturdaySelection_Changed" />
-                            <CheckBox x:Name="HealthQuarterly" Content="Trimestre inteiro" IsChecked="True" Unchecked="QuarterlySelection_Unchecked" Margin="0,7,0,0" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Cancelar" IsCancel="True" Margin="0,0,8,0" Padding="16,8" />
-                <Button Content="Salvar" Click="Save_Click" Padding="16,8" Style="{DynamicResource Button.Primary}" />
-            </StackPanel>
-        </Grid>
-    </Border>
+          </Border>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem
+        Header="Armazenamento">
+        <ScrollViewer
+          VerticalScrollBarVisibility="Auto"
+          Padding="16,16,28,16">
+          <StackPanel>
+            <Border
+              Background="{DynamicResource Brush.SurfaceRaised}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="1"
+              CornerRadius="7"
+              Padding="12"
+              Margin="0,0,0,16">
+              <StackPanel>
+                <TextBlock
+                  Text="Conteúdo local"
+                  FontWeight="SemiBold"
+                  Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock
+                  Text="Ao salvar, os vídeos existentes serão transferidos para a pasta escolhida."
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  Margin="0,3,0,8"
+                  TextWrapping="Wrap" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                      Width="*" />
+                    <ColumnDefinition
+                      Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBox
+                    x:Name="ContentPathText"
+                    AutomationProperties.Name="Pasta de conteúdo proposta"
+                    IsReadOnly="True"
+                    Padding="8"
+                    Margin="0,0,8,0" />
+                  <Button
+                    Grid.Column="1"
+                    Content="Escolher pasta"
+                    Click="ChooseContentPath_Click"
+                    Margin="0" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border
+              Background="{DynamicResource Brush.SurfaceRaised}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="1"
+              CornerRadius="8"
+              Padding="16"
+              Margin="0,0,0,12">
+              <StackPanel>
+                <TextBlock
+                  Text="Limpeza automática"
+                  FontSize="16"
+                  FontWeight="SemiBold"
+                  Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock
+                  Text="Remove apenas vídeos antigos que não estejam fixados. A limpeza acontece uma vez por mês, antes de uma sincronização."
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,9"
+                  TextWrapping="Wrap" />
+                <CheckBox
+                  x:Name="CleanupEnabled"
+                  Content="Ativar limpeza automática de vídeos antigos" />
+                <TextBlock
+                  Text="Manter vídeos dos últimos meses"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,12,0,4" />
+                <ComboBox
+                  x:Name="CleanupRetentionMonths"
+                  AutomationProperties.Name="Meses de retenção"
+                  Padding="8"
+                  SelectedIndex="1">
+                  <ComboBoxItem
+                    Content="1 mês"
+                    Tag="1" />
+                  <ComboBoxItem
+                    Content="3 meses"
+                    Tag="3" />
+                  <ComboBoxItem
+                    Content="6 meses"
+                    Tag="6" />
+                  <ComboBoxItem
+                    Content="12 meses"
+                    Tag="12" />
+                </ComboBox>
+                <TextBlock
+                  Text="Tolerância após esse período (dias)"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,12,0,4" />
+                <TextBox
+                  x:Name="CleanupGracePeriodDays"
+                  AutomationProperties.Name="Tolerância em dias"
+                  Padding="8"
+                  Text="30" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem
+        Header="Programas de vídeo">
+        <ScrollViewer
+          x:Name="ProgramsSettingsScroll"
+          VerticalScrollBarVisibility="Auto"
+          HorizontalScrollBarVisibility="Disabled"
+          Padding="16,16,28,16">
+          <StackPanel>
+            <Border
+              Background="{DynamicResource Brush.Selection}"
+              Padding="12"
+              CornerRadius="6"
+              Margin="0,0,0,16">
+              <TextBlock
+                Text="Importante: a regra define quais vídeos serão procurados. Só serão baixados os vídeos encontrados com arquivo disponível." />
+            </Border>
+            <Border
+              Background="{DynamicResource Brush.SurfaceRaised}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="1"
+              CornerRadius="8"
+              Padding="16"
+              Margin="0,0,0,12">
+              <StackPanel>
+                <TextBlock
+                  Text="Informativo das Missões"
+                  FontSize="16"
+                  FontWeight="SemiBold"
+                  Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock
+                  Text="Site oficial do programa"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,6" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                      Width="*" />
+                    <ColumnDefinition
+                      Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBox
+                    x:Name="MissionsUrl"
+                    AutomationProperties.Name="Endereço oficial de Informativo das Missões"
+                    Padding="8"
+                    Margin="0,0,8,0" />
+                  <Button
+                    Grid.Column="1"
+                    Content="Restaurar endereço oficial"
+                    Click="RestoreOfficialUrl_Click"
+                    Tag="Missions"
+                    ToolTip="Usar novamente o endereço oficial padrão"
+                    Margin="0" />
+                </Grid>
+                <Separator
+                  Margin="0,14,0,12"
+                  Background="{DynamicResource Brush.Border}" />
+                <WrapPanel
+                  Margin="0,0,0,12">
+                  <RadioButton
+                    x:Name="MissionsWeeklyMode"
+                    GroupName="MissionsRule"
+                    Content="Sábados escolhidos"
+                    Tag="Missions"
+                    Checked="DownloadMode_Changed"
+                    Margin="0,0,16,0" />
+                  <RadioButton
+                    x:Name="MissionsQuarterMode"
+                    GroupName="MissionsRule"
+                    Content="Trimestre inteiro"
+                    Tag="Missions"
+                    Checked="DownloadMode_Changed" />
+                </WrapPanel>
+                <TextBlock
+                  Text="Vídeos a baixar"
+                  Foreground="{DynamicResource Brush.TextPrimary}"
+                  FontWeight="SemiBold" />
+                <TextBlock
+                  Text="Escolha os sábados ou o trimestre. A busca depende dos vídeos publicados."
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,6"
+                  TextWrapping="Wrap" />
+                <CheckBox
+                  x:Name="MissionsPreviousSaturday"
+                  Content="Sábado anterior"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  x:Name="MissionsCurrentSaturday"
+                  Content="Sábado atual"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  x:Name="MissionsNextSaturday"
+                  Content="Próximo sábado"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  Visibility="Collapsed"
+                  x:Name="MissionsQuarterly"
+                  Content="Trimestre inteiro"
+                  IsChecked="True"
+                  Unchecked="QuarterlySelection_Unchecked"
+                  Margin="0,7,0,0" />
+              </StackPanel>
+            </Border>
+            <Border
+              Background="{DynamicResource Brush.SurfaceRaised}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="1"
+              CornerRadius="8"
+              Padding="16"
+              Margin="0,0,0,12">
+              <StackPanel>
+                <TextBlock
+                  Text="Provai e Vede"
+                  FontSize="16"
+                  FontWeight="SemiBold"
+                  Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock
+                  Text="Site oficial do programa"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,6" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                      Width="*" />
+                    <ColumnDefinition
+                      Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBox
+                    x:Name="ProvaiUrl"
+                    AutomationProperties.Name="Endereço oficial de Provai e Vede"
+                    Padding="8"
+                    Margin="0,0,8,0" />
+                  <Button
+                    Grid.Column="1"
+                    Content="Restaurar endereço oficial"
+                    Click="RestoreOfficialUrl_Click"
+                    Tag="ProvaiEVede"
+                    ToolTip="Usar novamente o endereço oficial padrão"
+                    Margin="0" />
+                </Grid>
+                <Separator
+                  Margin="0,14,0,12"
+                  Background="{DynamicResource Brush.Border}" />
+                <WrapPanel
+                  Margin="0,0,0,12">
+                  <RadioButton
+                    x:Name="ProvaiWeeklyMode"
+                    GroupName="ProvaiRule"
+                    Content="Sábados escolhidos"
+                    Tag="Provai"
+                    Checked="DownloadMode_Changed"
+                    Margin="0,0,16,0" />
+                  <RadioButton
+                    x:Name="ProvaiQuarterMode"
+                    GroupName="ProvaiRule"
+                    Content="Trimestre inteiro"
+                    Tag="Provai"
+                    Checked="DownloadMode_Changed" />
+                </WrapPanel>
+                <TextBlock
+                  Text="Vídeos a baixar"
+                  Foreground="{DynamicResource Brush.TextPrimary}"
+                  FontWeight="SemiBold" />
+                <TextBlock
+                  Text="Escolha os sábados ou o trimestre. A busca depende dos vídeos publicados."
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,6"
+                  TextWrapping="Wrap" />
+                <CheckBox
+                  x:Name="ProvaiPreviousSaturday"
+                  Content="Sábado anterior"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  x:Name="ProvaiCurrentSaturday"
+                  Content="Sábado atual"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  x:Name="ProvaiNextSaturday"
+                  Content="Próximo sábado"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  Visibility="Collapsed"
+                  x:Name="ProvaiQuarterly"
+                  Content="Trimestre inteiro"
+                  IsChecked="True"
+                  Unchecked="QuarterlySelection_Unchecked"
+                  Margin="0,7,0,0" />
+              </StackPanel>
+            </Border>
+            <Border
+              Background="{DynamicResource Brush.SurfaceRaised}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="1"
+              CornerRadius="8"
+              Padding="16">
+              <StackPanel>
+                <TextBlock
+                  Text="Minuto de Saúde"
+                  FontSize="16"
+                  FontWeight="SemiBold"
+                  Foreground="{DynamicResource Brush.TextPrimary}" />
+                <TextBlock
+                  Text="Site oficial do programa"
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,6" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition
+                      Width="*" />
+                    <ColumnDefinition
+                      Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBox
+                    x:Name="HealthUrl"
+                    AutomationProperties.Name="Endereço oficial de Minuto de Saúde"
+                    Padding="8"
+                    Margin="0,0,8,0" />
+                  <Button
+                    Grid.Column="1"
+                    Content="Restaurar endereço oficial"
+                    Click="RestoreOfficialUrl_Click"
+                    Tag="Health"
+                    ToolTip="Usar novamente o endereço oficial padrão"
+                    Margin="0" />
+                </Grid>
+                <Separator
+                  Margin="0,14,0,12"
+                  Background="{DynamicResource Brush.Border}" />
+                <WrapPanel
+                  Margin="0,0,0,12">
+                  <RadioButton
+                    x:Name="HealthWeeklyMode"
+                    GroupName="HealthRule"
+                    Content="Sábados escolhidos"
+                    Tag="Health"
+                    Checked="DownloadMode_Changed"
+                    Margin="0,0,16,0" />
+                  <RadioButton
+                    x:Name="HealthQuarterMode"
+                    GroupName="HealthRule"
+                    Content="Trimestre inteiro"
+                    Tag="Health"
+                    Checked="DownloadMode_Changed" />
+                </WrapPanel>
+                <TextBlock
+                  Text="Vídeos a baixar"
+                  Foreground="{DynamicResource Brush.TextPrimary}"
+                  FontWeight="SemiBold" />
+                <TextBlock
+                  Text="Escolha os sábados ou o trimestre. A busca depende dos vídeos publicados."
+                  Foreground="{DynamicResource Brush.TextSecondary}"
+                  FontSize="12"
+                  Margin="0,3,0,6"
+                  TextWrapping="Wrap" />
+                <CheckBox
+                  x:Name="HealthPreviousSaturday"
+                  Content="Sábado anterior"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  x:Name="HealthCurrentSaturday"
+                  Content="Sábado atual"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  x:Name="HealthNextSaturday"
+                  Content="Próximo sábado"
+                  Checked="SaturdaySelection_Changed"
+                  Unchecked="SaturdaySelection_Changed" />
+                <CheckBox
+                  Visibility="Collapsed"
+                  x:Name="HealthQuarterly"
+                  Content="Trimestre inteiro"
+                  IsChecked="True"
+                  Unchecked="QuarterlySelection_Unchecked"
+                  Margin="0,7,0,0" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+    <TextBlock
+      x:Name="SettingsFeedback"
+      Grid.Row="2"
+      Foreground="{DynamicResource Brush.Error}"
+      Margin="0,12,0,8" />
+    <WrapPanel
+      Grid.Row="3"
+      HorizontalAlignment="Right">
+      <Button
+        x:Name="CancelSettingsButton"
+        Content="Cancelar"
+        IsCancel="True"
+        Margin="0,0,8,8"
+        VerticalAlignment="Center" />
+      <Button
+        x:Name="SaveSettingsButton"
+        Content="Salvar configurações"
+        Click="Save_Click"
+        Style="{DynamicResource Button.Primary}"
+        Margin="0,0,8,8"
+        VerticalAlignment="Center" />
+    </WrapPanel>
+  </Grid>
 </Window>

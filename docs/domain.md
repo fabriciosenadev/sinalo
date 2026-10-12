@@ -73,6 +73,18 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 - Áudio, imagens, organização em coletâneas e fila de reprodução são etapas
   futuras, não funcionalidades desta entrega.
 
+## Sessão de reprodução
+
+- Carregamento, reprodução e pausa mantêm a atividade que suspende downloads.
+  Parada, término e falha liberam essa atividade; substituir um vídeo não cria
+  uma liberação transitória entre os arquivos.
+- Uma nova abertura confirmada incrementa o histórico uma vez. Pausar,
+  continuar, buscar e reiniciar o mesmo vídeo não criam um novo registro.
+- O painel acompanha a mídia ativa, não o cartão selecionado ou o programa
+  exibido. A seleção de monitor vale para a próxima abertura, inclusive repetição.
+- Sessão, posição, volume e mudo são transitórios; não exigem migração de banco
+  nem retomam mídia automaticamente ao iniciar o aplicativo.
+
 ## Fila de sincronizacao
 
 - Um pedido pode estar `Waiting`, `Running`, `Completed`, `Failed` ou `Cancelled`.
