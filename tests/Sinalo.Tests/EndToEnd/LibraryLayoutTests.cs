@@ -63,6 +63,12 @@ public sealed class LibraryLayoutTests
                     Assert.Equal(40,list.Items.Count);
                     Save(window,root,dark,width,scale,"videos");
                     Assert.True(list.ActualHeight>65,$"List height {list.ActualHeight}");
+                    Assert.Equal(ScrollUnit.Pixel,VirtualizingPanel.GetScrollUnit(list));
+                    Assert.True(VirtualizingPanel.GetIsVirtualizing(list));
+                    var scrolling=VisualChildren(list).OfType<ScrollViewer>().First();
+                    scrolling.ScrollToVerticalOffset(7);window.UpdateLayout();
+                    Assert.InRange(scrolling.VerticalOffset,6.5,7.5);
+                    scrolling.ScrollToTop();window.UpdateLayout();
                     if (width == 1024 && scale == 1.5)
                     {
                         var filters = (Expander)view.FindName("FilterOptions");
@@ -116,6 +122,12 @@ public sealed class LibraryLayoutTests
         Directory.CreateDirectory(Path.Combine(root,"TestResults"));
         using var output=File.Create(Path.Combine(root,"TestResults",$"library-{(dark ? "dark":"light")}-{width}-{scale:0.00}-{mode}.png"));
         encoder.Save(output);
+    }
+    private static IEnumerable<DependencyObject> VisualChildren(DependencyObject element)
+    {
+        yield return element;
+        for(var index=0;index<VisualTreeHelper.GetChildrenCount(element);index++)
+            foreach(var child in VisualChildren(VisualTreeHelper.GetChild(element,index))) yield return child;
     }
 }
 

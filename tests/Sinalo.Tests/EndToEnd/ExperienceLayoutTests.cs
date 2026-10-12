@@ -23,6 +23,47 @@ namespace Sinalo.Tests.EndToEnd;
 [Collection(WpfInterfaceCollection.Name)]
 public sealed class ExperienceLayoutTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SmoothWheel_MovesOnlyInnerRegionAndReleasesOnUnload(bool dark)
+    {
+        RunSta(() =>
+        {
+            var window = new MainWindow { DataContext = Model() };
+            var text = new TextBlock { Text = "Conteúdo", Height = 1500 };
+            var inner = new ScrollViewer { Content = text, Height = 160 };
+            var stack = new StackPanel(); stack.Children.Add(inner); stack.Children.Add(new Border { Height = 1500 });
+            var outer = new ScrollViewer { Content = stack };
+            window.Content = outer; Theme(window, dark); window.Show(); Flush(window);
+            Assert.True(SmoothScroll.GetIsEnabled(inner));
+            var wheel = new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, -120)
+                { RoutedEvent = System.Windows.Input.Mouse.PreviewMouseWheelEvent };
+            text.RaiseEvent(wheel);
+            Assert.True(wheel.Handled);
+            PumpFrames(); Flush(window);
+            Assert.True(inner.VerticalOffset > 0);
+            Assert.Equal(0, outer.VerticalOffset);
+            // At the top the inner region must not consume an upward gesture.
+            inner.ScrollToTop(); Flush(window);
+            wheel = new(System.Windows.Input.Mouse.PrimaryDevice, 0, 120)
+                { RoutedEvent = System.Windows.Input.Mouse.PreviewMouseWheelEvent };
+            text.RaiseEvent(wheel); Assert.False(wheel.Handled);
+            SmoothScroll.SetIsEnabled(inner, false);
+            Assert.False(SmoothScroll.GetIsEnabled(inner));
+            SmoothScroll.SetIsEnabled(inner, true);
+            text.RaiseEvent(new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, -120)
+                { RoutedEvent = System.Windows.Input.Mouse.PreviewMouseWheelEvent });
+            window.Close(); PumpFrames();
+        });
+    }
+    private static void PumpFrames()
+    {
+        var frame = new DispatcherFrame();
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
+        timer.Tick += (_, _) => { timer.Stop(); frame.Continue = false; };
+        timer.Start(); Dispatcher.PushFrame(frame);
+    }
     private static readonly SourceConfiguration[] Sources=[
         new(ContentSource.Missions,"Informativo das Missões","https://example.test/m",AvailabilityPolicy.RollingSaturday,new(true,true,true)),
         new(ContentSource.ProvaiEVede,"Provai e Vede","https://example.test/p",AvailabilityPolicy.QuarterlyFull,new(false,false,false)),
@@ -53,8 +94,15 @@ public sealed class ExperienceLayoutTests
             Assert.True(list.ActualHeight>60,$"Altura da lista: {list.ActualHeight}");
             Save(window,$"programs-{dark}-{width}-{scale}");
             var scrolling=Descendants(list).OfType<ScrollViewer>().First();
+            Assert.True(SmoothScroll.GetIsEnabled(scrolling));
+            Assert.True(((Button)window.FindName("ScheduleNavigationButton")).IsVisible);
             var scrollbar=Descendants(list).OfType<System.Windows.Controls.Primitives.ScrollBar>().First(b=>b.Orientation==System.Windows.Controls.Orientation.Vertical && b.IsVisible);
             System.Windows.Controls.Primitives.ScrollBar.PageDownCommand.Execute(null,scrollbar);Flush(window);Assert.True(scrolling.VerticalOffset>0);
+            scrolling.ScrollToTop();Flush(window);
+            Assert.Equal(ScrollUnit.Pixel,VirtualizingPanel.GetScrollUnit(list));
+            Assert.True(VirtualizingPanel.GetIsVirtualizing(list));
+            scrolling.ScrollToVerticalOffset(7);Flush(window);
+            Assert.InRange(scrolling.VerticalOffset,6.5,7.5);
             scrolling.ScrollToTop();Flush(window);
             var track=(System.Windows.Controls.Primitives.Track)scrollbar.Template.FindName("PART_Track",scrollbar);
             track.Thumb.RaiseEvent(new System.Windows.Controls.Primitives.DragStartedEventArgs(0,0){RoutedEvent=System.Windows.Controls.Primitives.Thumb.DragStartedEvent});

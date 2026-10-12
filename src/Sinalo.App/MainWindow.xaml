@@ -189,6 +189,12 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+          <Button x:Name="ScheduleNavigationButton"
+            Content="Programação desta sessão"
+            Style="{DynamicResource Button.Navigation}"
+            Click="OpenSchedule_Click"
+            ToolTip="Ver e organizar os vídeos adicionados à programação; não inicia reprodução automática"
+            Margin="0,16,0,8" />
           <TextBlock
             Text="ADICIONAR VÍDEO"
             FontSize="12"
