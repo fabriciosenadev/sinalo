@@ -47,8 +47,9 @@ Também estão concluídos:
 - **UX/UI:** planos 00–17 executados e revisados com MPV e Biblioteca.
   Componentes, monitor, confirmações e downloads compartilhados; ajustes para
   janelas compactas e escala de 150%, inclusive com vídeo ativo.
-- [Revisão integrada por tela](ux-ui/revisao-integrada.md). Não há incremento
-  de versão, tag ou instalador. PR #22 integrado no GitHub; conclusão remota
+- [Revisão integrada por tela](ux-ui/revisao-integrada.md). As três entregas
+  estão integradas e validadas na main local. Não há incremento de versão,
+  tag ou instalador. PR #22 integrado no GitHub; conclusão remota
   de #20/#21 depende do envio dos ajustes e do CI final.
 - Os testes isolados e renders não substituem o aceite conjunto em instalação
   legada, projetor, DPI real e computador com HD. Confirmar esses cenários

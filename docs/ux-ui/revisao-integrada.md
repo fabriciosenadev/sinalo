@@ -67,6 +67,8 @@ Validar também instalação legada, importação interrompida e atualização i
 ## Publicação
 
 O PR #22 foi integrado no GitHub. Os ajustes combinados de #20 e #21 foram
-validados localmente; confirmar seu envio/integração e o CI final da main.
+validados e integrados na **main local**. O envio remoto dos commits de #20/#21
+ficou pendente por falha de conexão local com o GitHub; o conector alternativo
+não possui permissão de escrita. Confirmar o envio e o CI final da main.
 Não remover os avisos de prévia do site nem anunciar uma nova versão antes
 do ciclo de release autorizado e da validação do conjunto.
