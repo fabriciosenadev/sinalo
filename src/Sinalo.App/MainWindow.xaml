@@ -31,6 +31,7 @@
         Height="Auto" />
       <RowDefinition
         Height="*" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition
@@ -464,6 +465,9 @@
           <Expander
             Header="Regra de busca e disponibilidade"
             Margin="0,0,0,8">
+            <Expander.Style><Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}"><Style.Triggers>
+              <DataTrigger Binding="{Binding IsCompactWorkspace}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+            </Style.Triggers></Style></Expander.Style>
             <StackPanel>
               <TextBlock
                 Text="{Binding SelectedSourcePolicy, StringFormat=Busca configurada: {0}}"
@@ -504,7 +508,11 @@
             Text="{Binding CatalogSummary}"
             FontSize="13"
             Foreground="{DynamicResource Brush.TextSecondary}"
-            Margin="0,8,0,0" />
+            Margin="0,8,0,0">
+            <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+              <DataTrigger Binding="{Binding IsCompactWorkspace}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+            </Style.Triggers></Style></TextBlock.Style>
+          </TextBlock>
         </StackPanel>
         <Grid
           Grid.Row="3"
@@ -676,7 +684,61 @@
         Grid.Row="2"
         Text="{Binding OperationMessage}"
         Foreground="{DynamicResource Brush.TextSecondary}"
-        Margin="0,12,0,0" />
+        ToolTip="{Binding OperationMessage}"
+        Margin="0,12,0,0">
+        <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Style.Triggers>
+          <DataTrigger Binding="{Binding IsCompactWorkspace}" Value="True">
+            <Setter Property="TextWrapping" Value="NoWrap" /><Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="FontSize" Value="12" /><Setter Property="Margin" Value="0,8,0,0" />
+          </DataTrigger>
+        </Style.Triggers></Style></TextBlock.Style>
+      </TextBlock>
     </Grid>
+    <Border Grid.Row="3" Grid.ColumnSpan="2" Margin="0,8,0,0" Padding="8"
+            Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1" CornerRadius="8">
+      <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed" />
+        <Style.Triggers><DataTrigger Binding="{Binding Playback.HasSession, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+          <Setter Property="Visibility" Value="Visible" />
+        </DataTrigger></Style.Triggers>
+      </Style></Border.Style>
+      <StackPanel x:Name="PlaybackPanel" DataContext="{Binding Playback, RelativeSource={RelativeSource AncestorType=Window}}">
+        <Expander x:Name="PlaybackDetails" IsExpanded="True" ToolTip="Expandir para ajustar posição, volume e reiniciar o vídeo">
+          <Expander.Header>
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+              <StackPanel Margin="0,0,16,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" />
+                <TextBlock Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12"><Run Text="{Binding Status, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TimeLabel, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding PlayerAndOutput, Mode=OneWay}" /></TextBlock>
+              </StackPanel>
+              <WrapPanel Grid.Column="1">
+                <Button Content="{Binding PlayPauseLabel}" Command="{Binding PlayPauseCommand}" Style="{DynamicResource Button.Primary}" Margin="0,0,8,0" />
+                <Button Content="Parar" Command="{Binding StopCommand}" Margin="0" />
+              </WrapPanel>
+            </Grid>
+          </Expander.Header>
+          <StackPanel Margin="0,8,0,0">
+            <Slider x:Name="VideoSeekSlider" Minimum="0" Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}"
+                    IsEnabled="{Binding CanSeek}" PreviewMouseLeftButtonDown="VideoSeek_Begin" PreviewMouseLeftButtonUp="VideoSeek_Commit"
+                    PreviewKeyDown="VideoSeek_KeyDown" PreviewKeyUp="VideoSeek_KeyUp" AutomationProperties.Name="Posição do vídeo" Margin="0,4,0,4" />
+            <WrapPanel>
+              <Button Content="Reiniciar vídeo" Command="{Binding RestartCommand}" />
+              <StackPanel Orientation="Horizontal" Margin="0,0,12,8" Height="40">
+                <TextBlock Text="Volume" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Slider x:Name="VideoVolumeSlider" Width="130" Minimum="0" Maximum="100" Value="{Binding Volume}" IsEnabled="{Binding CanVolume}"
+                        PreviewMouseLeftButtonDown="VideoVolume_Begin" PreviewMouseLeftButtonUp="VideoVolume_Commit"
+                        PreviewKeyDown="VideoVolume_KeyDown" PreviewKeyUp="VideoVolume_KeyUp" AutomationProperties.Name="Volume do vídeo" />
+              </StackPanel>
+              <Button Content="{Binding MuteLabel}" Command="{Binding ToggleMuteCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Expander>
+        <TextBlock Text="{Binding Message}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12">
+          <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+            <DataTrigger Binding="{Binding Message}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+          </Style.Triggers></Style></TextBlock.Style>
+        </TextBlock>
+      </StackPanel>
+    </Border>
   </Grid>
 </Window>

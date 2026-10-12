@@ -21,6 +21,7 @@ public partial class App : System.Windows.Application
     private SystemThemeService? _themeService;
     private MpvPlaybackLauncher? _mpvPlaybackLauncher;
     private IPresentationOutputService? _presentationOutputService;
+    private FallbackPlaybackLauncher? _playbackController;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -62,13 +63,25 @@ public partial class App : System.Windows.Application
 
         var mpvPlaybackLauncher = new MpvPlaybackLauncher();
         var playbackGate = new PlaybackActivityGate();
-        mpvPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
         var windowsPlaybackLauncher = new WindowsPlaybackLauncher();
-        windowsPlaybackLauncher.PlaybackActivityChanged += playbackGate.SetActive;
+        var playbackController = new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher);
+        _playbackController = playbackController;
+        playbackController.Changed += snapshot => playbackGate.SetActive(snapshot.IsActive);
         _mpvPlaybackLauncher = mpvPlaybackLauncher;
-        var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory());
+        var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory(), new PlaybackOutputCoordinator(playbackController));
+        var playbackService = new PlaybackService(contentCatalog, playbackController, presentationOutputService);
+        MainWindow? mainWindow = null;
+        var playbackViewModel = new PlaybackViewModel(playbackController, playbackService,
+            action => Dispatcher.BeginInvoke(action),
+            resolveReplayOutput: async () =>
+            {
+                if (mainWindow?.DataContext is not HomeViewModel { SelectedPlaybackScreen: { } screen }) return null;
+                var output = OutputSelectionResolver.Resolve(new PlaybackConfiguration(screen.ScreenNumber, screen.MonitorKey), await monitorService.GetOutputsAsync());
+                return output is null ? null : new PlaybackLaunchOptions(output);
+            },
+            replayed: item => (mainWindow?.DataContext as HomeViewModel)?.MarkItemAsPlayed(item));
         _presentationOutputService = presentationOutputService;
-        var mainWindow = new MainWindow
+        mainWindow = new MainWindow
         {
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel, worshipTimer: worshipTimerViewModel),
             ConfigurationService = configurationService,
@@ -97,7 +110,8 @@ public partial class App : System.Windows.Application
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
             ManualSynchronizationService = new ManualContentSynchronizationService(contentCatalog, downloader, storageSpaceService),
             LinkedVideoService = new LinkedVideoService(pathService, playbackGate: playbackGate),
-            PlaybackService = new PlaybackService(contentCatalog, new FallbackPlaybackLauncher(mpvPlaybackLauncher, windowsPlaybackLauncher)),
+            PlaybackService = playbackService,
+            Playback = playbackViewModel,
             PlaybackRuntime = mpvPlaybackLauncher
         };
 
@@ -107,7 +121,7 @@ public partial class App : System.Windows.Application
         _themeService.ApplyCurrentTheme();
         _ = mainWindow.CheckForUpdateAsync();
         mainWindow.StartPeriodicUpdateChecks();
-        _ = Task.Run(async () => await mpvPlaybackLauncher.WarmAsync());
+        _ = Task.Run(async () => { try { await mpvPlaybackLauncher.WarmAsync(); } catch { /* A contingência é resolvida ao solicitar reprodução. */ } });
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -117,6 +131,7 @@ public partial class App : System.Windows.Application
         _themeService?.Dispose();
         try { _mpvPlaybackLauncher?.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
         catch { }
+        _playbackController?.Dispose();
         _httpClient.Dispose();
         base.OnExit(e);
     }

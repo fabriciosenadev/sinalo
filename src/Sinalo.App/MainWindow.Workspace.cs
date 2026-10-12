@@ -10,6 +10,7 @@ public partial class MainWindow
 {
     private string _presentationSceneKind = "conference";
     private HomeViewModel? _uxModel;
+    private bool? _playbackCompact;
     private void InitializeWorkspaceUi()
     {
         DataContextChanged += (_, _) =>
@@ -42,6 +43,11 @@ public partial class MainWindow
         if (CatalogRegion is null || DataContext is not HomeViewModel home) return;
         var wide = WorkspaceRegion.ActualWidth >= 1000;
         home.IsCompactWorkspace = WorkspaceRegion.ActualHeight < 540;
+        if (_playbackCompact != home.IsCompactWorkspace)
+        {
+            _playbackCompact = home.IsCompactWorkspace;
+            PlaybackDetails.IsExpanded = !home.IsCompactWorkspace;
+        }
         DetailsColumn.Width = new GridLength(wide && home.ShowCatalogDetails ? 340 : 0);
         Grid.SetColumn(CatalogDetails, wide ? 1 : 0);
         Grid.SetColumnSpan(CatalogDetails, wide ? 1 : 2);
