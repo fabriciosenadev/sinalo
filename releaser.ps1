@@ -131,6 +131,9 @@ elseif ([string]::IsNullOrWhiteSpace($Version)) {
 
 Assert-Version -Value $Version
 
+Write-Step "Preparando componentes de download por link"
+& $videoToolsScript
+
 if (-not $SkipTests) {
     Write-Step "Executando testes e validando cobertura"
     & $coverageScript -Configuration $Configuration
@@ -138,9 +141,6 @@ if (-not $SkipTests) {
         throw "Testes ou cobertura falharam. O instalador nao foi gerado."
     }
 }
-
-Write-Step "Preparando componentes de download por link"
-& $videoToolsScript
 
 Write-Step "Publicando Sinalo $Version para $Runtime"
 New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null

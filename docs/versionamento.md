@@ -44,3 +44,9 @@ preservados sempre que possível.
 Uma tag ou release já publicada é imutável. Se uma correção for necessária,
 publique uma nova versão em vez de substituir arquivos de uma entrega que já
 chegou aos computadores da igreja.
+
+Se o workflow falhar antes de criar a release, corrija a infraestrutura na main
+e use a execução manual de **Release**, informando a tag existente. O workflow
+faz checkout da tag original e prepara os componentes de mídia antes dos testes;
+não move a tag nem substitui uma release já existente. Isso não serve para
+incluir novas alterações do aplicativo na tag antiga.

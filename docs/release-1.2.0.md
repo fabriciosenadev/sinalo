@@ -46,3 +46,13 @@ Para testar sem instalar, o executável está em `.release/Sinalo-win-x64/Sinalo
 6. Conferir atualização a partir da 1.1.0, preservando banco e vídeos.
 
 A validação automatizada não comprova fluidez em hardware com HD e DPI real.
+
+## Recuperação da publicação
+
+A primeira Action falhou antes de gerar o pacote porque o FFmpeg só era
+preparado após os testes. O CI preparava antes e passava; checkout limpo de
+release falhou em seis testes reais de mídia. A infraestrutura da main foi
+corrigida para preparar componentes antes dos testes, com testes de contrato.
+A execução manual do workflow usa a tag original v1.2.0, sem alterá-la, e
+recusa sobrescrever releases publicados. O conteúdo do aplicativo é o commit
+9edd17b da tag, não mudanças posteriores da main.
