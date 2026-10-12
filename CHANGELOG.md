@@ -4,9 +4,24 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
-## Em desenvolvimento
+## Em desenvolvimento — ainda não publicado
 
-### Novo
+- Nova **Biblioteca de vídeos** reúne os vídeos dos programas e MP4 locais, com
+  pesquisa por nome/data, filtro de origem e ordenação.
+- Biblioteca organizada em **Vídeos** e **Importar vídeos**, com lista legível,
+  detalhes contextuais, seleção da tela de saída e acesso à fila de downloads.
+  A edição tem Salvar/Cancelar e protege alterações não salvas.
+- Importe arquivos ou pastas, incluindo subpastas. O padrão copia para o Sinalo;
+  opcionalmente, mantenha o arquivo no local original, que precisa continuar acessível.
+- Edite o nome exibido sem renomear arquivos; vídeos importados podem ter data
+  de uso opcional. Localize arquivos ausentes e reproduza na tela configurada.
+- Importações verificam espaço, permitem cancelamento e recuperam cópias
+  interrompidas. A limpeza automática não apaga vídeos importados.
+- Remover um importado preserva o arquivo por padrão; excluir uma cópia do
+  Sinalo exige confirmação. Arquivos originais referenciados não são apagados.
+- Entrega inicial restrita a vídeos MP4; áudio e imagens permanecem planejados.
+
+### Reprodução
 
 - Controle de vídeos na área **Reprodução**: pausar/continuar, parar, reiniciar,
   avançar para uma posição, ajustar volume e silenciar, com título, tempo e tela
@@ -16,7 +31,7 @@ direto na instalação ou no uso do aplicativo.
 - Abrir a apresentação na mesma saída interrompe o vídeo pelo MPV. Quando um
   player externo estiver ativo, o Sinalo informa a necessidade de fechá-lo.
 
-### Melhorado
+### Player e operação
 
 - Comandos por IPC confirmados e encerramento limitado no tempo. O MPV continua
   aquecido entre vídeos; a contingência para VLC permanece para falhas de início,
@@ -45,9 +60,13 @@ direto na instalação ou no uso do aplicativo.
 - Temas claro e escuro consistentes em listas, controles, rolagem e diálogos;
   Novidades destaca a versão instalada e recolhe o histórico anterior.
 
-Esta interface está em validação na branch `feat/experiencia-usuario`.
-Não integra a Biblioteca geral nem o controle completo do MPV e ainda não
-foi publicada em uma nova versão.
+A interface, a Biblioteca e o player foram revisados em conjunto. A integração
+não altera a versão publicada 1.1.0; ainda não há nova tag ou instalador.
+- A Biblioteca usa o monitor, os diálogos e o painel de downloads compartilhados.
+- Vídeos importados aparecem na sessão global e podem ser reproduzidos novamente
+  pelo serviço da Biblioteca, mantendo seu histórico e validando o arquivo.
+- A abertura carrega a Biblioteca local em segundo plano; navegar nos programas
+  lê o catálogo local sem precisar buscar vídeos na internet.
 
 ## 1.1.0 - 04/10/2026
 

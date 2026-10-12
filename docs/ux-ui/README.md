@@ -1,5 +1,9 @@
 # Plano de UX/UI de todo o Sinalo
 
+**Estado atual:** consulte a [revisão integrada de 11/10/2026](revisao-integrada.md).
+Os planos abaixo registram a entrega isolada original; agora a revisão considera
+também Biblioteca e MPV, sem anunciar release antes da conclusão do ciclo.
+
 Data: 08/10/2026. Branch independente: `feat/experiencia-usuario`.
 Criada diretamente da `main` local, commit `4291646`.
 **Implementado em branch; aceite manual pendente.** Não houve merge da Biblioteca

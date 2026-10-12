@@ -24,6 +24,7 @@ public sealed partial class HomeViewModel
     }
     public void RestoreWorkspaceState(HomeViewModel previous)
     {
+        IsGeneralLibraryWorkspace = previous.IsGeneralLibraryWorkspace;
         IsTimerWorkspace = previous.IsTimerWorkspace;
         IsRaffleWorkspace = previous.IsRaffleWorkspace;
         IsWorshipTimerWorkspace = previous.IsWorshipTimerWorkspace;
@@ -52,7 +53,7 @@ public sealed partial class HomeViewModel
     }
     public bool ShowProgramCalendar => IsLibraryWorkspace && !IsCompactWorkspace;
     partial void OnIsCompactWorkspaceChanged(bool value) => OnPropertyChanged(nameof(ShowProgramCalendar));
-    public string WorkspaceTitle => IsTimerWorkspace ? "Cronômetro" : IsWorshipTimerWorkspace ? "Cronômetro de Culto" : IsRaffleWorkspace ? "Sorteio" : IsLinkedVideoWorkspace ? "Adicionar vídeo por link" : SelectedSource == "Todos" ? "Programas de vídeo" : SelectedSource;
+    public string WorkspaceTitle => IsGeneralLibraryWorkspace ? "Biblioteca de vídeos" : IsTimerWorkspace ? "Cronômetro" : IsWorshipTimerWorkspace ? "Cronômetro de Culto" : IsRaffleWorkspace ? "Sorteio" : IsLinkedVideoWorkspace ? "Adicionar vídeo por link" : SelectedSource == "Todos" ? "Programas de vídeo" : SelectedSource;
     public string CatalogSummary => $"{CatalogItems.Count} vídeo(s) pronto(s) para reproduzir";
     public bool IsCatalogEmpty => CatalogItems.Count == 0;
     public string CatalogEmptyMessage => !string.IsNullOrWhiteSpace(SearchQuery) ? "Nenhum vídeo corresponde à pesquisa. Limpe a pesquisa para ver os demais." : "Nenhum vídeo local neste programa. Busque os arquivos publicados ou adicione um vídeo por link.";
@@ -74,6 +75,7 @@ public sealed partial class HomeViewModel
     }
     public void SelectProgram(string name)
     {
+        IsGeneralLibraryWorkspace = false;
         IsTimerWorkspace = IsWorshipTimerWorkspace = IsRaffleWorkspace = IsLinkedVideoWorkspace = false;
         SelectedSource = name;
         OperationMessage = CatalogSummary;

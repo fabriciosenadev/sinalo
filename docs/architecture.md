@@ -177,12 +177,9 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 
 ## Reproducao e telas
 
-- A tela principal e uma biblioteca de uso rapido: `Hoje`, `Proximo Sabado`, fontes e busca.
+- A tela principal abre a Biblioteca geral; programas e ferramentas têm workspaces próprios.
 - Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; em falha de inicializacao/conexao, o Sinalo usa VLC e depois o player padrao do Windows. Erros da midia e falhas durante uma sessao nao abrem outro player automaticamente.
 
-- A tela principal oferece os programas, pesquisa por título/data, seleção de
-  vídeo e detalhes contextuais. A Biblioteca geral permanece em outra branch.
-- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; na falha dele, o Sinalo usa VLC e depois o player padrao do Windows.
 - O MPV permanece ocioso entre vídeos e recebe a troca de arquivo por IPC, reduzindo a espera em computadores com HD. Ele pode abrir em tela cheia no monitor selecionado pelo operador.
 - A UI exige uma tela de saida para a reproducao. Uma configuracao de tela
   existente e preservada; instalacoes legadas sem tela definida usam a tela
@@ -197,6 +194,31 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
   A apresentacao e a reproducao de video nao usam a mesma saida ao mesmo tempo;
   a desconexao do monitor e verificada antes de abrir a apresentacao.
 - O item pode ter pre-visualizacao em janela do operador, mas a exibicao no projetor e local.
+
+## Biblioteca local (integrada ao conjunto, ainda não publicada)
+
+`LibraryMedia` é independente de `ContentSource`. `library_media` acrescenta
+metadados aos itens legados por vínculo único; caminho, histórico e fixação dos
+programas continuam em `content_items`. A migração é aditiva e idempotente.
+`ILibraryRepository`, classificador, validador e leitor de metadados têm contratos
+na Application, implementados na Infrastructure. `LibraryViewModel` é separado
+da Home e consulta páginas de 50 itens; a lista WPF é virtualizada.
+
+A biblioteca usa duas abas (Vídeos e Importar vídeos). Na consulta, detalhes
+contextuais ocupam uma coluna em áreas úteis >=1100 DIP, ou uma visão central
+nas menores. O botão de reprodução fica fixo; o conteúdo de detalhes tem altura
+útil e rolagem própria. A MainWindow libera a coluna da lateral e oculta a faixa
+de sábados somente nesse workspace, preservando o seletor de monitor existente.
+A fila segue acessível num diálogo ligado ao estado atual da Home. Layout não
+gera consultas nem hashes; edição e mensagens de importação/ações são separadas.
+
+Importação MP4 roda fora da UI, valida estrutura ISO BMFF, verifica hashes ao
+copiar e registra um diário privado para recuperar interrupções. Essa validação
+não promete decodificar todos os frames. Metadados técnicos opcionais não exigem
+FFmpeg/ffprobe. Um gate coordena importação, downloads e alterações de arquivos;
+blocos pesados aguardam a reprodução encerrar. A atualização cancela e aguarda
+a importação antes de encerrar. A reprodução usa os contratos atuais da main,
+sem importar a implementação de controle completo do MPV da outra branch.
 
 ### Controle de reprodução implementado localmente
 
@@ -232,7 +254,7 @@ de esquema SQLite, retomada de posição gravada ou persistência de volume.
 
 O Sinalo so marca um item como offline depois de validar um arquivo local completo. A busca no site configurado e o download manual de um link do YouTube são caminhos distintos: um item ausente no site pode ser adicionado pelo operador por link. Esse download conserva arquivos parciais para retomada quando a origem permitir e não torna o vídeo pronto antes da validação.
 
-## Remodelagem de experiência — branch feat/experiencia-usuario
+## Experiência integrada
 
 A camada App compartilha tokens e templates em `VisualIdentity.xaml`, com cores
 semânticas atualizadas por `SystemThemeService`. `MainWindow` contém navegação,
@@ -242,13 +264,17 @@ estão em `Views`, sem duplicar os serviços de domínio.
 `HomeWorkspaceState` guarda apenas estado de interface. Recarregar o catálogo
 preserva ferramenta ativa, seleção por ID, programação em memória, consulta
 por link, downloads e atualização. Configuração de monitor e regras existentes
-continuam nos serviços originais; não houve mudança de banco ou de formato
-persistido. Escolhas trimestrais legadas continuam representadas por ausência
+continuam nos serviços originais. A revisão visual não exige reconfiguração;
+a Biblioteca acrescenta metadados com migração aditiva descrita acima.
+Escolhas trimestrais legadas continuam representadas por ausência
 de sábados, agora com escolha explícita no formulário.
 
 Downloads, programação, atualização e diagnósticos têm superfícies dedicadas.
 A apresentação mantém a ferramenta que abriu sua cena, não a página atual do
 operador, e usa fundo escuro de alto contraste independente do tema.
 
-A branch não contém Biblioteca geral nem controles novos de MPV. Ver
-[registro de execução](ux-ui/execucao.md) e pendências de validação física.
+A Biblioteca compartilha shell, monitor, tema, downloads e confirmações. O player
+é uma sessão global, não a seleção atual da lista. `LibraryPlaybackService`
+atribui ID/título aos importados e valida arquivos antes do replay; o painel
+recebe a estratégia de replay sem depender da camada Infrastructure.
+Ver [revisão integrada](ux-ui/revisao-integrada.md) e pendências de validação física.

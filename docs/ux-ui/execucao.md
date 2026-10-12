@@ -92,6 +92,12 @@ projetor, leitor de tela ou DPI físico do Windows.
 10. Somente após aceite, autorizar commits/integração e planejar a versão.
     Atualização instalada deve ser validada no ciclo de release autorizado.
 
+## Revisão conjunta posterior
+
+A análise de MPV, Biblioteca e UX/UI combinados está em
+[revisao-integrada.md](revisao-integrada.md). O registro abaixo descreve a
+entrega isolada original; não deve ser usado como estado atual da integração.
+
 ## Documentação e publicação
 
 ### Ajuste após validação do operador

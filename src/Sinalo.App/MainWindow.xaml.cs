@@ -55,6 +55,9 @@ public partial class MainWindow : Window
     public ILinkedVideoService? LinkedVideoService { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public IAsyncDisposable? PlaybackRuntime { get; init; }
+    public ContentOperationGate? ContentOperations { get; init; }
+    public static readonly DependencyProperty LibraryProperty = DependencyProperty.Register(nameof(Library), typeof(LibraryViewModel), typeof(MainWindow));
+    public LibraryViewModel? Library { get => (LibraryViewModel?)GetValue(LibraryProperty); init => SetValue(LibraryProperty, value); }
     public static readonly DependencyProperty PlaybackProperty = DependencyProperty.Register(nameof(Playback), typeof(PlaybackViewModel), typeof(MainWindow));
     public PlaybackViewModel? Playback { get => (PlaybackViewModel?)GetValue(PlaybackProperty); init => SetValue(PlaybackProperty, value); }
     public SynchronizationQueue? SynchronizationQueue
@@ -78,6 +81,7 @@ public partial class MainWindow : Window
         Closing += (_, _) => SynchronizationQueue?.CancelAll();
         Closed += (_, _) =>
         {
+            Library?.CancelImport();
             _timerRefresh.Stop();
             _updateCheckTimer.Stop();
             _updateCheckCancellation.Cancel();
@@ -171,9 +175,11 @@ public partial class MainWindow : Window
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async Task PrepareForShutdownAsync()
     {
+        Library?.CancelImport();
         _updateCheckTimer.Stop();
         _updateCheckCancellation.Cancel();
         SynchronizationQueue?.CancelAll();
+        if (Library is not null) await Library.WhenImportIdleAsync();
         if (SynchronizationQueue is not null)
         {
             try { await SynchronizationQueue.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(10)); }
@@ -256,7 +262,7 @@ public partial class MainWindow : Window
     }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private void LinkedVideoWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectLinkedVideoWorkspace();
+    private async void LinkedVideoWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectLinkedVideoWorkspace(); }
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal async void InspectLinkedVideo_Click(object sender, RoutedEventArgs e)
@@ -350,6 +356,7 @@ public partial class MainWindow : Window
         IProgress<SynchronizationQueueProgress> queueProgress,
         CancellationToken cancellationToken)
     {
+        using var contentLease = ContentOperations is null ? null : await ContentOperations.EnterAsync(cancellationToken);
         if (DiscoveryService is null || ContentCatalog is null) throw new InvalidOperationException("Os serviços de sincronização não estão disponíveis.");
         if (request.LinkedVideo is { } linked)
         {
@@ -497,14 +504,21 @@ public partial class MainWindow : Window
         finally { SetIdle(); }
     }
 
-    private void SourceFilter_Click(object sender, RoutedEventArgs e)
+    private async void SourceFilter_Click(object sender, RoutedEventArgs e)
     {
+        if (!await CanLeaveLibraryAsync()) return;
         if (DataContext is HomeViewModel viewModel && sender is FrameworkElement { Tag: string filter }) viewModel.SelectProgram(filter);
+        if (ConfigurationService is not null && ContentCatalog is not null)
+        {
+            try { ReplaceHomeViewModel(await ConfigurationService.LoadSourcesAsync(), await LoadCatalogAsync(), (DataContext as HomeViewModel)?.OperationMessage ?? ""); }
+            catch { if (DataContext is HomeViewModel current) current.OperationMessage="Não foi possível ler os vídeos locais. Tente abrir o programa novamente."; }
+        }
     }
 
-    private void TimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectTimerWorkspace();
-    private void WorshipTimerWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectWorshipTimerWorkspace();
-    private void RaffleWorkspace_Click(object sender, RoutedEventArgs e) => (DataContext as HomeViewModel)?.SelectRaffleWorkspace();
+    private async void TimerWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectTimerWorkspace(); }
+    private async void WorshipTimerWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectWorshipTimerWorkspace(); }
+    private async void RaffleWorkspace_Click(object sender, RoutedEventArgs e) { if (await CanLeaveLibraryAsync()) (DataContext as HomeViewModel)?.SelectRaffleWorkspace(); }
+    private async Task<bool> CanLeaveLibraryAsync() => DataContext is not HomeViewModel { IsGeneralLibraryWorkspace: true } || Library is null || await Library.ResolvePendingChangesAsync();
 
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     internal async void RaffleAction_Click(object sender, RoutedEventArgs e)
@@ -535,6 +549,7 @@ public partial class MainWindow : Window
 
     private async void PlaybackScreen_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        RefreshLibraryContext();
         if (PlaybackConfigurationService is null || DataContext is not HomeViewModel viewModel || viewModel.SelectedPlaybackScreen is null) return;
         await PlaybackConfigurationService.SaveAsync(new PlaybackConfiguration(viewModel.SelectedPlaybackScreen.ScreenNumber, viewModel.SelectedPlaybackScreen.MonitorKey));
     }
@@ -631,6 +646,7 @@ public partial class MainWindow : Window
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     private async void TimerRefresh_Tick(object? sender, EventArgs e)
     {
+        RefreshLibraryContext();
         if (DataContext is HomeViewModel presentationState) presentationState.IsPresentationOpen = PresentationOutputService?.IsOpen == true;
         if (DataContext is not HomeViewModel viewModel) return;
         viewModel.Timer.Refresh();
@@ -943,7 +959,7 @@ public partial class MainWindow : Window
             previous?.PlaybackScreens, previous?.SelectedPlaybackScreen?.ScreenNumber,
             timer: previous?.Timer,
             raffle: previous?.Raffle,
-            worshipTimer: previous?.WorshipTimer) { OperationMessage = message };
+            worshipTimer: previous?.WorshipTimer) { OperationMessage = message, IsBusy = previous?.IsBusy ?? false };
         RestoreFilters(viewModel, previous);
         DataContext = viewModel;
     }
@@ -956,7 +972,28 @@ public partial class MainWindow : Window
         current.SearchQuery = previous.SearchQuery;
         current.RestoreLinkedVideoState(previous);
         current.RestoreWorkspaceState(previous);
+        current.IsGeneralLibraryWorkspace = previous.IsGeneralLibraryWorkspace;
     }
+
+    private async void GeneralLibrary_Click(object sender, RoutedEventArgs e)
+    {
+        (DataContext as HomeViewModel)?.SelectGeneralLibraryWorkspace();
+        RefreshLibraryContext();
+        if (Library is not null) await Library.RefreshAsync();
+    }
+
+    public void RefreshLibraryContext()
+    {
+        if (Library is null || DataContext is not HomeViewModel home) return;
+        Library.OutputScreenLabel = home.SelectedPlaybackScreen?.Label ?? "tela indisponível";
+        Library.HasOutputScreen = home.SelectedPlaybackScreen is not null;
+        Library.ContentFolder = home.ContentPath;
+        Library.PresentationIsOpen = PresentationOutputService?.IsOpen == true;
+    }
+
+    public void LibraryOutputScreenChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => PlaybackScreen_SelectionChanged(sender,e);
+
+    public void ShowLibraryQueue() => new DownloadsWindow(this).ShowDialog();
 
     private static string GetSourceName(Sinalo.Domain.ContentSource source) => source switch
     {

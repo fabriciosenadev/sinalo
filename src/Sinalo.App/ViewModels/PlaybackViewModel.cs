@@ -8,6 +8,7 @@ public sealed partial class PlaybackViewModel : ObservableObject, IDisposable
 {
     private readonly IPlaybackController _controller;
     private readonly PlaybackService _service;
+    private readonly Func<string, PlaybackLaunchOptions, Task<PlaybackResult>>? _replay;
     private readonly Action<Action> _dispatch;
     private readonly Func<Task<PlaybackLaunchOptions?>>? _resolveReplayOutput;
     private readonly Action<Sinalo.Domain.ContentItem>? _replayed;
@@ -33,10 +34,12 @@ public sealed partial class PlaybackViewModel : ObservableObject, IDisposable
     public string TimeLabel => $"{FormatTime(PositionSeconds)} / {(_snapshot.DurationSeconds is > 0 ? FormatTime(DurationSeconds) : "--:--")}";
 
     public PlaybackViewModel(IPlaybackController controller, PlaybackService service, Action<Action>? dispatch = null,
-        Func<Task<PlaybackLaunchOptions?>>? resolveReplayOutput = null, Action<Sinalo.Domain.ContentItem>? replayed = null)
+        Func<Task<PlaybackLaunchOptions?>>? resolveReplayOutput = null, Action<Sinalo.Domain.ContentItem>? replayed = null,
+        Func<string, PlaybackLaunchOptions, Task<PlaybackResult>>? replay = null)
     {
         _controller = controller;
         _service = service;
+        _replay = replay;
         _dispatch = dispatch ?? (action => action());
         _resolveReplayOutput = resolveReplayOutput;
         _replayed = replayed;
@@ -88,7 +91,7 @@ public sealed partial class PlaybackViewModel : ObservableObject, IDisposable
             {
                 var selectedOutput = _resolveReplayOutput is null ? output : await _resolveReplayOutput();
                 if (selectedOutput is null) return new(false, "A tela selecionada não está disponível. Verifique a conexão do monitor.");
-                var result = await _service.PlayAsync(id, selectedOutput);
+                var result = _replay is null ? await _service.PlayAsync(id, selectedOutput) : await _replay(id, selectedOutput);
                 if (result.Started && result.Item is not null) _replayed?.Invoke(result.Item);
                 return new(result.Started, result.Started ? null : result.Message);
             });

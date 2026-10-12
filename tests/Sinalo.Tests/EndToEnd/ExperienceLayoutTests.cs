@@ -126,7 +126,7 @@ public sealed class ExperienceLayoutTests
             var main=new MainWindow{DataContext=home,WorshipTimerAudioPlayer=audio};Theme(main,true);main.Show();Flush(main);
             foreach(var view in new FrameworkElement[]{new Sinalo.App.Views.TimerView(),new Sinalo.App.Views.RaffleView(),new Sinalo.App.Views.WorshipTimerView(),new Sinalo.App.Views.LinkedVideoView()})
                 ForwardHandlers(view);
-            foreach(var view in Descendants(main).OfType<System.Windows.Controls.UserControl>()) ForwardHandlers(view);
+            foreach(var view in Descendants(main).OfType<System.Windows.Controls.UserControl>().Where(view => view.GetType().Namespace == "Sinalo.App.Views")) ForwardHandlers(view);
             home.SelectWorshipTimerWorkspace();home.WorshipTimer.PlaySelectedAudio();Flush(main);
             Assert.True(home.WorshipTimer.CanControlAudio);
             Assert.Contains(Descendants(main).OfType<Button>(),b=>Equals(b.Content,"Parar áudio") && b.IsVisible && b.IsEnabled);
