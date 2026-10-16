@@ -34,6 +34,10 @@ public partial class LibraryView : System.Windows.Controls.UserControl
     { UiDialog.UnsavedChoice.Save => LibraryEditDecision.Save, UiDialog.UnsavedChoice.Discard => LibraryEditDecision.Discard, _ => LibraryEditDecision.Cancel };
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if(e.PropertyName==nameof(LibraryViewModel.Selected) && !_selecting && MediaList.SelectedItems.Count<=1 && _model is not null)
+        {
+            _selecting=true;try{MediaList.SelectedItem=_model.Selected;}finally{_selecting=false;}
+        }
         if (e.PropertyName is nameof(LibraryViewModel.ShowDetails) or nameof(LibraryViewModel.IsWideLayout)) UpdateWorkspaceLayout();
     }
     private void Workspace_Loaded(object sender, RoutedEventArgs e) { AttachModel(); (Window.GetWindow(this) as MainWindow)?.RefreshLibraryContext(); }
@@ -65,6 +69,22 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         FilterBar.Margin = new Thickness(0,0,0,shortViewport ? 8 : 14);
         ListFooter.Margin = new Thickness(0,shortViewport ? 8 : 12,0,0);
     }
+    private async void MoveCategory_Click(object sender,RoutedEventArgs e)
+    {
+        if(_model is null)return;
+        if(!await _model.ResolvePendingChangesAsync())return;
+        var ids=MediaList.SelectedItems.Cast<Sinalo.Domain.LibraryMedia>().Select(x=>x.Id).ToArray();
+        if(ids.Length==0 && _model.Selected is { } item)ids=[item.Id];
+        if(ids.Length>0 && UiDialog.Confirm(Window.GetWindow(this),"Transferir mídias","Alterar a categoria preserva arquivos, histórico e vínculos internos.","Transferir"))await _model.MoveSelectedAsync(ids);
+    }
+    private async void MoveExisting_Click(object sender,RoutedEventArgs e)
+    {
+        if(_model is {ExistingImportIds.Count:>0} && UiDialog.Confirm(Window.GetWindow(this),"Mover cadastros existentes","Transferir os itens já cadastrados para a categoria escolhida? Nenhum arquivo será duplicado.","Transferir"))await _model.MoveExistingImportsAsync();
+    }
+    private async void CategoryLink_Click(object sender,RoutedEventArgs e)
+    {
+        if(_model is not null && await _model.ResolvePendingChangesAsync())(Window.GetWindow(this) as MainWindow)?.OpenLinkForCategory();
+    }
     private async void MediaList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_selecting || _model is null || _model.IsRefreshing || e.AddedItems.Count == 0) return;
@@ -72,7 +92,7 @@ public partial class LibraryView : System.Windows.Controls.UserControl
         try
         {
             await _model.SelectVideoAsync(e.AddedItems[0] as Sinalo.Domain.LibraryMedia);
-            BindingOperations.GetBindingExpression(MediaList, System.Windows.Controls.ListBox.SelectedItemProperty)?.UpdateTarget();
+            if(MediaList.SelectedItems.Count<=1)MediaList.SelectedItem=_model.Selected;
         }
         finally { _selecting = false; }
     }

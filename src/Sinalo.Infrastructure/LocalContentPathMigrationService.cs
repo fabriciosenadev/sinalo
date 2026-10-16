@@ -9,13 +9,14 @@ namespace Sinalo.Infrastructure;
 public sealed class LocalContentPathMigrationService(
     IContentPathConfigurationService configuration,
     IContentCatalog catalog, ILibraryRepository? library = null, ContentOperationGate? operations = null,
-    PlaybackActivityGate? activity = null) : IContentPathMigrationService
+    PlaybackActivityGate? activity = null,Func<Task>? beforeMove=null) : IContentPathMigrationService
 {
     public Task MoveAsync(string newContentPath, CancellationToken cancellationToken = default) => Task.Run(() => MoveCoreAsync(newContentPath, cancellationToken));
     private async Task MoveCoreAsync(string newContentPath, CancellationToken cancellationToken)
     {
         if (activity?.IsActive == true) throw new InvalidOperationException("Encerre a reprodução antes de mover o conteúdo.");
         using var lease = operations is null ? null : await operations.EnterAsync(cancellationToken);
+        if(beforeMove is not null)await beforeMove();
         if (activity?.IsActive == true) throw new InvalidOperationException("Encerre a reprodução antes de mover o conteúdo.");
         var previousPath = Normalize(configuration.GetContentPath());
         var targetPath = Normalize(newContentPath);

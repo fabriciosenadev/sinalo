@@ -7,10 +7,11 @@ public sealed record LibraryMedia(string Id, string Name, string? ContentItemId,
     DateOnly? UsageDate, string? LocalPath, string? OriginalPath, MediaStorageMode StorageMode,
     MediaAvailability Availability, DateTimeOffset AddedAtUtc, long? SizeBytes = null, string? Sha256 = null,
     int PlayCount = 0, bool IsPinned = false, LibraryMediaType Type = LibraryMediaType.Video,
-    DateTimeOffset? FirstPlayedAtUtc = null, DateTimeOffset? LastPlayedAtUtc = null)
+    DateTimeOffset? FirstPlayedAtUtc = null, DateTimeOffset? LastPlayedAtUtc = null,
+    string CategoryId = MediaCategory.Uncategorized, string CategoryName = "Sem categoria")
 {
     public bool IsImported => ContentItemId is null;
-    public string OriginLabel => Source switch { ContentSource.Missions => "Informativo das Missões", ContentSource.ProvaiEVede => "Provai e Vede", ContentSource.Health => "Minuto de Saúde", _ => "Importado" };
+    public string OriginLabel => Source switch { ContentSource.Missions => "Informativo das Missões", ContentSource.ProvaiEVede => "Provai e Vede", ContentSource.Health => "Minuto de Saúde", _ => Id.Contains("-youtube-",StringComparison.Ordinal) ? "Vídeo por link" : "Importado" };
     public string StorageLabel => StorageMode == MediaStorageMode.Managed ? "Cópia na pasta do Sinalo" : "Arquivo no local original";
     public bool CanPlay => Availability == MediaAvailability.Available && !string.IsNullOrWhiteSpace(LocalPath);
     public string AvailabilityLabel => Availability switch { MediaAvailability.Available => "Pronto para reproduzir", MediaAvailability.Missing => "Arquivo ausente", _ => "Arquivo inválido" };

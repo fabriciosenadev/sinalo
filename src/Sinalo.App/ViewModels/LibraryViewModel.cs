@@ -14,7 +14,8 @@ public sealed record LibrarySortOption(LibrarySort Value, string Label) { public
 public sealed partial class LibraryViewModel(ILibraryRepository repository, ILibraryImportService importer,
     ILibraryFileService files, LibraryPlaybackService playback, IContentCatalog catalog,
     Sinalo.Application.Storage.IContentDeletionService deletion,
-    Func<Task<PlaybackLaunchOptions?>>? resolveOutput = null, Func<bool>? presentationOpen = null) : ObservableObject
+    Func<Task<PlaybackLaunchOptions?>>? resolveOutput = null, Func<bool>? presentationOpen = null,
+    IMediaCategoryService? categories = null) : ObservableObject
 {
     private CancellationTokenSource? _importCancellation;
     private TaskCompletionSource? _importFinished;
@@ -33,6 +34,58 @@ public sealed partial class LibraryViewModel(ILibraryRepository repository, ILib
     [ObservableProperty] private bool isImporting;
     [ObservableProperty] private string message = "Vídeos MP4 locais e dos programas. Áudio e imagens serão entregues em etapas futuras.";
     [ObservableProperty] private double progress;
+    [ObservableProperty] private MediaCategory? categoryFilter;
+    [ObservableProperty] private MediaCategory? importCategory;
+    [ObservableProperty] private MediaCategory? moveCategory;
+    public ObservableCollection<MediaCategory> CategoryOptions { get; } = [];
+    public ObservableCollection<MediaCategory> CategoryFilters { get; } = [new("*","Todas as categorias",IsSystem:true)];
+    public string LibraryTitle => CategoryFilter is { Id: not "*" } ? CategoryFilter.Name : "Biblioteca de vídeos";
+    public IReadOnlyList<string> ExistingImportIds {get;private set;}=[];
+    public bool HasExistingImports => ExistingImportIds.Count > 0;
+    public bool CanMoveExistingImports => !IsImporting && HasExistingImports && ImportCategory is {IsDeleting:false};
+    public bool CanMoveSelected => !IsImporting && HasSelection && MoveCategory is {IsDeleting:false};
+    public string MoveHint => IsImporting ? "Aguarde a importação terminar antes de transferir."
+        : !HasSelection ? "Selecione os vídeos que deseja transferir." : MoveCategory is null ? "Escolha uma categoria de destino." : "Transferir preserva arquivos, histórico e referências.";
+    private void NotifyCategoryActions()
+    {
+        foreach(var name in new[]{nameof(HasExistingImports),nameof(CanMoveExistingImports),nameof(CanMoveSelected),nameof(MoveHint)})OnPropertyChanged(name);
+    }
+    partial void OnImportCategoryChanged(MediaCategory? value)=>NotifyCategoryActions();
+    partial void OnMoveCategoryChanged(MediaCategory? value)=>NotifyCategoryActions();
+    public async Task MoveExistingImportsAsync()
+    {
+        await SafeAsync(async()=>{if(categories is null || ImportCategory is null || ExistingImportIds.Count==0)throw new InvalidOperationException("Não há cadastros existentes para mover ou falta escolher o destino.");
+            if(IsImporting)throw new InvalidOperationException("Aguarde a importação terminar antes de transferir.");
+            await categories.AssignAsync(ExistingImportIds,ImportCategory.Id);await RefreshAsync();ImportMessage="Cadastros existentes transferidos, sem duplicar arquivos.";});
+    }
+    public async Task<IReadOnlyList<LibraryMedia>> AllMediaAsync()
+    {
+        return await Task.Run(async()=>{var list=new List<LibraryMedia>();for(var page=0;;page++){var batch=await repository.QueryAsync(new(Page:page,PageSize:100));list.AddRange(batch.Items);if(list.Count>=batch.Total)return (IReadOnlyList<LibraryMedia>)list;}});
+    }
+    public Task<PlaybackResult> PlayMediaAsync(string id,PlaybackLaunchOptions output)=>playback.PlayAsync(id,output);
+    public Task<LibraryMedia?> FindMediaAsync(string id)=>repository.FindAsync(id);
+    public async Task RemoveMediaAsync(string id)
+    {
+        await Task.Run(async()=>{var item=await repository.FindAsync(id);if(item is null)return;
+        if(item.ContentItemId is { } linked)await deletion.DeleteAsync(linked);else await files.RemoveAsync(id,item.StorageMode==MediaStorageMode.Managed);});
+    }
+    partial void OnCategoryFilterChanged(MediaCategory? value) { _page=0;OnPropertyChanged(nameof(LibraryTitle));OnPropertyChanged(nameof(CanImport)); }
+    public async Task LoadCategoriesAsync()
+    {
+        if(categories is null)return;
+        var filter=CategoryFilter?.Id;var import=ImportCategory?.Id;var move=MoveCategory?.Id;
+        var list=await categories.ListAsync(); CategoryOptions.Clear();CategoryFilters.Clear();CategoryFilters.Add(new("*","Todas as categorias",IsSystem:true));
+        foreach(var item in list){CategoryFilters.Add(item);if(!item.IsDeleting)CategoryOptions.Add(item);}
+        CategoryFilter=CategoryFilters.FirstOrDefault(x=>x.Id==filter)??CategoryFilters[0];
+        ImportCategory=CategoryOptions.FirstOrDefault(x=>x.Id==import)??CategoryOptions.FirstOrDefault(x=>x.Id==MediaCategory.Uncategorized);
+        MoveCategory=CategoryOptions.FirstOrDefault(x=>x.Id==move);
+    }
+    public async Task MoveSelectedAsync(IReadOnlyList<string> ids)
+    {
+        await SafeAsync(async()=>{if(categories is null || MoveCategory is null)throw new InvalidOperationException("Escolha a categoria de destino.");
+            if(IsImporting || ids.Count==0)throw new InvalidOperationException("Selecione as mídias e aguarde a importação terminar antes de transferir.");
+            await categories.AssignAsync(ids,MoveCategory.Id);await RefreshAsync();Message="Mídias transferidas. Arquivos e vínculos preservados.";});
+    }
     public ObservableCollection<LibraryMedia> Items { get; } = [];
     public IReadOnlyList<LibraryOriginOption> Origins { get; } = [new("Todos", "Todas as origens"), new("Importados", "Importados"), new("0", "Informativo das Missões"), new("1", "Provai e Vede"), new("2", "Minuto de Saúde")];
     public IReadOnlyList<LibrarySortOption> Sorts { get; } = [new(LibrarySort.Name, "Nome"), new(LibrarySort.AddedAt, "Data de inclusão"), new(LibrarySort.UsageDate, "Data de uso")];
@@ -54,13 +107,14 @@ public sealed partial class LibraryViewModel(ILibraryRepository repository, ILib
         else if (IsWideLayout && oldValue?.Id != value.Id) DetailsOpen = true;
         foreach (var property in new[] { nameof(HasSelection), nameof(IsImported), nameof(CanDeleteCopy), nameof(CanEditDate), nameof(SelectedDetails) }) OnPropertyChanged(property);
         NotifyWorkspace();
+        NotifyCategoryActions();
     }
     [RelayCommand]
     public async Task RefreshAsync()
     {
         var generation = Interlocked.Increment(ref _loadGeneration);
         var id = Selected?.Id;
-        var query = new LibraryQuery(Search, Origin.Value, Sort.Value, _page);
+        var query = new LibraryQuery(Search, Origin.Value, Sort.Value, _page, CategoryId: CategoryFilter is { Id:not "*" } ? CategoryFilter.Id:null);
         try
         {
             var page = await Task.Run(() => repository.QueryAsync(query));
@@ -83,13 +137,20 @@ public sealed partial class LibraryViewModel(ILibraryRepository repository, ILib
     public async Task ImportAsync(IReadOnlyList<string> paths)
     {
         if (IsImporting) return;
+        if(CategoryFilter?.IsDeleting==true){ImportMessage="Conclua a exclusão pendente ou abra outra categoria antes de importar.";return;}
+        var importDestination=ImportCategory?.Id??MediaCategory.Uncategorized;
+        ExistingImportIds=[];
+        NotifyCategoryActions();
         _importCancellation = new(); _importFinished = new(TaskCreationOptions.RunContinuationsAsynchronously); IsImporting = true; HasImportResult = false; ImportFailures = "";
         try
         {
-            var request = new LibraryImportRequest(paths, UseOriginal ? MediaStorageMode.Referenced : MediaStorageMode.Managed, IncludeSubfolders);
+            if(categories is not null)await categories.ValidateDestinationAsync(importDestination);
+            var request = new LibraryImportRequest(paths, UseOriginal ? MediaStorageMode.Referenced : MediaStorageMode.Managed, IncludeSubfolders,importDestination);
             var result = await importer.ImportAsync(request, new Progress<LibraryImportProgress>(update => { Progress = update.Percentage; ImportMessage = $"{update.Stage}: {update.File}"; }), _importCancellation.Token);
             _page = 0; await RefreshAsync();
             ImportedCount = result.Imported; ExistingCount = result.Existing; IgnoredCount = result.Ignored; FailedCount = result.Failures.Count;
+            ExistingImportIds=result.ExistingMediaIds??[];
+            NotifyCategoryActions();
             ImportFailures = string.Join("\n", result.Failures); HasImportResult = true;
             ImportMessage = result.Cancelled ? "Importação cancelada. Os vídeos já concluídos foram preservados." : "Importação concluída.";
             Message = $"{(result.Cancelled ? "Cancelado" : "Concluído")}: {result.Imported} importado(s), {result.Existing} existente(s), {result.Ignored} ignorado(s), {result.Failures.Count} falha(s)." + (result.Failures.Count > 0 ? "\n" + string.Join("\n", result.Failures) : "");

@@ -195,6 +195,11 @@
             Click="OpenSchedule_Click"
             ToolTip="Ver e organizar os vídeos adicionados à programação; não inicia reprodução automática"
             Margin="0,16,0,8" />
+          <TextBlock Text="MINHAS CATEGORIAS" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,16,0,8"/>
+          <ItemsControl x:Name="CustomCategoryNavigation" ItemsSource="{Binding CustomCategories, RelativeSource={RelativeSource AncestorType=Window}}">
+            <ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding}" Tag="{Binding}" ToolTip="{Binding Name}" Click="Category_Click" Style="{DynamicResource Button.Navigation}"/></DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button x:Name="ManageCategoriesButton" Content="Criar / gerenciar categorias" Click="ManageCategories_Click" Style="{DynamicResource Button.Navigation}" Margin="0,8,0,8"/>
           <TextBlock
             Text="ADICIONAR VÍDEO"
             FontSize="12"

@@ -28,7 +28,7 @@ public sealed partial class LibraryViewModel
     public bool IsRefreshing { get; private set; }
     public Func<LibraryEditDecision>? ConfirmPendingChanges { get; set; }
     public bool CopyIntoSinalo { get => !UseOriginal; set => UseOriginal = !value; }
-    public bool CanImport => !IsImporting;
+    public bool CanImport => !IsImporting && CategoryFilter?.IsDeleting!=true;
     public bool HasImportFailures => FailedCount > 0;
     public bool ShowVideos => !IsImportTab;
     public bool ShowList => ShowVideos && (!DetailsOpen || IsWideLayout);
@@ -39,7 +39,7 @@ public sealed partial class LibraryViewModel
     public bool ShowEmpty => Items.Count == 0;
     public bool CanPrevious => _page > 0;
     public bool CanNext => (_page + 1) * 50 < _total;
-    public bool IsFiltered => !string.IsNullOrWhiteSpace(Search) || Origin.Value != "Todos";
+    public bool IsFiltered => !string.IsNullOrWhiteSpace(Search) || Origin.Value != "Todos" || CategoryFilter is {Id:not "*"};
     public string CountLabel => $"{_total} {(IsFiltered ? "resultado(s)" : "vídeo(s)")}";
     public string EmptyTitle => IsFiltered ? "Nenhum vídeo corresponde à pesquisa" : "Sua biblioteca está vazia";
     public string EmptyDescription => IsFiltered ? "Tente outro nome ou data, ou limpe os filtros." : "Importe vídeos MP4 ou baixe vídeos de um dos programas na navegação.";
@@ -59,7 +59,7 @@ public sealed partial class LibraryViewModel
         (EditName != Selected.Name || EditDate != (Selected.UsageDate?.ToString("dd/MM/yyyy") ?? ""));
     partial void OnMessageChanged(string value) => ActionMessage = value;
     partial void OnUseOriginalChanged(bool value) => OnPropertyChanged(nameof(CopyIntoSinalo));
-    partial void OnIsImportingChanged(bool value) => OnPropertyChanged(nameof(CanImport));
+    partial void OnIsImportingChanged(bool value) { OnPropertyChanged(nameof(CanImport)); NotifyCategoryActions(); }
     partial void OnIsImportTabChanged(bool value) => NotifyWorkspace();
     partial void OnDetailsOpenChanged(bool value) => NotifyWorkspace();
     partial void OnIsWideLayoutChanged(bool value) => NotifyWorkspace();
@@ -103,5 +103,5 @@ public sealed partial class LibraryViewModel
     [RelayCommand] private async Task CloseDetailsAsync()
     { if (await ResolvePendingChangesAsync()) { IsEditing = false; DetailsOpen = false; } }
     [RelayCommand] private async Task ClearFiltersAsync()
-    { Search = ""; Origin = Origins[0]; _page = 0; await RefreshAsync(); }
+    { Search = ""; Origin = Origins[0]; CategoryFilter=CategoryFilters.FirstOrDefault(x=>x.Id=="*"); _page = 0; await RefreshAsync(); }
 }

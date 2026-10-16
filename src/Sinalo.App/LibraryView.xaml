@@ -315,7 +315,7 @@
               <TextBox
                 x:Name="SearchInput"
                 Width="200"
-                MinHeight="36"
+                MinHeight="40"
                 Padding="8"
                 Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"
                 ToolTip="Nome ou DD/MM/AAAA">
@@ -337,7 +337,7 @@
               <ComboBox
                 x:Name="OriginInput"
                 Width="180"
-                MinHeight="36"
+                MinHeight="40"
                 Padding="8"
                 ItemsSource="{Binding Origins}"
                 SelectedItem="{Binding Origin}" />
@@ -353,27 +353,30 @@
               <ComboBox
                 x:Name="SortInput"
                 Width="145"
-                MinHeight="36"
+                MinHeight="40"
                 Padding="8"
                 ItemsSource="{Binding Sorts}"
                 SelectedItem="{Binding Sort}" />
             </StackPanel>
             <Button
               Content="Filtros"
+              ToolTip="Origem e categoria são filtros independentes"
               Visibility="{Binding ShowCompactRows, Converter={StaticResource BoolVisibility}}"
               Command="{Binding ToggleFiltersCommand}"
-              VerticalAlignment="Center"
-              Margin="0,0,8,8" />
+              VerticalAlignment="Bottom"
+              Margin="0,0,8,6" />
+            <StackPanel Margin="0,0,10,6"><Label Content="Categoria" Target="{Binding ElementName=CategoryFilterInput}" Padding="0,0,0,5" Foreground="{DynamicResource Brush.TextSecondary}"/><ComboBox x:Name="CategoryFilterInput" Width="180" ItemsSource="{Binding CategoryFilters}" SelectedItem="{Binding CategoryFilter}"/></StackPanel>
             <Button
               Content="Pesquisar"
               Command="{Binding SearchNowCommand}"
-              VerticalAlignment="Center"
-              Margin="0,0,8,8" />
+              VerticalAlignment="Bottom"
+              Margin="0,0,8,6" />
             <Button
               Content="Atualizar lista"
               Command="{Binding RefreshCommand}"
-              VerticalAlignment="Center"
-              Margin="0,0,8,8" />
+              VerticalAlignment="Bottom"
+              Margin="0,0,8,6" />
+            <Button Content="Adicionar vídeo por link" Click="CategoryLink_Click" VerticalAlignment="Bottom" Margin="0,0,8,6"/>
           </WrapPanel>
         </Expander>
         <Border
@@ -408,9 +411,9 @@
         </Border>
         <ListBox
           x:Name="MediaList"
+          SelectionMode="Extended"
           Grid.Row="2"
           ItemsSource="{Binding Items}"
-          SelectedItem="{Binding Selected, Mode=OneWay}"
           SelectionChanged="MediaList_SelectionChanged"
           ItemContainerStyle="{StaticResource Library.Row}"
           ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -614,7 +617,12 @@
               <TextBlock
                 Text="{Binding Selected.OriginLabel}"
                 Foreground="{DynamicResource Brush.TextSecondary}"
-                Margin="0,6,0,18" />
+                Margin="0,6,0,4" />
+              <TextBlock Text="{Binding Selected.CategoryName, StringFormat='Categoria: {0}'}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,18"/>
+              <TextBlock Text="Mover para categoria" Margin="0,16,0,6"/>
+              <ComboBox ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding MoveCategory}"/>
+              <TextBlock Text="{Binding MoveHint}" Margin="0,8,0,8" Foreground="{DynamicResource Brush.TextSecondary}"/>
+              <Button Content="Transferir selecionados" Click="MoveCategory_Click" IsEnabled="{Binding CanMoveSelected}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
               <TextBlock
                 Text="{Binding ActionMessage}"
                 TextWrapping="Wrap"
@@ -671,7 +679,7 @@
                   Foreground="{DynamicResource Brush.TextPrimary}" />
                 <TextBox
                   x:Name="EditNameInput"
-                  MinHeight="36"
+                  MinHeight="40"
                   Padding="8"
                   Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" />
                 <StackPanel
@@ -684,7 +692,7 @@
                     Foreground="{DynamicResource Brush.TextPrimary}" />
                   <TextBox
                     x:Name="EditDateInput"
-                    MinHeight="36"
+                    MinHeight="40"
                     Padding="8"
                     Text="{Binding EditDate, UpdateSourceTrigger=PropertyChanged}" />
                 </StackPanel>
@@ -754,6 +762,7 @@
                 HorizontalAlignment="Left" />
               <TextBlock
                 Text="{Binding ActionMessage}"
+                ToolTip="A transferência de categoria preserva os arquivos físicos"
                 TextWrapping="Wrap"
                 Margin="0,16,0,0"
                 Foreground="{DynamicResource Brush.TextSecondary}" />
@@ -777,10 +786,12 @@
           FontSize="22"
           FontWeight="SemiBold" />
         <TextBlock
-          Text="Escolha arquivos MP4 ou uma pasta. Não é necessário definir programa ou data."
+          Text="Escolha arquivos MP4 ou uma pasta e a categoria de destino. Não é necessário definir programa ou data."
           TextWrapping="Wrap"
           Foreground="{DynamicResource Brush.TextSecondary}"
           Margin="0,8,0,20" />
+        <TextBlock Text="Adicionar em" Margin="0,0,0,6"/>
+        <ComboBox ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding ImportCategory}" IsEnabled="{Binding CanImport}" Margin="0,0,0,12"/>
         <Border
           Background="{DynamicResource Brush.Surface}"
           BorderBrush="{DynamicResource Brush.Border}"
@@ -885,8 +896,10 @@
               FontWeight="SemiBold" />
             <TextBlock
               Text="{Binding ImportMessage}"
+              ToolTip="Se já houver cadastro, você pode transferi-lo sem duplicar o arquivo"
               TextWrapping="Wrap"
               Margin="0,12,0,0" />
+            <Button Content="Mover cadastros já existentes para o destino escolhido" Click="MoveExisting_Click" IsEnabled="{Binding CanMoveExistingImports}" Visibility="{Binding HasExistingImports,Converter={StaticResource BoolVisibility}}" HorizontalAlignment="Left" Margin="0,12,0,0"/>
             <ProgressBar
               Minimum="0"
               Maximum="100"

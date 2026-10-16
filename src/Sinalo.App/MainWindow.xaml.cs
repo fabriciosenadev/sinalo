@@ -196,6 +196,7 @@ public partial class MainWindow : Window
             try { await PlaybackRuntime.DisposeAsync(); }
             catch { }
         }
+        if(ContentOperations is not null){using var completed=await ContentOperations.EnterAsync();}
     }
 
     private async void RefreshCatalog_Click(object sender, RoutedEventArgs e)
@@ -288,8 +289,17 @@ public partial class MainWindow : Window
         try
         {
             var selected = viewModel.CreateLinkedVideoRequest();
+            if(Categories is not null)
+            {
+                await Categories.ValidateDestinationAsync(selected.EffectiveCategoryId);
+                if(await Categories.FindLinkedAsync(selected.Video.Id,selected.EffectiveCategoryId) is { } found)
+                {
+                    if(found.CanPlay){viewModel.LinkedVideoStatus="Este vídeo já está pronto na categoria escolhida.";return;}
+                    selected=selected with {ExistingMediaId=found.Id,LibraryStorage=found.IsImported,Destination=found.Source??selected.Destination};
+                }
+            }
             var existing = await ContentCatalog.FindByIdAsync(selected.ItemId);
-            if (existing?.IsReadyOffline == true && existing.LocalPath is { } localPath && File.Exists(localPath))
+            if (Categories is null && existing?.IsReadyOffline == true && existing.LocalPath is { } localPath && File.Exists(localPath))
             {
                 viewModel.OperationMessage = "Este vídeo já está pronto offline no programa escolhido.";
                 viewModel.LinkedVideoStatus = viewModel.OperationMessage;
@@ -361,14 +371,24 @@ public partial class MainWindow : Window
         if (request.LinkedVideo is { } linked)
         {
             if (LinkedVideoService is null) throw new InvalidOperationException("O componente de download por link não está disponível.");
+            if(Categories is not null)
+            {
+                await Categories.ValidateDestinationAsync(linked.EffectiveCategoryId,cancellationToken);
+                if(await Categories.FindLinkedAsync(linked.Video.Id,linked.EffectiveCategoryId,cancellationToken) is { CanPlay:true })return new(0);
+            }
             if (linked.Destination != request.Configuration.Source) throw new InvalidOperationException("O programa do vídeo não corresponde ao pedido da fila.");
             var existing = await ContentCatalog.FindByIdAsync(linked.ItemId, cancellationToken);
-            if (existing?.IsReadyOffline == true && existing.LocalPath is { } file && File.Exists(file)) return new SynchronizationQueueCompletion(0);
+            if (Categories is null && existing?.IsReadyOffline == true && existing.LocalPath is { } file && File.Exists(file)) return new SynchronizationQueueCompletion(0);
             var progress = new Progress<DownloadProgress>(update => queueProgress.Report(new SynchronizationQueueProgress(
                 $"{linked.Video.Title}: {update.Stage}", update.Percentage, GetSynchronizationStage(update.Stage))));
             var downloaded = await LinkedVideoService.DownloadAsync(linked, progress, cancellationToken);
-            await ContentCatalog.UpsertAsync([downloaded], cancellationToken);
-            _ = Dispatcher.BeginInvoke(() => (DataContext as HomeViewModel)?.MarkItemAsReady(downloaded));
+            if((linked.IsCustomDestination || linked.LibraryStorage) && Categories is not null)await Categories.PublishLinkedAsync(linked,downloaded,cancellationToken);
+            else await ContentCatalog.UpsertAsync([downloaded], cancellationToken);
+            _ = Dispatcher.BeginInvoke(async () =>
+            {
+                if(!linked.IsCustomDestination && !linked.LibraryStorage)(DataContext as HomeViewModel)?.MarkItemAsReady(downloaded);
+                if(Categories is not null)await RefreshCategoriesAsync();else if(Library is not null)await Library.RefreshAsync();
+            });
             return new SynchronizationQueueCompletion(1);
         }
         queueProgress.Report(new SynchronizationQueueProgress("Consultando o site oficial...", Stage: SynchronizationStage.Discovery));
@@ -602,6 +622,11 @@ public partial class MainWindow : Window
 
         try
         {
+            if(Categories is not null && Library is not null)
+            {
+                var played=await Library.PlayMediaAsync(item.Id,launchOptions);viewModel.OperationMessage=played.Message;
+                await RefreshCategoriesAsync();return;
+            }
             var result = await PlaybackService.PlayAsync(item.Id, launchOptions);
             viewModel.OperationMessage = result.Message;
             if (result.Started && result.Item is not null) viewModel.MarkItemAsPlayed(result.Item);
@@ -884,12 +909,15 @@ public partial class MainWindow : Window
     private async void DeleteSelectedVideo_Click(object sender, RoutedEventArgs e)
     {
         if (ContentDeletionService is null || DataContext is not HomeViewModel { SelectedCatalogItem: { } selected }) return;
-        if (!UiDialog.Confirm(this, "Excluir vídeo do computador?", $"O arquivo de '{selected.Title}' será excluído. Ele poderá ser baixado novamente conforme a configuração do programa.", "Excluir arquivo")) return;
+        var record=Library is null?null:await Library.FindMediaAsync(selected.Id);
+        var explanation=record?.StorageMode==Sinalo.Domain.MediaStorageMode.Referenced ? $"A referência de '{selected.Title}' será removida do Sinalo. O arquivo original será preservado." : $"A cópia gerenciada de '{selected.Title}' será excluída. Conteúdo de fontes pode ser encontrado novamente conforme sua configuração.";
+        if (!UiDialog.Confirm(this, "Remover vídeo?",explanation,"Confirmar remoção")) return;
 
         SetBusy($"Excluindo {selected.Title}...");
         try
         {
-            await ContentDeletionService.DeleteAsync(selected.Id);
+            if(Categories is not null && Library is not null)await Library.RemoveMediaAsync(selected.Id);
+            else await ContentDeletionService.DeleteAsync(selected.Id);
             if (DataContext is HomeViewModel viewModel)
             {
                 viewModel.RemoveCatalogItem(selected.Id);
@@ -977,6 +1005,8 @@ public partial class MainWindow : Window
 
     private async void GeneralLibrary_Click(object sender, RoutedEventArgs e)
     {
+        if(DataContext is HomeViewModel home)home.GeneralLibraryTitle="Biblioteca de vídeos";
+        if(Library is not null){if(!await Library.ResolvePendingChangesAsync())return;Library.CategoryFilter=Library.CategoryFilters.FirstOrDefault(x=>x.Id=="*");Library.ImportCategory=Library.CategoryOptions.FirstOrDefault(x=>x.Id==Sinalo.Domain.MediaCategory.Uncategorized);}
         (DataContext as HomeViewModel)?.SelectGeneralLibraryWorkspace();
         RefreshLibraryContext();
         if (Library is not null) await Library.RefreshAsync();

@@ -11,9 +11,13 @@ public sealed record LinkedVideoFormat(string VideoFormatId, string? AudioFormat
 
 public sealed record LinkedVideo(string Id, string Title, Uri PageUri, DateOnly PublishedDate, IReadOnlyList<LinkedVideoFormat> Formats);
 
-public sealed record LinkedVideoDownloadRequest(LinkedVideo Video, LinkedVideoFormat Format, ContentSource Destination, DateOnly ScheduledDate)
+public sealed record LinkedVideoDownloadRequest(LinkedVideo Video, LinkedVideoFormat Format, ContentSource Destination, DateOnly ScheduledDate,
+    string? CategoryId = null, string? CategoryName = null, DateOnly? CustomUsageDate = null,
+    string? ExistingMediaId = null, bool LibraryStorage = false)
 {
-    public string ItemId => $"{SourceDirectory(Destination)}-youtube-{Video.Id}";
+    public bool IsCustomDestination => CategoryId is not null && MediaCategory.SourceFor(CategoryId) is null;
+    public string EffectiveCategoryId => CategoryId ?? MediaCategory.ForSource(Destination);
+    public string ItemId => ExistingMediaId ?? $"{(IsCustomDestination ? CategoryId : SourceDirectory(Destination))}-youtube-{Video.Id}";
     public static bool IsManualItemId(string id) =>
         id.StartsWith("health-youtube-", StringComparison.Ordinal) ||
         id.StartsWith("missions-youtube-", StringComparison.Ordinal) ||

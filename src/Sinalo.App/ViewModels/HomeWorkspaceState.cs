@@ -4,6 +4,8 @@ namespace Sinalo.App.ViewModels;
 /// <summary>Estado de interface. Não altera política de downloads ou persistência.</summary>
 public sealed partial class HomeViewModel
 {
+    [ObservableProperty] private string generalLibraryTitle="Biblioteca de vídeos";
+    partial void OnGeneralLibraryTitleChanged(string value)=>OnPropertyChanged(nameof(WorkspaceTitle));
     [ObservableProperty] private bool detailsOpen;
     [ObservableProperty] private bool isPresentationOpen;
     [ObservableProperty] private string synchronizationMessage = "Nenhum download nesta sessão.";
@@ -53,7 +55,7 @@ public sealed partial class HomeViewModel
     }
     public bool ShowProgramCalendar => IsLibraryWorkspace && !IsCompactWorkspace;
     partial void OnIsCompactWorkspaceChanged(bool value) => OnPropertyChanged(nameof(ShowProgramCalendar));
-    public string WorkspaceTitle => IsGeneralLibraryWorkspace ? "Biblioteca de vídeos" : IsTimerWorkspace ? "Cronômetro" : IsWorshipTimerWorkspace ? "Cronômetro de Culto" : IsRaffleWorkspace ? "Sorteio" : IsLinkedVideoWorkspace ? "Adicionar vídeo por link" : SelectedSource == "Todos" ? "Programas de vídeo" : SelectedSource;
+    public string WorkspaceTitle => IsGeneralLibraryWorkspace ? GeneralLibraryTitle : IsTimerWorkspace ? "Cronômetro" : IsWorshipTimerWorkspace ? "Cronômetro de Culto" : IsRaffleWorkspace ? "Sorteio" : IsLinkedVideoWorkspace ? "Adicionar vídeo por link" : SelectedSource == "Todos" ? "Programas de vídeo" : SelectedSource;
     public string CatalogSummary => $"{CatalogItems.Count} vídeo(s) pronto(s) para reproduzir";
     public bool IsCatalogEmpty => CatalogItems.Count == 0;
     public string CatalogEmptyMessage => !string.IsNullOrWhiteSpace(SearchQuery) ? "Nenhum vídeo corresponde à pesquisa. Limpe a pesquisa para ver os demais." : "Nenhum vídeo local neste programa. Busque os arquivos publicados ou adicione um vídeo por link.";

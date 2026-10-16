@@ -39,7 +39,12 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
         paths.EnsureFolders();
         var contentRoot = paths.GetPaths().ContentPath;
         var itemId = request.ItemId;
-        var targetDirectory = Path.Combine(contentRoot, Quarter.From(request.ScheduledDate).ToString(), LinkedVideoDownloadRequest.SourceDirectory(request.Destination));
+        if(!Regex.IsMatch(itemId,"^[A-Za-z0-9_-]{1,180}$") || !Regex.IsMatch(request.Format.VideoFormatId,"^[A-Za-z0-9_-]{1,40}$"))
+            throw new InvalidDataException("Identificador de mídia ou qualidade inválido.");
+        if(request.IsCustomDestination && request.CategoryId != MediaCategory.Uncategorized &&
+           !Regex.IsMatch(request.CategoryId!, "^custom-[a-f0-9]{32}$")) throw new InvalidDataException("Destino inválido.");
+        var targetDirectory = request.LibraryStorage ? Path.Combine(contentRoot,"categories",itemId) : request.IsCustomDestination ? Path.Combine(contentRoot, "categories", request.CategoryId!) :
+            Path.Combine(contentRoot, Quarter.From(request.ScheduledDate).ToString(), LinkedVideoDownloadRequest.SourceDirectory(request.Destination));
         var target = Path.Combine(targetDirectory, $"youtube-{video.Id}.mp4");
         var partialDirectory = Path.Combine(contentRoot, ".incoming", itemId + "-" + request.Format.VideoFormatId);
         var free = _freeSpace(contentRoot);

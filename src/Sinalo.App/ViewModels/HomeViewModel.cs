@@ -94,7 +94,7 @@ public sealed partial class HomeViewModel : ObservableObject
     [ObservableProperty] private double updateProgressPercent;
 
     public IReadOnlyList<SourceCard> Sources { get; }
-    public IReadOnlyList<LinkedVideoDestinationOption> LinkedVideoDestinations { get; } =
+    public ObservableCollection<LinkedVideoDestinationOption> LinkedVideoDestinations { get; } =
     [
         new(ContentSource.Missions, "Informativo das Missões"),
         new(ContentSource.ProvaiEVede, "Provai e Vede"),
@@ -112,7 +112,8 @@ public sealed partial class HomeViewModel : ObservableObject
     public bool IsLibraryWorkspace => !IsTimerWorkspace && !IsRaffleWorkspace && !IsWorshipTimerWorkspace && !IsLinkedVideoWorkspace && !IsGeneralLibraryWorkspace;
     public bool CanQueueLinkedVideo => !IsInspectingLinkedVideo && _inspectedLinkedVideo is not null &&
         SelectedLinkedVideoFormat is not null && SelectedLinkedVideoDestination is not null &&
-        DateOnly.TryParseExact(LinkedVideoDateText, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+        ((SelectedLinkedVideoDestination.CategoryId is not null && MediaCategory.SourceFor(SelectedLinkedVideoDestination.CategoryId) is null && string.IsNullOrWhiteSpace(LinkedVideoDateText)) ||
+        DateOnly.TryParseExact(LinkedVideoDateText, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _));
     public bool CanInspectLinkedVideo => !IsInspectingLinkedVideo && !string.IsNullOrWhiteSpace(LinkedVideoUrl);
     public string LinkedVideoTitle => _inspectedLinkedVideo?.Title ?? string.Empty;
     public string LinkedVideoPublishedDate => _inspectedLinkedVideo is null ? string.Empty : $"Publicado em {_inspectedLinkedVideo.PublishedDate:dd/MM/yyyy}";
@@ -167,7 +168,8 @@ public sealed partial class HomeViewModel : ObservableObject
     {
         LinkedVideoUrl = previous.LinkedVideoUrl;
         LinkedVideoDateText = previous.LinkedVideoDateText;
-        SelectedLinkedVideoDestination = LinkedVideoDestinations.FirstOrDefault(option => option.Source == previous.SelectedLinkedVideoDestination?.Source);
+        LinkedVideoDestinations.Clear();foreach(var option in previous.LinkedVideoDestinations)LinkedVideoDestinations.Add(option);
+        SelectedLinkedVideoDestination = LinkedVideoDestinations.FirstOrDefault(option => option.CategoryId == previous.SelectedLinkedVideoDestination?.CategoryId && option.Source == previous.SelectedLinkedVideoDestination?.Source);
         if (previous._inspectedLinkedVideo is not null && previous.LinkedVideoUrl == LinkedVideoUrl)
         {
             SetInspectedLinkedVideo(previous._inspectedLinkedVideo);
@@ -202,10 +204,11 @@ public sealed partial class HomeViewModel : ObservableObject
     }
     public LinkedVideoDownloadRequest CreateLinkedVideoRequest()
     {
-        if (!CanQueueLinkedVideo || _inspectedLinkedVideo is null || SelectedLinkedVideoFormat is null || SelectedLinkedVideoDestination is null ||
-            !DateOnly.TryParseExact(LinkedVideoDateText, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        if (!CanQueueLinkedVideo || _inspectedLinkedVideo is null || SelectedLinkedVideoFormat is null || SelectedLinkedVideoDestination is null)
             throw new InvalidOperationException("Consulte um vídeo e informe programa, qualidade e data de uso válidos.");
-        return new LinkedVideoDownloadRequest(_inspectedLinkedVideo, SelectedLinkedVideoFormat, SelectedLinkedVideoDestination.Source, date);
+        var validDate=DateOnly.TryParseExact(LinkedVideoDateText,"dd/MM/yyyy",CultureInfo.InvariantCulture,DateTimeStyles.None,out var date);
+        return new LinkedVideoDownloadRequest(_inspectedLinkedVideo, SelectedLinkedVideoFormat, SelectedLinkedVideoDestination.Source,
+            validDate?date:_inspectedLinkedVideo.PublishedDate, SelectedLinkedVideoDestination.CategoryId, SelectedLinkedVideoDestination.Label, validDate?date:null);
     }
     partial void OnSelectedAvailabilityChanged(string value) => ApplyFilters();
     partial void OnSearchQueryChanged(string value) => ApplyFilters();
@@ -294,7 +297,7 @@ public sealed partial class HomeViewModel : ObservableObject
     {
         var hadSelection = SelectedCatalogItem is not null;
         var index = _allCatalogItems.FindIndex(card => card.Id == item.Id);
-        var card = MapItem(item);
+        var card = MapForWorkspace(item);
         if (index >= 0) _allCatalogItems[index] = card;
         else _allCatalogItems.Add(card);
         ApplyFilters();
@@ -308,7 +311,7 @@ public sealed partial class HomeViewModel : ObservableObject
     public void MarkItemAsPlayed(ContentItem item)
     {
         var index = _allCatalogItems.FindIndex(card => card.Id == item.Id);
-        var card = MapItem(item);
+        var card = MapForWorkspace(item);
         if (index >= 0) _allCatalogItems[index] = card;
         else _allCatalogItems.Add(card);
         ApplyFilters();
@@ -327,7 +330,7 @@ public sealed partial class HomeViewModel : ObservableObject
     {
         var index = _allCatalogItems.FindIndex(card => card.Id == item.Id);
         if (index < 0) return;
-        var card = MapItem(item);
+        var card = MapForWorkspace(item);
         _allCatalogItems[index] = card;
         ApplyFilters();
         SelectedCatalogItem = card;
@@ -389,6 +392,18 @@ public sealed partial class HomeViewModel : ObservableObject
         item.IsReadyOffline ? "▶" : item.SyncState == SyncState.OnlineOnly ? "◌" : "↓",
         item.PlayCount == 0 ? string.Empty : $"Reproduzido {item.PlayCount}×",
         item.IsPinned);
+    private CatalogCard MapForWorkspace(ContentItem item)
+    {
+        var card=MapItem(item);var previous=_allCatalogItems.FirstOrDefault(x=>x.Id==item.Id);
+        return previous is null?card:card with{SourceName=previous.SourceName};
+    }
+    public void SetCategorizedProgramItems(IReadOnlyList<LibraryMedia> items)
+    {
+        _allCatalogItems.Clear();
+        foreach(var item in items.Where(x=>x.CanPlay && MediaCategory.SourceFor(x.CategoryId) is not null))
+            _allCatalogItems.Add(new(item.Id,item.Name,item.CategoryName,item.UsageDate?.ToString("dd/MM/yyyy")??"Sem data", "Pronto offline",item.LocalPath,"▶",item.PlayCount==0?"":$"Reproduzido {item.PlayCount}×",item.IsPinned));
+        ApplyFilters();
+    }
 
     private static string FormatDate(DateOnly date) => date.ToString("dd/MM/yyyy");
     private static string GetSourceName(ContentSource source) => source switch
@@ -423,7 +438,7 @@ public sealed partial class SourceCard(ContentSource source, string name, string
     public string Status { get; } = status;
     [ObservableProperty] private bool isSelected;
 }
-public sealed record LinkedVideoDestinationOption(ContentSource Source, string Label);
+public sealed record LinkedVideoDestinationOption(ContentSource Source, string Label, string? CategoryId = null);
 public sealed record CatalogCard(string Id, string Title, string SourceName, string ScheduledDate, string Status, string? LocalPath, string ThumbnailGlyph, string PlaybackLabel = "", bool IsPinned = false)
 {
     // Compatibilidade com consumidores que já exibiam a coluna "Source" da lista anterior.

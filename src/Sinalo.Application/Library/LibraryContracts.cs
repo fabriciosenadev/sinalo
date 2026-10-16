@@ -4,7 +4,7 @@ using Sinalo.Application.Playback;
 namespace Sinalo.Application.Library;
 
 public enum LibrarySort { Name, AddedAt, UsageDate }
-public sealed record LibraryQuery(string Search = "", string Origin = "Todos", LibrarySort Sort = LibrarySort.Name, int Page = 0, int PageSize = 50);
+public sealed record LibraryQuery(string Search = "", string Origin = "Todos", LibrarySort Sort = LibrarySort.Name, int Page = 0, int PageSize = 50, string? CategoryId = null, bool IncludeDetached = false);
 public sealed record LibraryPage(IReadOnlyList<LibraryMedia> Items, int Total);
 public interface ILibraryRepository
 {
@@ -23,9 +23,9 @@ public interface IMediaClassifier { bool Supports(string path); }
 public interface ILocalMediaValidator { Task ValidateAsync(string path, CancellationToken token = default); }
 public sealed record LocalMediaMetadata(double? DurationSeconds = null, int? Width = null, int? Height = null);
 public interface ILocalMediaMetadataReader { Task<LocalMediaMetadata> ReadAsync(string path, CancellationToken token = default); }
-public sealed record LibraryImportRequest(IReadOnlyList<string> Paths, MediaStorageMode StorageMode = MediaStorageMode.Managed, bool IncludeSubfolders = true);
+public sealed record LibraryImportRequest(IReadOnlyList<string> Paths, MediaStorageMode StorageMode = MediaStorageMode.Managed, bool IncludeSubfolders = true, string CategoryId = MediaCategory.Uncategorized);
 public sealed record LibraryImportProgress(string File, string Stage, double Percentage);
-public sealed record LibraryImportResult(int Imported, int Existing, int Ignored, IReadOnlyList<string> Failures, bool Cancelled);
+public sealed record LibraryImportResult(int Imported, int Existing, int Ignored, IReadOnlyList<string> Failures, bool Cancelled, IReadOnlyList<string>? ExistingMediaIds = null);
 public interface ILibraryImportService
 {
     Task<LibraryImportResult> ImportAsync(LibraryImportRequest request, IProgress<LibraryImportProgress>? progress = null, CancellationToken token = default);

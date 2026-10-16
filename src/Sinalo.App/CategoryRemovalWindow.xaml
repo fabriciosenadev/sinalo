@@ -1,0 +1,26 @@
+<Window x:Class="Sinalo.App.CategoryRemovalWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Excluir categoria" Width="640" Height="560" MinWidth="430" MinHeight="340" WindowStartupLocation="CenterOwner"
+ Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.TextPrimary}">
+ <Window.Resources><BooleanToVisibilityConverter x:Key="BoolVisibility"/></Window.Resources>
+ <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+ <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,0">
+ <StackPanel>
+ <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
+ <TextBlock Text="{Binding Summary}" Margin="0,16,0,16"/>
+ <StackPanel Visibility="{Binding ShowChoices,Converter={StaticResource BoolVisibility}}">
+ <RadioButton x:Name="TransferChoice" GroupName="RemovalMode" Content="Transferir todas as mídias e referências" IsChecked="{Binding IsTransfer}" Margin="0,0,0,12"/>
+ <StackPanel Visibility="{Binding IsTransfer,Converter={StaticResource BoolVisibility}}" Margin="24,0,0,16">
+ <Label Content="Categoria de destino" Target="{Binding ElementName=DestinationInput}" Padding="0,0,0,6"/>
+ <ComboBox x:Name="DestinationInput" ItemsSource="{Binding Destinations}" SelectedItem="{Binding Destination}"/>
+ </StackPanel>
+ <RadioButton x:Name="DeleteChoice" GroupName="RemovalMode" Content="Excluir mídias e categoria definitivamente" IsChecked="{Binding IsDelete}"/>
+ </StackPanel>
+ <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,20,0,0">
+ <TextBlock Text="{Binding Hint}" AutomationProperties.LiveSetting="Polite"/>
+ </Border>
+ </StackPanel></ScrollViewer>
+ <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,20,0,0">
+ <Button x:Name="CancelButton" Content="Cancelar" IsCancel="True" IsDefault="True"/>
+ <Button x:Name="ConfirmButton" Content="{Binding ActionLabel}" IsEnabled="{Binding CanContinue}" Click="Confirm_Click"/>
+ </WrapPanel></Grid>
+</Window>

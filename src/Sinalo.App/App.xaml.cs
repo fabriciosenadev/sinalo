@@ -50,6 +50,10 @@ public partial class App : System.Windows.Application
         var libraryRepository = new SqliteLibraryRepository(pathService);
         var contentOperations = new ContentOperationGate();
         var playbackGate = new PlaybackActivityGate();
+        MainWindow? mainWindow = null;
+        var categoryOperations = new CategoryOperationState();
+        var categories = new SqliteMediaCategoryService(pathService,libraryRepository,contentOperations,playbackGate,
+            ()=>categoryOperations.IsBusy);
         var mediaValidator = new Mp4LibraryValidator(playbackGate);
         var libraryImporter = new LocalLibraryImportService(pathService, libraryRepository, mediaValidator, mediaValidator, contentOperations, playbackGate);
         var libraryFiles = new LocalLibraryFileService(libraryRepository, pathService, mediaValidator, contentOperations, playbackGate);
@@ -77,7 +81,6 @@ public partial class App : System.Windows.Application
         var presentationOutputService = new PresentationOutputService(monitorService, new PresentationWindowFactory(), new PlaybackOutputCoordinator(playbackController));
         var playbackService = new PlaybackService(contentCatalog, playbackController, presentationOutputService);
         var libraryPlayback = new LibraryPlaybackService(libraryRepository, contentCatalog, playbackController, mediaValidator, presentationOutputService);
-        MainWindow? mainWindow = null;
         var playbackViewModel = new PlaybackViewModel(playbackController, playbackService,
             action => Dispatcher.BeginInvoke(action),
             resolveReplayOutput: async () =>
@@ -102,14 +105,16 @@ public partial class App : System.Windows.Application
                 if (mainWindow?.DataContext is not HomeViewModel { SelectedPlaybackScreen: { } screen }) return null;
                 var output = OutputSelectionResolver.Resolve(new PlaybackConfiguration(screen.ScreenNumber, screen.MonitorKey), await monitorService.GetOutputsAsync());
                 return output is null ? null : new PlaybackLaunchOptions(output);
-            }, presentationOpen: () => presentationOutputService.IsOpen);
+            }, presentationOpen: () => presentationOutputService.IsOpen,categories:categories);
         mainWindow = new MainWindow
         {
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel, worshipTimer: worshipTimerViewModel),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,
-            ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog, libraryRepository, contentOperations, playbackGate),
+            ContentPathMigrationService = new LocalContentPathMigrationService(pathService, contentCatalog, libraryRepository, contentOperations, playbackGate,
+                async()=>{if((await categories.ListAsync()).Any(x=>x.IsDeleting))throw new InvalidOperationException("Conclua a exclusão pendente de categorias antes de mudar a pasta de conteúdo.");}),
             Library = libraryViewModel,
+            Categories = categories,
             ContentOperations = contentOperations,
             ApplicationUpdateService = new GitHubApplicationUpdateService(_httpClient, pathService),
             UpdateInstallerLauncher = new WindowsUpdateInstallerLauncher(pathService),
@@ -140,6 +145,9 @@ public partial class App : System.Windows.Application
         };
 
         mainWindow.SynchronizationQueue = mainWindow.CreateSynchronizationQueue();
+        categoryOperations.Bind(libraryViewModel, mainWindow.SynchronizationQueue);
+        mainWindow.Closed += (_, _) => categoryOperations.Dispose();
+        await mainWindow.RefreshCategoriesAsync();
 
         ((HomeViewModel)mainWindow.DataContext).SelectGeneralLibraryWorkspace();
         mainWindow.Show();

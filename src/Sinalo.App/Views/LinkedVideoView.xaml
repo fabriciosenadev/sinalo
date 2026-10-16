@@ -82,7 +82,7 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
               <TextBlock
-                Text="3. Destino — salvar no programa"
+                Text="3. Destino — adicionar em"
                 Foreground="{DynamicResource Brush.TextPrimary}"
                 Margin="0,20,0,5" />
               <ComboBox
@@ -97,7 +97,7 @@
                 </ComboBox.ItemTemplate>
               </ComboBox>
               <TextBlock
-                Text="Data de uso (DD/MM/AAAA)"
+                Text="Data de uso (DD/MM/AAAA; opcional nas categorias personalizadas)"
                 Foreground="{DynamicResource Brush.TextPrimary}"
                 Margin="0,20,0,5" />
               <TextBox

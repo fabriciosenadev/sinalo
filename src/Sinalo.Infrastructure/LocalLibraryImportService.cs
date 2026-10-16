@@ -19,6 +19,7 @@ public sealed class LocalLibraryImportService(ISinaloPathService paths, ILibrary
     private async Task<LibraryImportResult> ImportCoreAsync(LibraryImportRequest request, IProgress<LibraryImportProgress>? progress, CancellationToken token)
     {
         var imported = 0; var existing = 0; var ignored = 0; var failures = new List<string>();
+        var existingIds=new List<string>();
         try
         {
             using var lease = await operations.EnterAsync(token);
@@ -29,7 +30,7 @@ public sealed class LocalLibraryImportService(ISinaloPathService paths, ILibrary
             foreach (var file in Enumerate(request, failures, token).Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if (!classifier.Supports(file)) { ignored++; continue; }
-                if (await library.FindByPathAsync(file, token) is not null) { existing++; continue; }
+                if (await library.FindByPathAsync(file, token) is { } found) { existing++;existingIds.Add(found.Id); continue; }
                 candidates.Add(file);
             }
             var files = candidates.ToArray();
@@ -72,7 +73,7 @@ public sealed class LocalLibraryImportService(ISinaloPathService paths, ILibrary
                         target = final;
                     }
                     await library.SaveImportedAsync(new(id, Path.GetFileNameWithoutExtension(file), null, null, null, target, file,
-                        request.StorageMode, MediaAvailability.Available, DateTimeOffset.UtcNow, size, hash), token);
+                        request.StorageMode, MediaAvailability.Available, DateTimeOffset.UtcNow, size, hash, CategoryId: request.CategoryId), token);
                     imported++;
                 }
                 catch (OperationCanceledException) { throw; }
@@ -90,7 +91,7 @@ public sealed class LocalLibraryImportService(ISinaloPathService paths, ILibrary
                 }
             }
             progress?.Report(new("", "Concluído", 100));
-            return new(imported, existing, ignored, failures, false);
+            return new(imported, existing, ignored, failures, false,existingIds);
         }
         catch (OperationCanceledException) { return new(imported, existing, ignored, failures, true); }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException)

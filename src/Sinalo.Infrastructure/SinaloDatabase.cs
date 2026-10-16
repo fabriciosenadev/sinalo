@@ -131,6 +131,22 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
               WHERE NOT EXISTS(SELECT 1 FROM library_media WHERE id=NEW.id OR content_item_id=NEW.id); END;
             """;
         await library.ExecuteNonQueryAsync(cancellationToken);
+        await AddColumnIfMissingAsync(connection,"library_media","is_pinned","INTEGER NOT NULL DEFAULT 0",cancellationToken);
+        var categories = connection.CreateCommand();
+        categories.CommandText = """
+            CREATE TABLE IF NOT EXISTS media_categories(id TEXT PRIMARY KEY, name TEXT NOT NULL, name_key TEXT UNIQUE NOT NULL, position INTEGER NOT NULL, is_system INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0, deleting INTEGER NOT NULL DEFAULT 0);
+            INSERT OR IGNORE INTO media_categories(id,name,name_key,position,is_system) VALUES
+              ('missions','Informativo das Missões','INFORMATIVO DAS MISSÕES',0,1),
+              ('provai-e-vede','Provai e Vede','PROVAI E VEDE',1,1),
+              ('health','Minuto de Saúde','MINUTO DE SAÚDE',2,1),
+              ('uncategorized','Sem categoria','SEM CATEGORIA',3,1);
+            CREATE TABLE IF NOT EXISTS media_category_assignments(media_id TEXT PRIMARY KEY, category_id TEXT NOT NULL REFERENCES media_categories(id));
+            CREATE INDEX IF NOT EXISTS idx_media_category ON media_category_assignments(category_id);
+            CREATE TABLE IF NOT EXISTS category_deletions(category_id TEXT NOT NULL, media_id TEXT NOT NULL, path TEXT NULL, storage_mode INTEGER NOT NULL, size INTEGER NULL, modified_ticks INTEGER NULL, removed_file INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(category_id,media_id));
+            CREATE TABLE IF NOT EXISTS linked_library_media(media_id TEXT PRIMARY KEY, video_id TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS idx_linked_library_video ON linked_library_media(video_id);
+            """;
+        await categories.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static async Task AddColumnIfMissingAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken cancellationToken)

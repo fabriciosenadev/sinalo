@@ -25,7 +25,8 @@ public sealed class LocalLibraryFileService(ILibraryRepository library, ISinaloP
         {
             if (media.IsImported)
             {
-                if (!media.Id.StartsWith("local-", StringComparison.Ordinal) || !Guid.TryParseExact(media.Id[6..], "N", out _))
+                if (!(media.Id.StartsWith("local-", StringComparison.Ordinal) && Guid.TryParseExact(media.Id[6..], "N", out _)) &&
+                    !System.Text.RegularExpressions.Regex.IsMatch(media.Id,"^(custom-[a-f0-9]{32}|uncategorized)-youtube-[A-Za-z0-9_-]{11}$"))
                     throw new InvalidOperationException("O identificador da cópia local é inválido.");
                 target = Path.Combine(paths.GetPaths().ContentPath, "imported", media.Id, Path.GetFileName(replacement));
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);

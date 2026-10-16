@@ -61,6 +61,11 @@ public sealed class LibraryLayoutTests
                     Assert.Equal(Visibility.Collapsed,((FrameworkElement)window.FindName("ProgramWorkspace")).Visibility);
                     Assert.Equal("Biblioteca de vídeos",home.WorkspaceTitle);
                     Assert.Equal(40,list.Items.Count);
+                    foreach(var controlName in new[]{"SearchInput","OriginInput","SortInput","CategoryFilterInput"})
+                    {
+                        var control=(Control)view.FindName(controlName);
+                        if(control.IsVisible)Assert.InRange(control.ActualHeight,40,41);
+                    }
                     Save(window,root,dark,width,scale,"videos");
                     Assert.True(list.ActualHeight>65,$"List height {list.ActualHeight}");
                     Assert.Equal(ScrollUnit.Pixel,VirtualizingPanel.GetScrollUnit(list));

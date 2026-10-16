@@ -26,6 +26,7 @@ public sealed class LocalContentCleanupService(
             if (!item.IsReadyOffline || item.ScheduledDate >= cutoff) continue;
             if (item.IsPinned) { pinned++; continue; }
             if (string.IsNullOrWhiteSpace(item.LocalPath)) continue;
+            if (library is not null && await library.FindAsync(item.Id, cancellationToken) is { CategoryId: var category } && MediaCategory.SourceFor(category) is null) continue;
 
             var filePath = Path.GetFullPath(item.LocalPath);
             if (!filePath.StartsWith(root, StringComparison.OrdinalIgnoreCase)) continue;

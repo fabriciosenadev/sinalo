@@ -17,7 +17,7 @@ public enum SynchronizationQueueState
 public sealed record SynchronizationQueueRequest(SourceConfiguration Configuration, IReadOnlyList<string>? SelectedItemIds = null, LinkedVideoDownloadRequest? LinkedVideo = null)
 {
     public string Key => LinkedVideo is null ? Configuration.Source.ToString() : $"linked:{LinkedVideo.ItemId}";
-    public string DisplayName => LinkedVideo is null ? Configuration.DisplayName : $"{LinkedVideo.Video.Title} · {Configuration.DisplayName}";
+    public string DisplayName => LinkedVideo is null ? Configuration.DisplayName : $"{LinkedVideo.Video.Title} · {LinkedVideo.CategoryName ?? Configuration.DisplayName}";
 }
 public sealed record SynchronizationQueueProgress(string Message, double? Percentage = null, SynchronizationStage Stage = SynchronizationStage.Discovery);
 public sealed record SynchronizationQueueCompletion(int ReadyItems);
