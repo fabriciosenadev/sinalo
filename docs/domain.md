@@ -73,6 +73,22 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 - Áudio, imagens, organização em coletâneas e fila de reprodução são etapas
   futuras, não funcionalidades desta entrega.
 
+## Categorias personalizadas — entrega 1.3.0
+
+Categoria é o destino lógico principal da mídia; origem informa como ela chegou.
+Os três programas são categorias de sistema protegidas; Sem categoria preserva
+importados legados. Personalizadas aceitam nomes únicos, renomeação e ordenação,
+sem conector de descoberta automática. MP4 é o formato desta primeira entrega.
+
+Transferir preserva ID, caminho, modo cópia/referência, metadados, histórico e
+fixação. Categoria vazia exige confirmação direta, sem destino obrigatório.
+Excluir categoria com mídias exige escolher transferência ou exclusão definitiva:
+esta remove cadastros e vínculos internos e apaga somente arquivos gerenciados
+próprios. Arquivo referenciado permanece fisicamente intacto. Conteúdo descoberto
+pode voltar em sincronização posterior conforme a regra original; não há blacklist.
+Limpeza automática não seleciona conteúdo organizado em categorias personalizadas.
+Importados não passam a ter limpeza de fonte só porque foram alocados num programa.
+
 ## Sessão de reprodução
 
 - Carregamento, reprodução e pausa mantêm a atividade que suspende downloads.

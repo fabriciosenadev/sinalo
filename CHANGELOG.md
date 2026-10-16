@@ -4,6 +4,27 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 1.3.0 - 16/10/2026
+
+### Categorias personalizadas
+
+- Categorias personalizadas por nome na navegação e nos destinos de importação
+  e vídeo por link, sem alterar a descoberta dos três programas existentes.
+- Organização de mídias entre categorias sem mover ou duplicar arquivos,
+  preservando origem, histórico e referências internas.
+- Ao excluir uma categoria, escolha transferir suas mídias ou excluí-las.
+  Originais externos referenciados nunca são apagados; apenas seus vínculos
+  dentro do Sinalo são removidos. Falhas de exclusão ficam pendentes para nova tentativa.
+- Pesquisa, filtros e botões da Biblioteca com alturas e alinhamento consistentes.
+- Gerenciamento de categorias orienta ações indisponíveis, bloqueia cliques repetidos
+  e permite recarregar a lista após falhas. Categoria vazia tem confirmação direta;
+  categorias com mídias exigem escolher transferência ou exclusão explicitamente.
+- Nomes das categorias aparecem corretamente no menu, inclusive exclusões pendentes.
+  Ao abrir o gerenciamento dentro de uma categoria personalizada, ela já vem
+  selecionada; na Biblioteca geral, a escolha continua sendo explícita.
+- Corrigida a falha de acesso à interface por outra thread que impedia concluir
+  a exclusão de categorias. As proteções durante importações e downloads continuam ativas.
+
 ## 1.2.0 - 11/10/2026
 
 ### Biblioteca de vídeos

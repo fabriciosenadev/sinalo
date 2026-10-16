@@ -242,6 +242,53 @@ oferece parada integrada. Os controles indisponíveis no player externo ficam
 desabilitados. A seleção de monitor existente é preservada. Não há alteração
 de esquema SQLite, retomada de posição gravada ou persistência de volume.
 
+## Categorias personalizadas — entrega 1.3.0
+
+`MediaCategory`/`IMediaCategoryService` separam organização de `ContentSource`.
+SQLite mantém categorias, associação por identidade canônica da mídia e journal
+de exclusão; refresh/descoberta não recriam sua classificação manual. A Biblioteca
+consulta categoria e origem separadamente. Programas mostram também importados
+alocados neles, usando a mesma reprodução da Biblioteca.
+
+Downloads por link de categorias personalizadas publicam em `library_media`,
+sem gravar uma fonte fictícia em `content_items`; o DTO legado de progresso continua
+sendo apenas transporte. IDs de vídeo/provedor são registrados para deduplicação
+mesmo após transferência. Os caminhos gerenciados usam IDs, não nomes do usuário.
+
+Transferência de categoria é transacional em SQL e não altera arquivos. Exclusão
+definitiva é journalizada por item, sem prometer atomicidade entre banco e disco:
+originais referenciados nunca são apagados. Erros mantêm categoria bloqueada e
+exigem nova tentativa explícita. Migração de pasta é bloqueada com exclusão pendente;
+atualização aguarda o gate das operações. Listas futuras devem integrar a remoção
+de vínculos apenas nesse fluxo de exclusão definitiva confirmado.
+
+Exclusão validada pelo usuário em 16/10/2026, com autorização de publicação da
+1.3.0. Cenários físicos não exercitados permanecem no roteiro operacional.
+
+Estabilização de 16/10/2026: `CategoryManagerViewModel` mantém as pré-condições
+dos comandos e captura categoria/revisão/impacto antes do diálogo. O estado do
+fluxo impede reentrância desde a inspeção, sem reter o gate enquanto o operador
+escolhe. `CategoryRemovalWindow`/ViewModel separam a escolha da persistência;
+cancelamento não inicia remoção, e uma falha de refresh não desfaz o resultado
+persistido. `MainWindow` assina/desassina eventos de categorias no seu ciclo de
+vida e serializa refreshes para manter menu, filtros e destinos coerentes.
+Não houve alteração de esquema para esta estabilização. Ver o diagnóstico e
+o relatório de execução em `docs/validacao-estabilizacao-categorias-2026-10-16.md`.
+
+O menu fornece a categoria diretamente ao template textual de navegação, sem
+aninhamento de controles que seriam convertidos em texto. O gerenciamento
+recebe opcionalmente o ID da categoria personalizada aberta e seleciona o registro
+atualizado após carregar; em outros workspaces não herda filtros antigos.
+Uma falha inicial permite retomar essa seleção na recarga, sem selecionar outra
+categoria caso o ID não exista mais. Não exige migração de dados.
+
+`CategoryOperationState` publica o estado de importação em um indicador com
+leitura/escrita volátil e consulta o snapshot protegido por lock da fila.
+O bootstrap conecta esse estado à Biblioteca e à fila, sem capturar propriedades
+da janela no callback de exclusão. O serviço continua em segundo plano e confere
+ocupação antes e depois do gate; não usa Dispatcher.Invoke dentro do gate.
+A assinatura de alterações é desfeita ao fechar a janela principal.
+
 ## Fora do MVP
 
 - Login, usuarios e permissao por igreja.
