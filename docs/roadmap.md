@@ -93,6 +93,25 @@ Também estão concluídos:
 
 ## Melhorias futuras
 
+### Sugestões pelo site — prioridade proposta média, implementação média
+
+- Planejado, não implementado. Spec específica:
+  `Sinalo-specs/sugestoes-usuarios-site.md`, fases S0–S3.
+- Formulário no próprio site, sem redirecionamento ou conta do visitante;
+  recebimento e armazenamento privados com Worker e banco D1 da Cloudflare.
+- Plano sem orçamento: apenas serviços gratuitos, cotas e retenção controladas,
+  com indisponibilidade segura ao esgotar recursos, sem upgrade automático.
+- Segurança é pré-requisito de publicação, com criticidade alta: Turnstile
+  validado no servidor a cada envio, domínio/action, limites de frequência,
+  idempotência, proteção de dados, teto global e suspensão administrativa.
+  Não prometer ausência absoluta de bots ou spam; validação não comprova identidade.
+- Preservar texto em falhas e confirmar somente após gravação. Sem anexos,
+  mural público, e-mails automáticos ou painel customizado na primeira entrega.
+- Independente das evoluções da Biblioteca/player e do plano mestre de mídia;
+  acopla apenas site, deploy e serviços externos. Contas administrativas,
+  limites e retenção devem ser definidos antes da implantação. Atalho no desktop
+  é opcional futuro, não parte desta spec nem motivo para novo instalador agora.
+
 ### Organização e reprodução completas inspiradas no MidiaDeck — implementação grande, por etapas
 
 O Sinalo já tem catálogo SQLite de vídeos offline, três programas de origem,
