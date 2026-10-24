@@ -1,10 +1,21 @@
 # Roadmap do Sinalo
 
-**Versão atual:** 1.3.0 — série estável
-**Revisado em:** 16/10/2026
+**Versão atual:** 1.3.1 — série estável
+**Revisado em:** 24/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
+
+## Correção 1.3.1
+
+- Reprodução: até três tentativas sequenciais de iniciar o MPV por solicitação
+  antes de recorrer ao VLC, apenas em falhas elegíveis de inicialização/conexão.
+  Sucesso, cancelamento e erros da mídia encerram as retentativas. Pré-aquecimento
+  independente; timeouts existentes mantidos. Aceite no computador da igreja pendente.
+  Validação de 24/10/2026: 434 testes aprovados; cobertura total de 88,91% de
+  linhas e 77,83% de branches no preparo do release. Ajuste compatível,
+  incluído como PATCH na 1.3.1;
+  não afirma resolução definitiva da causa no computador da igreja sem reteste.
 
 ## Entregue
 

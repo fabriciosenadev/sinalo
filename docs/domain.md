@@ -50,6 +50,10 @@ itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 - A pasta de conteudo pode ser escolhida pelo operador, especialmente quando houver unidade com mais espaco.
 - Videos nao sao gravados no SQLite.
 - A reprodução prioritária usa o MPV incluído no Sinalo e mantido ocioso entre vídeos; VLC e o player padrão são contingências.
+- Por solicitação, falhas de inicialização elegíveis permitem até três tentativas
+  de MPV antes da contingência. Sucesso ou cancelamento interrompem a sequência;
+  erro da mídia não dispara retentativas ou troca automática de player. O
+  pré-aquecimento não conta nesse limite e cada solicitação renova seu contador.
 - A reprodução sempre usa uma tela de saída selecionada. Uma configuração
   existente é preservada; configurações legadas sem tela definida usam a tela
   principal informada pelo Windows.

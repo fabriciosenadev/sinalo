@@ -178,7 +178,15 @@ Os pedidos do operador entram em uma fila unica da sessao. Cada pedido guarda a 
 ## Reproducao e telas
 
 - A tela principal abre a Biblioteca geral; programas e ferramentas têm workspaces próprios.
-- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede; em falha de inicializacao/conexao, o Sinalo usa VLC e depois o player padrao do Windows. Erros da midia e falhas durante uma sessao nao abrem outro player automaticamente.
+- Um item `Pronto` abre seu arquivo local no MPV, sem requisicao de rede. O
+  `FallbackPlaybackLauncher` faz até três tentativas por solicitação quando a
+  falha de inicialização/conexão permite contingência (`AllowsFallback`). Só
+  depois das três falhas usa VLC e, na ausência dele, o player padrão do Windows.
+  Sucesso, cancelamento ou falha não elegível interrompem as retentativas.
+  Erros da mídia e falhas durante uma sessão não abrem outro player automaticamente.
+  O pré-aquecimento na abertura é independente e não consome essas três tentativas.
+  As chamadas são sequenciais e assíncronas, sem mudar os timeouts de cada tentativa;
+  a espera total até a contingência pode aumentar em computadores lentos.
 
 - O MPV permanece ocioso entre vídeos e recebe a troca de arquivo por IPC, reduzindo a espera em computadores com HD. Ele pode abrir em tela cheia no monitor selecionado pelo operador.
 - A UI exige uma tela de saida para a reproducao. Uma configuracao de tela

@@ -4,6 +4,13 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 1.3.1 - 24/10/2026
+
+- Melhorada a inicialização do MPV: o Sinalo realiza até três tentativas antes
+  de recorrer ao VLC, reduzindo trocas prematuras de player em computadores lentos.
+- As tentativas terminam assim que o MPV inicia ou a operação é cancelada.
+  Erros no próprio vídeo continuam sem abrir outro player automaticamente.
+
 ## 1.3.0 - 16/10/2026
 
 ### Categorias personalizadas
