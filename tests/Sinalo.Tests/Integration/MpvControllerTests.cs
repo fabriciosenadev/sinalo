@@ -8,6 +8,34 @@ namespace Sinalo.Tests.Integration;
 public sealed class MpvControllerTests
 {
     [Fact]
+    public async Task FailedWarmupDoesNotConsumeThreeLaunchAttemptsBeforeFallback()
+    {
+        await using var player = new MpvPlaybackLauncher(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "mpv.exe"));
+        await Assert.ThrowsAsync<FileNotFoundException>(() => player.WarmAsync());
+        var failures = 0;
+        player.Changed += snapshot => { if (snapshot.State == PlaybackState.Failed) failures++; };
+        var fallback = new StartupFallbackProbe(() =>
+        {
+            Assert.Equal(3, failures);
+            Assert.Null(player.ProcessId);
+        });
+        using var launcher = new FallbackPlaybackLauncher(player, fallback);
+        var result = await launcher.LaunchAsync("video.mp4", new(1));
+        Assert.Equal(3, failures); Assert.Equal(1, fallback.Calls);
+        Assert.True(result.Started); Assert.Equal("VLC", result.PlayerName);
+    }
+
+    private sealed class StartupFallbackProbe(Action beforeLaunch) : IPlaybackLauncher
+    {
+        public int Calls { get; private set; }
+        public Task<PlaybackLaunchResult> LaunchAsync(string filePath, PlaybackLaunchOptions options, CancellationToken cancellationToken = default)
+        {
+            beforeLaunch(); Calls++;
+            return Task.FromResult(new PlaybackLaunchResult(true, "VLC", "Contingência de teste, sem abrir player externo."));
+        }
+    }
+
+    [Fact]
     public async Task ControlsConfirmedPlaybackAndReusesProcessWithoutActivityGap()
     {
         using var video = await PlaybackVideoFixture.CreateAsync();

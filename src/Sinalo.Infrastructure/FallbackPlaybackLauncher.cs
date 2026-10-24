@@ -4,6 +4,7 @@ namespace Sinalo.Infrastructure;
 
 public sealed class FallbackPlaybackLauncher : IPlaybackLauncher, IPlaybackController, IDisposable
 {
+    private const int PrimaryLaunchAttempts = 3;
     private readonly IPlaybackLauncher _primary;
     private readonly IPlaybackLauncher _fallback;
     private readonly IPlaybackController? _primaryController;
@@ -28,8 +29,15 @@ public sealed class FallbackPlaybackLauncher : IPlaybackLauncher, IPlaybackContr
         if (_active?.Current.IsActive == true && _active != _primaryController)
             return new(false, Current.Player, "Feche o vídeo no player externo antes de abrir outro pelo Sinalo.", false);
         _active = _primaryController;
-        var result = await _primary.LaunchAsync(filePath, options, cancellationToken);
-        if (result.Started || !result.AllowsFallback) return result;
+        for (var attempt = 0; attempt < PrimaryLaunchAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = await _primary.LaunchAsync(filePath, options, cancellationToken);
+            // Only startup failures are retryable; media/session errors must not
+            // reopen a video or switch players after playback has begun.
+            if (result.Started || !result.AllowsFallback) return result;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
         _active = _fallbackController;
         return await _fallback.LaunchAsync(filePath, options, cancellationToken);
     }
