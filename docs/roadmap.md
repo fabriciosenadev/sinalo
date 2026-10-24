@@ -12,10 +12,13 @@ continua recebendo correções e novas funcionalidades compatíveis.
   antes de recorrer ao VLC, apenas em falhas elegíveis de inicialização/conexão.
   Sucesso, cancelamento e erros da mídia encerram as retentativas. Pré-aquecimento
   independente; timeouts existentes mantidos. Aceite no computador da igreja pendente.
-  Validação de 24/10/2026: 434 testes aprovados; cobertura total de 88,91% de
+  Validação de 24/10/2026: 435 testes aprovados; cobertura total de 88,91% de
   linhas e 77,83% de branches no preparo do release. Ajuste compatível,
   incluído como PATCH na 1.3.1;
   não afirma resolução definitiva da causa no computador da igreja sem reteste.
+- Empacotamento: FFmpeg fixado na build `autobuild-2026-10-24-17-20`, com hashes
+  do pacote e executável e licença correspondente. Corrige o download removido
+  da origem; próximas atualizações continuam manuais, sem seguir `latest`.
 
 ## Entregue
 

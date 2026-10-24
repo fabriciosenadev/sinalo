@@ -6,10 +6,13 @@ $cache = Join-Path $root '.release\tools-cache'
 $destination = Join-Path $root 'src\Sinalo.App\binaries\video-download'
 New-Item -ItemType Directory -Force -Path $cache, $destination | Out-Null
 
+# Fixed, reviewed build. Never resolve "latest" automatically during a build.
+$ffmpegPackage = @{ Name = 'ffmpeg-N-128018-ga881f0a9ad-win64-gpl.zip'; Url = 'https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2026-10-24-17-20/ffmpeg-N-128018-ga881f0a9ad-win64-gpl.zip'; Hash = '80418b69fbf11a7db0b06e2c4ea8cbf1c742c91ace4f4295577c6bea6ab0c35e'; Exe = 'ffmpeg.exe'; ExeHash = 'cbe0763cf575c9a5a6c02e0eea723e2552e7964ccce67bf5060a6e7684dc1558' }
+
 $packages = @(
     @{ Name = 'yt-dlp.exe'; Url = 'https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp.exe'; Hash = '66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a'; Exe = 'yt-dlp.exe'; ExeHash = '66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a' },
     @{ Name = 'deno-x86_64-pc-windows-msvc.zip'; Url = 'https://github.com/denoland/deno/releases/download/v2.9.7/deno-x86_64-pc-windows-msvc.zip'; Hash = 'a0c3101b4158d1dfb7d6a78a7bf0f3de80c96bb423c152beec8beb22786f2238'; Exe = 'deno.exe'; ExeHash = 'e020f3e232bd16e33768dee528e5983349c962952051ced0a5d58ad42f5d9b33' },
-    @{ Name = 'ffmpeg-N-127149-g50d206a75b-win64-gpl.zip'; Url = 'https://github.com/yt-dlp/FFmpeg-Builds/releases/download/autobuild-2026-10-03-19-23/ffmpeg-N-127149-g50d206a75b-win64-gpl.zip'; Hash = '33f215a02689d5563a495ea58c694f4354fb04a89e5d2eef8ab76b3daec89ef1'; Exe = 'ffmpeg.exe'; ExeHash = '8c1893db532e412c868277042f8d3752b8f38dd074e8643eb821fa4b9bdeb41b' }
+    $ffmpegPackage
 )
 
 foreach ($package in $packages) {
@@ -40,7 +43,7 @@ foreach ($package in $packages) {
     if ($executableHash -ne $package.ExeHash) { throw "Executável $($package.Exe) não corresponde ao checksum esperado." }
 }
 
-$ffmpegArchive = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $cache 'ffmpeg-N-127149-g50d206a75b-win64-gpl.zip'))
+$ffmpegArchive = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $cache $ffmpegPackage.Name))
 try {
     $license = $ffmpegArchive.Entries | Where-Object { $_.FullName.EndsWith('/LICENSE.txt') } | Select-Object -First 1
     if ($null -eq $license) { throw 'Licença do build FFmpeg ausente.' }

@@ -45,6 +45,15 @@ Os conectores identificam os itens publicados nas URLs configuradas e montam um 
 - **MPV**: processo externo embutido, pré-aquecido e controlado por IPC para reprodução ágil de arquivos locais. Se não estiver disponível, o Sinalo usa VLC e, por fim, o player padrão do Windows.
 - **FFmpeg/ffprobe**: leitura de metadados e geracao sob demanda de miniaturas.
 
+O FFmpeg incluído para mesclagem nos downloads por link é fixado por versão,
+URL, SHA-256 do arquivo e do executável em `eng/prepare-video-download-tools.ps1`.
+O pacote e sua licença usam a mesma definição. Na 1.3.1 usa
+`autobuild-2026-10-24-17-20` / `N-128018-ga881f0a9ad` (Windows x64 GPL).
+Não resolver `latest` automaticamente nem atualizar ferramentas no computador do
+usuário fora do instalador. Se a origem remover a release, a compilação falha;
+selecionar outra versão explicitamente, conferir hashes, licença e testes antes
+de publicar. O cache acelera builds, mas não garante reconstrução histórica.
+
 ### Descoberta e catalogo local
 
 O MVP nao depende de um catalogo remoto ou de uma API propria. Na tela de configuracoes, o operador informa a URL de cada fonte. Conectores especificos leem essas paginas em segundo plano, identificam os itens publicados e gravam o catalogo no SQLite local.

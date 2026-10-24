@@ -10,6 +10,8 @@ direto na instalação ou no uso do aplicativo.
   de recorrer ao VLC, reduzindo trocas prematuras de player em computadores lentos.
 - As tentativas terminam assim que o MPV inicia ou a operação é cancelada.
   Erros no próprio vídeo continuam sem abrir outro player automaticamente.
+- Atualizado o FFmpeg incluído no instalador para uma build específica disponível,
+  corrigindo a geração do pacote após a remoção do download anterior na origem.
 
 ## 1.3.0 - 16/10/2026
 
