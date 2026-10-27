@@ -11,10 +11,11 @@ public sealed class ProvaiEVedeSynchronizationService(IContentCatalog catalog, I
     public async Task<IReadOnlyList<ContentItem>> SynchronizeQuarterAsync(IProgress<DownloadProgress>? progress = null, AvailabilityPolicy policy = AvailabilityPolicy.QuarterlyFull, CancellationToken cancellationToken = default)
         => await SynchronizeQuarterAsync(progress, DownloadSelection.FromLegacyPolicy(policy), cancellationToken);
 
-    public async Task<IReadOnlyList<ContentItem>> SynchronizeQuarterAsync(IProgress<DownloadProgress>? progress, DownloadSelection selection, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ContentItem>> SynchronizeQuarterAsync(IProgress<DownloadProgress>? progress, DownloadSelection selection, CancellationToken cancellationToken = default, IReadOnlySet<string>? discoveredItemIds = null)
     {
         var ready = new List<ContentItem>();
         var candidates = (await catalog.ListBySourceAsync(ContentSource.ProvaiEVede, cancellationToken))
+            .Where(item => discoveredItemIds is null || discoveredItemIds.Contains(item.Id))
             .Where(item => item.Assets.Count > 0 && (!item.IsReadyOffline || string.IsNullOrWhiteSpace(item.LocalPath) || !File.Exists(item.LocalPath)))
             .ToArray();
         var selected = _saturdayWindowService is null

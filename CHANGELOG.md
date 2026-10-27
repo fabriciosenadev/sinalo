@@ -4,6 +4,17 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## Em desenvolvimento
+
+- Provai e Vede aceita também o endereço direto de um trimestre, convencional
+  ou em Libras, sem alterar o endereço padrão nem as configurações existentes.
+- Busca dinâmica em Libras pela página base com `#libras`: acompanha o trimestre
+  e o ano atuais sem trocar o endereço. Se Libras não estiver publicada, informa
+  a indisponibilidade sem baixar a versão convencional ou um trimestre antigo.
+- Vídeos em Libras são identificados separadamente e não substituem os vídeos
+  convencionais já baixados. A busca baixa somente os itens encontrados no
+  endereço escolhido, respeitando os sábados selecionados ou o trimestre inteiro.
+
 ## 1.3.1 - 24/10/2026
 
 - Melhorada a inicialização do MPV: o Sinalo realiza até três tentativas antes

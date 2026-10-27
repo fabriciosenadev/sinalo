@@ -1,10 +1,25 @@
 # Roadmap do Sinalo
 
 **Versão atual:** 1.3.1 — série estável
-**Revisado em:** 24/10/2026
+**Revisado em:** 27/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
+
+## Em desenvolvimento — compatibilidade de Provai e Vede
+
+- Página base preservada e suporte a páginas trimestrais diretas convencionais
+  ou em Libras; identidades e arquivos distintos, sem apagar o acervo existente.
+- Página base com `#libras` acompanha dinamicamente o trimestre e ano atuais,
+  sem exigir troca de endereço ou substituir silenciosamente a versão escolhida.
+- Downloads limitados à descoberta do pedido, mantendo as regras de sábados e
+  trimestre e a seleção manual. Somente o link trimestral direto permanece fixo.
+- Documentação e guia do site atualizados no código. Consulta real das duas
+  páginas e da base com `#libras` aprovada; validação final com SDK 10.0.403:
+  463 testes aprovados, cobertura total de 89,10% de linhas e 78,28% de branches. Interrupção pela
+  atualização do ambiente resolvida; teste manual aprovado pelo usuário e
+  preparo de release autorizado em 27/10/2026. Publicação pendente. Ver
+  [relatório de validação](validacao-provai-e-vede-libras.md).
 
 ## Correção 1.3.1
 

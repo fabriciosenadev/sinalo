@@ -32,6 +32,19 @@ trimestre completo permanece como nenhuma data marcada.
 A seleção é uma regra de busca, não uma garantia de download: o aplicativo só baixa
 itens que forem encontrados na fonte e tenham um arquivo oficial disponível.
 
+Provai e Vede aceita a página base existente e páginas trimestrais diretas,
+convencionais ou em Libras. A página base continua procurando o trimestre atual
+convencional; com `#libras` ao final, procura a versão em Libras do trimestre e
+ano atuais automaticamente, sem trocar a configuração a cada período. Se essa
+versão ainda não estiver publicada na base, informa a ausência sem substituir
+por convencional ou trimestre anterior. Um endereço trimestral direto continua
+fixo e fornece seu próprio ano e trimestre.
+A janela de sábados continua sendo a operacional atual, não a do trimestre fixado.
+Versões convencionais preservam os IDs legados; Libras usa IDs distintos e o
+sufixo de exibição `(Libras)`. Trocar a URL não apaga os vídeos existentes nem
+muda suas categorias. Downloads automáticos e seleção manual desse programa
+limitam-se aos itens encontrados no endereço do pedido, não a pendências antigas.
+
 ## Estados de sincronizacao
 
 | Estado | Significado |

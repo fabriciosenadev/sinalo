@@ -337,8 +337,10 @@ public partial class MainWindow : Window
                 }
             }
             viewModel.OperationMessage = $"Consultando o site oficial de {configuration.DisplayName}...";
-            await DiscoveryService.RefreshAsync(configuration);
-            var candidates = SynchronizationCandidateSelector.Select(source, await ContentCatalog.ListBySourceAsync(source), configuration.ResolvedDownloadSelection, new SaturdayWindowService(), DateOnly.FromDateTime(DateTime.Today));
+            var discovered = await DiscoveryService.RefreshAsync(configuration);
+            var candidates = SynchronizationCandidateSelector.Select(source,
+                source == Sinalo.Domain.ContentSource.ProvaiEVede ? discovered : await ContentCatalog.ListBySourceAsync(source),
+                configuration.ResolvedDownloadSelection, new SaturdayWindowService(), DateOnly.FromDateTime(DateTime.Today));
             if (ContentStorageSpaceService is not null)
             {
                 var assessment = await ContentStorageSpaceService.AssessAsync(candidates);
@@ -392,7 +394,8 @@ public partial class MainWindow : Window
             return new SynchronizationQueueCompletion(1);
         }
         queueProgress.Report(new SynchronizationQueueProgress("Consultando o site oficial...", Stage: SynchronizationStage.Discovery));
-        await DiscoveryService.RefreshAsync(request.Configuration, cancellationToken);
+        var discovered = await DiscoveryService.RefreshAsync(request.Configuration, cancellationToken);
+        var discoveredIds = discovered.Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
         queueProgress.Report(new SynchronizationQueueProgress("Catálogo atualizado. Preparando downloads...", Stage: SynchronizationStage.Download));
         var downloadProgress = new Progress<DownloadProgress>(progress =>
         {
@@ -409,13 +412,16 @@ public partial class MainWindow : Window
         });
 
         IReadOnlyList<Sinalo.Domain.ContentItem> synchronized = request.SelectedItemIds is { Count: > 0 } && ManualSynchronizationService is not null
-            ? await ManualSynchronizationService.SynchronizeAsync(request.Configuration.Source, request.SelectedItemIds, downloadProgress, cancellationToken)
+            ? await ManualSynchronizationService.SynchronizeAsync(request.Configuration.Source,
+                request.Configuration.Source == Sinalo.Domain.ContentSource.ProvaiEVede
+                    ? request.SelectedItemIds.Where(discoveredIds.Contains).ToArray() : request.SelectedItemIds,
+                downloadProgress, cancellationToken)
             : request.Configuration.Source switch
         {
             Sinalo.Domain.ContentSource.Missions when MissionsSynchronizationService is not null => request.Configuration.DownloadSelection is { } missionSelection
                 ? await MissionsSynchronizationService.SynchronizeAsync(missionSelection, downloadProgress, cancellationToken)
                 : await MissionsSynchronizationService.SynchronizeAsync(downloadProgress, cancellationToken),
-            Sinalo.Domain.ContentSource.ProvaiEVede when ProvaiEVedeSynchronizationService is not null => await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(downloadProgress, request.Configuration.ResolvedDownloadSelection, cancellationToken),
+            Sinalo.Domain.ContentSource.ProvaiEVede when ProvaiEVedeSynchronizationService is not null => await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(downloadProgress, request.Configuration.ResolvedDownloadSelection, cancellationToken, discoveredIds),
             Sinalo.Domain.ContentSource.Health when HealthSynchronizationService is not null => await HealthSynchronizationService.SynchronizeAsync(request.Configuration.ResolvedDownloadSelection, downloadProgress, cancellationToken),
             _ => throw new InvalidOperationException("O programa selecionado não está disponível para sincronização.")
         };
@@ -507,7 +513,10 @@ public partial class MainWindow : Window
             if (source == Sinalo.Domain.ContentSource.ProvaiEVede && ProvaiEVedeSynchronizationService is not null)
             {
                 var configuration = (await ConfigurationService.LoadSourcesAsync()).Single(item => item.Source == source);
-                synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress, configuration.ResolvedDownloadSelection);
+                if (DiscoveryService is null) throw new InvalidOperationException("O componente de descoberta não está disponível.");
+                var discovered = await DiscoveryService.RefreshAsync(configuration);
+                synchronized = await ProvaiEVedeSynchronizationService.SynchronizeQuarterAsync(progress, configuration.ResolvedDownloadSelection,
+                    discoveredItemIds: discovered.Select(item => item.Id).ToHashSet(StringComparer.Ordinal));
             }
             if (source == Sinalo.Domain.ContentSource.Health && HealthSynchronizationService is not null)
             {

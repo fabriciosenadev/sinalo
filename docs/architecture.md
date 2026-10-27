@@ -56,6 +56,21 @@ de publicar. O cache acelera builds, mas não garante reconstrução histórica.
 
 ### Descoberta e catalogo local
 
+`ProvaiEVedeDiscoveryConnector` reconhece páginas trimestrais diretas pelo slug
+com ano, trimestre e sufixo opcional `-libras`. Reutiliza o HTML já obtido e lê
+cada linha MP4 isoladamente; datas inválidas ou de outro trimestre são ignoradas.
+Na página base, seleciona o link convencional do trimestre operacional por padrão.
+O fragmento `#libras` seleciona somente o link em Libras desse trimestre e ano,
+sem montar URLs presumidas, trocar de versão ou recorrer a períodos anteriores.
+O fragmento é um seletor local do Sinalo, não uma página trimestral nem um filtro
+do servidor; o conector lê os links publicados no HTML da página base.
+IDs convencionais permanecem `provai-e-vede-AAAA-MM-DD`; Libras usa
+`provai-e-vede-libras-AAAA-MM-DD` e prefixo `libras-` no arquivo gerenciado.
+Não há migração de esquema ou reidentificação dos registros legados.
+A fila passa os IDs da descoberta ao sincronizador de Provai e Vede e cruza a
+seleção manual com esses IDs. O pré-cálculo de espaço usa a mesma descoberta,
+sem incluir outras versões ou trimestres pendentes do catálogo.
+
 O MVP nao depende de um catalogo remoto ou de uma API propria. Na tela de configuracoes, o operador informa a URL de cada fonte. Conectores especificos leem essas paginas em segundo plano, identificam os itens publicados e gravam o catalogo no SQLite local.
 
 Cada item descoberto precisa ter data de referencia e uma URL de arquivo autorizada para poder ser baixado. Se a fonte oferecer somente uma pagina ou video online, o item pode ser listado, mas permanecera `OnlineSomente`.
