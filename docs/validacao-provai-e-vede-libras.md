@@ -1,6 +1,6 @@
 # Compatibilidade de Provai e Vede — 27/10/2026
 
-## Escopo implementado, ainda não publicado
+## Escopo implementado — release 1.4.0 preparada, ainda não publicada
 
 - Endereço padrão e configuração existentes preservados.
 - Endereço dinâmico em Libras:
@@ -15,7 +15,7 @@
   à descoberta do endereço do pedido. O catálogo anterior não é apagado.
 - Mantidas regras de sábados, trimestre inteiro, arquivo existente e nova
   elegibilidade após exclusão do arquivo local.
-- Documentação técnica, changelog em desenvolvimento e guia do site atualizados.
+- Documentação técnica, changelog 1.4.0 e guia do site atualizados.
 
 ## Evidências obtidas
 
@@ -79,5 +79,20 @@ trimestre seguinte. Com sábados selecionados, aplica as datas operacionais
 atuais; trimestre inteiro considera os vídeos encontrados na página escolhida.
 Não busca simultaneamente as duas versões e não muda configurações automaticamente.
 
-Aceite recebido para commits e preparo da release. Publicação no GitHub é uma
-etapa distinta do preparo local.
+## Preparo da release 1.4.0
+
+- Classificação MINOR: nova funcionalidade compatível após a última release
+  publicada `v1.3.1`; nenhum incremento PATCH foi usado.
+- Implementação registrada no commit `b944fec`.
+- `releaser.ps1 -Version 1.4.0` concluído com testes e cobertura habilitados:
+  **463 aprovados**, **89,10% de linhas**, **78,30% de branches**.
+- Runtime MPV completo conferido (28 arquivos), ferramentas de download e
+  atualizador incluídos. Não foi executada instalação no computador do usuário.
+- Projeto, produto do aplicativo e produto do instalador conferidos em **1.4.0**.
+- Instalador local: `.release/installer/Sinalo-Setup-win-x64.exe`,
+  **205.202.936 bytes**. Arquivo de checksum conferido contra SHA-256 calculado:
+  `951cf0262858c0b2c4e1e60ecb407d50410821f0c6fc08de61929a1eb9f93f09`.
+- Site: guia de configuração identifica a disponibilidade na 1.4.0; página
+  inicial aponta para o guia de Libras, com âncora e notas de versão conferidas.
+- Publicação no GitHub é etapa distinta do preparo local. Nenhum push, tag ou
+  release remota foi realizado nesta solicitação de preparo.

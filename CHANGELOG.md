@@ -4,7 +4,9 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
-## Em desenvolvimento
+## 1.4.0 - 27/10/2026
+
+### Provai e Vede em Libras
 
 - Provai e Vede aceita também o endereço direto de um trimestre, convencional
   ou em Libras, sem alterar o endereço padrão nem as configurações existentes.
