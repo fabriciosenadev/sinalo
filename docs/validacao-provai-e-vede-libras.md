@@ -1,6 +1,6 @@
 # Compatibilidade de Provai e Vede — 27/10/2026
 
-## Escopo implementado — release 1.4.0 preparada, ainda não publicada
+## Escopo implementado — release 1.4.0 publicada
 
 - Endereço padrão e configuração existentes preservados.
 - Endereço dinâmico em Libras:
@@ -96,3 +96,22 @@ Não busca simultaneamente as duas versões e não muda configurações automati
   inicial aponta para o guia de Libras, com âncora e notas de versão conferidas.
 - Publicação no GitHub é etapa distinta do preparo local. Nenhum push, tag ou
   release remota foi realizado nesta solicitação de preparo.
+
+## Publicação autorizada na sequência — concluída
+
+- Usuário autorizou prosseguir com push e publicação após o preparo local.
+- Commits `b944fec` e `808febd` enviados para `main` antes da criação e envio
+  da tag anotada `v1.4.0`, que aponta para `808febded2182beb6480126c0b59e93f76675595`.
+- CI [40503892202](https://github.com/fabriciosenadev/sinalo/actions/runs/40503892202),
+  Release [40503896487](https://github.com/fabriciosenadev/sinalo/actions/runs/40503896487)
+  e Pages [40503892243](https://github.com/fabriciosenadev/sinalo/actions/runs/40503892243)
+  concluídos com sucesso.
+- [Release pública 1.4.0](https://github.com/fabriciosenadev/sinalo/releases/tag/v1.4.0)
+  confirmada como mais recente, sem marcação de rascunho ou pré-release.
+- Instalador remoto: **205.209.015 bytes**, SHA-256
+  `ca3949fde9a1cfb7975b7e8c991cf23ef0712f117252f6a335091d38dfc2ddf9`.
+  Checksum publicado conferido com o digest do arquivo fornecido pelo GitHub.
+  Este é o pacote recompilado pela automação; o hash local anterior é distinto.
+- Guia público respondeu HTTP 200 e contém a versão 1.4.0 e as instruções de
+  configuração dinâmica com `#libras`.
+- Nenhuma tag ou release existente foi sobrescrita.

@@ -1,7 +1,6 @@
 # Roadmap do Sinalo
 
-**Versão preparada:** 1.4.0 — série estável (publicação pendente)
-**Última versão publicada:** 1.3.1
+**Versão atual:** 1.4.0 — série estável, publicada
 **Revisado em:** 27/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
@@ -19,7 +18,8 @@ continua recebendo correções e novas funcionalidades compatíveis.
   páginas e da base com `#libras` aprovada; validação final com SDK 10.0.403:
   463 testes aprovados, cobertura total de 89,10% de linhas e 78,30% de branches no preparo do instalador. Interrupção pela
   atualização do ambiente resolvida; teste manual aprovado pelo usuário e
-  instalador 1.4.0 gerado e conferido em 27/10/2026. Publicação pendente. Ver
+  instalador 1.4.0 gerado e conferido em 27/10/2026. Release publicada com
+  instalador e checksum; CI, publicação e GitHub Pages aprovados. Ver
   [relatório de validação](validacao-provai-e-vede-libras.md).
 
 ## Correção 1.3.1
