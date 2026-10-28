@@ -120,6 +120,25 @@ Importados não passam a ter limpeza de fonte só porque foram alocados num prog
 
 ## Fila de sincronizacao
 
+### Publicação e aprovação da fonte secundária de saúde
+
+- Canal YouTube é opt-in e independente do site e da seleção de sábados.
+- Somente vídeos públicos, publicados e com MP4 H.264/áudio AAC compatível
+  participam da consulta. Agendados, lives em andamento e VOD em processamento
+  não são inferidos como disponíveis pelo título, episódio ou posição visual.
+- Os quatro recentes são ordenados pela publicação confirmada; episódio é
+  identificação auxiliar. Já baixado permanece na lista sem permitir seleção.
+- Aprovação congela IDs, configuração/revisão, formatos e lote. Atualizar lista
+  limpa a seleção. Mudança relevante exige nova aprovação; vídeo novo não entra
+  num pedido anterior e selecionado indisponível nunca é substituído.
+- Publicação é metadado da origem, não uso no culto. Uso é opcional e editável
+  na Biblioteca. O download usa a fila única, sem criar um segundo sincronizador.
+- Novos itens são fixados por padrão. Sair dos quatro recentes não remove acervo.
+  Remover o arquivo permite redownload aprovado, sem duplicar identidade nem
+  desfazer organização. Transferência de categoria não faz o vídeo parecer novo.
+- O site vazio ou com erro não dispara download por YouTube: a ação secundária
+  continua explícita. Fonte desativada não consulta rede ao iniciar o Sinalo.
+
 - Um pedido pode estar `Waiting`, `Running`, `Completed`, `Failed` ou `Cancelled`.
 - Apenas um pedido executa descoberta e download por vez.
 - A mesma fonte nao pode estar duas vezes em estados `Waiting` ou `Running`.

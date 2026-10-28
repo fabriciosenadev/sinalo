@@ -326,7 +326,8 @@ A assinatura de alterações é desfeita ao fechar a janela principal.
 - Login, usuarios e permissao por igreja.
 - API propria ou painel web.
 - Edicao de catalogo dentro do app.
-- Descoberta automática de canais de vídeo ou playlists de plataformas; o fluxo manual por link não varre um canal.
+- Varredura genérica/automática de canais e playlists; a consulta opt-in do
+  Minuto de Saúde abaixo não inicia downloads sem seleção e confirmação.
 - Estatisticas centralizadas e sincronizacao entre computadores.
 
 ## Premissa para sincronizacao offline
@@ -334,6 +335,48 @@ A assinatura de alterações é desfeita ao fechar a janela principal.
 O Sinalo so marca um item como offline depois de validar um arquivo local completo. A busca no site configurado e o download manual de um link do YouTube são caminhos distintos: um item ausente no site pode ser adicionado pelo operador por link. Esse download conserva arquivos parciais para retomada quando a origem permitir e não torna o vídeo pronto antes da validação.
 
 ## Experiência integrada
+
+### Fonte secundária do Minuto de Saúde — entrega 1.5.0
+
+`HealthYouTubeConfigurationService` persiste uma configuração independente,
+desativada por padrão, em `health_youtube_configuration`: URL validada, ID/nome
+do canal verificado, teto 480/720/1080p e revisão. Não altera as fontes do site.
+`ChannelVideoService` reutiliza o runner empacotado do fluxo por link, somente
+comandos de metadados, sem cookies, login ou atualização automática da ferramenta.
+
+A aba `/videos` tem janela limitada a 100 entradas. Estados de estreia/live são
+excluídos; datas e formatos exigem metadados individuais. A ordem newest-first
+do canal é conferida com um quinto publicado de fronteira; desordem detectada
+expande a inspeção dentro da janela e sinaliza limitação. Erro parcial nunca é
+declarado consulta completa. Cache em memória: 15 minutos, até 100 IDs. Cada
+processo tem timeout de 90 segundos (cinco minutos para a consulta completa)
+e saída de metadados limitada a 16 MiB;
+fechar a janela cancela o processo. Não há varredura periódica em segundo plano.
+
+`HealthYouTubeViewModel` apresenta até quatro candidatos por publicação, sem
+repor já baixados com vídeos antigos. A janela mantém o rodapé fora da rolagem,
+usa o tema compartilhado e gera requests apenas após seleção e confirmação.
+O estado `IsBusy` controla painel de busca com progresso indeterminado,
+texto de espera, bloqueio de atualizar/confirmar e ocultação dos resultados
+anteriores. Ao concluir/falhar, a animação é encerrada e mostra resultados ou
+estado vazio, sem inventar porcentagem. Títulos, painéis e botões usam os estilos
+compartilhados; os resultados e a ajuda têm rolagem sem deslocar o rodapé.
+`LinkedVideoExecutionService` é o executor compartilhado com o fluxo manual:
+confere revisão/ID/formato novamente, deduplica globalmente e reutiliza fila,
+espaço livre, pausa durante reprodução, `.part`, validação e hash existentes.
+O gate de conteúdo só é adquirido na execução, nunca enquanto o usuário escolhe.
+Falha crítica de espaço cancela os pendentes do mesmo lote aprovado, não outros
+pedidos; falhas comuns ficam visíveis individualmente na fila. Não há substituição
+silenciosa por outro vídeo ou formato, recodificação ou download automático.
+
+`library_media.published_date` e `provider_channel_id` são colunas aditivas,
+opcionais. Data de uso pode ser nula; publicação não inventa um sábado. A busca
+inclui publicação e os detalhes distinguem sua origem. Identidade vinculada é
+consultada em qualquer categoria, preservando ID, caminho gerenciado, nome,
+histórico e fixação no redownload. Não toca originais externos referenciados.
+Ver [validação](validacao-minuto-saude-youtube.md); teste de mídia real/HD ainda
+não foi exercitado nesta execução. Consulta/interface aprovadas; publicação
+da feature 1.5.0 autorizada pelo operador.
 
 A camada App compartilha tokens e templates em `VisualIdentity.xaml`, com cores
 semânticas atualizadas por `SystemThemeService`. `MainWindow` contém navegação,

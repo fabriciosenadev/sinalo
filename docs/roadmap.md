@@ -1,10 +1,21 @@
 # Roadmap do Sinalo
 
-**Versão atual:** 1.4.0 — série estável, publicada
-**Revisado em:** 27/10/2026
+**Versão em preparação:** 1.5.0 — feature compatível; última publicada: 1.4.0
+**Revisado em:** 28/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
+
+## Entrega 1.5.0 — Minuto de Saúde: YouTube com aprovação
+
+- Consulta opt-in do canal Vida e Saúde UCB, até quatro recentes já publicados,
+  com exclusão de agendados e aprovação explícita antes de entrar na fila.
+- Qualidade máxima configurável, identidade global para evitar duplicação,
+  publicação separada do uso no culto e preservação de acervo/categorias.
+- Interface e consulta aprovadas pelo usuário em 28/10/2026; teste físico de
+  download/reprodução na máquina da igreja não exercitado nesta execução.
+- Publicação da 1.5.0 autorizada; instalador, CI, release e Pages em validação.
+  Ver [relatório de validação](validacao-minuto-saude-youtube.md).
 
 ## Entrega 1.4.0 — compatibilidade de Provai e Vede
 
@@ -122,6 +133,30 @@ Também estão concluídos:
   áudio/imagens, FFmpeg ou miniaturas. Preserva dados e configurações da 1.2.0.
 
 ## Melhorias futuras
+
+### Minuto de Saúde: YouTube com aprovação — prioridade alta, implementação média/grande
+
+- Implementado para a 1.5.0, publicação em andamento: fonte secundária pelo canal Vida e Saúde UCB,
+  preservando o site, o endereço atual e suas regras de sábados/trimestre.
+- Consultar a aba Vídeos, excluir agendados/indisponíveis e listar os quatro
+  recentes já publicados, confirmando metadados individuais e ordenando por
+  publicação. Episódio ajuda na identificação, não comprova disponibilidade.
+- Seleção inicialmente desmarcada; download somente dos itens selecionados
+  após confirmação explícita, pela fila existente. Sem baixar automaticamente
+  por abrir a tela, habilitar a fonte ou consultar; sem mapear postagem a sábado.
+- Já baixados permanecem entre os quatro, sem repor posições com episódios
+  antigos. Preservar IDs, histórico, nomes, fixação e categorias; arquivo ausente
+  pode ser baixado novamente com aprovação. Acervo anterior não é apagado.
+- Evidência de 28/10: consulta real identificou EP 132–135 agendados; título/EP
+  e posição visual não bastam. Nenhuma mídia foi baixada na análise.
+- Reutiliza vídeo por link, identidade/categorias, fila, diagnóstico e Biblioteca;
+  não depende de coletâneas, miniaturas ou fila de reprodução. Y0–Y6 no plano
+  `../Sinalo-specs/minuto-saude-fonte-secundaria-youtube.md`.
+- Substitui o plano anterior de playlist com N downloads automáticos.
+  Consulta real sem mídia confirmada em 28/10. Testes automatizados e migração
+  em dados isolados; validação de download real e reprodução em HD ainda pendente
+  de autorização/aceite. Ver `docs/validacao-minuto-saude-youtube.md`.
+  Consulta/interface aprovadas e publicação autorizada em 28/10/2026.
 
 ### Sugestões pelo site — prioridade proposta média, implementação média
 

@@ -4,6 +4,24 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 1.5.0 - 28/10/2026
+
+### Minuto de Saúde: vídeos recentes do YouTube
+
+- Fonte secundária opcional pelo canal Vida e Saúde UCB, sem alterar o site
+  configurado nem suas regras de sábados ou trimestre.
+- Consulta dos quatro vídeos recentes já publicados, excluindo estreias
+  agendadas. O número do episódio ajuda a identificar, mas não define a ordem.
+- Escolha explícita dos vídeos antes de baixar, com resumo de qualidade e
+  tamanho estimado. Consultar, habilitar ou abrir a tela não inicia downloads.
+- Busca com indicador animado, mensagem de espera e bloqueio das ações enquanto
+  consulta. Janela alinhada aos painéis, botões e temas claro/escuro do aplicativo.
+- Vídeos já baixados são identificados mesmo quando movidos para outra
+  categoria. Arquivos removidos podem ser baixados novamente com aprovação,
+  preservando nome, histórico, categoria e fixação.
+- Data de publicação separada da data opcional de uso no culto. Os vídeos
+  entram na Biblioteca e no Minuto de Saúde somente após validação local.
+
 ## 1.4.0 - 27/10/2026
 
 ### Provai e Vede em Libras
