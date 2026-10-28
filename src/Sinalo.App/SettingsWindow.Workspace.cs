@@ -32,9 +32,12 @@ public partial class SettingsWindow
             }
         };
     }
-    private string CaptureSettings() => string.Join("|", ThemePreferenceCombo.SelectedIndex, ContentPathText.Text, CleanupEnabled.IsChecked, CleanupRetentionMonths.SelectedIndex, CleanupGracePeriodDays.Text, MissionsUrl.Text, ProvaiUrl.Text, HealthUrl.Text, MissionsPreviousSaturday.IsChecked, MissionsCurrentSaturday.IsChecked, MissionsNextSaturday.IsChecked, ProvaiPreviousSaturday.IsChecked, ProvaiCurrentSaturday.IsChecked, ProvaiNextSaturday.IsChecked, HealthPreviousSaturday.IsChecked, HealthCurrentSaturday.IsChecked, HealthNextSaturday.IsChecked);
+    private string CaptureSettings() => string.Join("|", ThemePreferenceCombo.SelectedIndex, ContentPathText.Text, CleanupEnabled.IsChecked, CleanupRetentionMonths.SelectedIndex, CleanupGracePeriodDays.Text, MissionsUrl.Text, ProvaiUrl.Text, HealthUrl.Text, MissionsPreviousSaturday.IsChecked, MissionsCurrentSaturday.IsChecked, MissionsNextSaturday.IsChecked, ProvaiPreviousSaturday.IsChecked, ProvaiCurrentSaturday.IsChecked, ProvaiNextSaturday.IsChecked, HealthPreviousSaturday.IsChecked, HealthCurrentSaturday.IsChecked, HealthNextSaturday.IsChecked, HealthChannelEnabled.IsChecked, HealthChannelUrl.Text, HealthChannelHeight.SelectedIndex);
     private bool ValidateSettings()
     {
+        if (_healthYouTubeConfiguration is not null)
+            try { ReadHealthChannelConfiguration().Validate(); }
+            catch (ArgumentException exception) { SettingsFeedback.Text = exception.Message; SettingsCategories.SelectedIndex = 2; HealthChannelUrl.Focus(); return false; }
         foreach(var input in new[] { MissionsUrl, ProvaiUrl, HealthUrl })
             if(!string.IsNullOrWhiteSpace(input.Text) && (!Uri.TryCreate(input.Text, UriKind.Absolute, out var uri) || (uri.Scheme != "http" && uri.Scheme != "https"))) { SettingsFeedback.Text="Informe um endereço http ou https válido para o programa."; SettingsCategories.SelectedIndex=2; input.Focus(); return false; }
         if(!int.TryParse(CleanupGracePeriodDays.Text,out var days) || days<0 || days>180) { SettingsFeedback.Text="Informe uma tolerância entre 0 e 180 dias."; SettingsCategories.SelectedIndex=1; CleanupGracePeriodDays.Focus(); return false; }

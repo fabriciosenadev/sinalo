@@ -2,7 +2,8 @@ using Sinalo.Domain;
 
 namespace Sinalo.Application.Synchronization;
 
-public sealed record LinkedVideoFormat(string VideoFormatId, string? AudioFormatId, int Height, long? EstimatedBytes)
+public sealed record LinkedVideoFormat(string VideoFormatId, string? AudioFormatId, int Height, long? EstimatedBytes,
+    string VideoCodec = "", string AudioCodec = "")
 {
     public string Label => $"{Height}p MP4" + (EstimatedBytes is > 0 ? $" · aproximadamente {EstimatedBytes / 1024 / 1024} MB" : "");
     public string Selector => AudioFormatId is null ? VideoFormatId : $"{VideoFormatId}+{AudioFormatId}";
@@ -13,7 +14,8 @@ public sealed record LinkedVideo(string Id, string Title, Uri PageUri, DateOnly 
 
 public sealed record LinkedVideoDownloadRequest(LinkedVideo Video, LinkedVideoFormat Format, ContentSource Destination, DateOnly ScheduledDate,
     string? CategoryId = null, string? CategoryName = null, DateOnly? CustomUsageDate = null,
-    string? ExistingMediaId = null, bool LibraryStorage = false)
+    string? ExistingMediaId = null, bool LibraryStorage = false, ChannelVideoApproval? ChannelApproval = null,
+    string? ExistingManagedPath = null)
 {
     public bool IsCustomDestination => CategoryId is not null && MediaCategory.SourceFor(CategoryId) is null;
     public string EffectiveCategoryId => CategoryId ?? MediaCategory.ForSource(Destination);

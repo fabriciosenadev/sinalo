@@ -444,6 +444,14 @@
         </Border>
         <WrapPanel
           Grid.Row="1">
+            <Button x:Name="HealthYouTubeButton" Content="Consultar vídeos no YouTube" Click="ConsultHealthYouTube_Click" Margin="0,0,8,8" VerticalAlignment="Center">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                  <Setter Property="Visibility" Value="Collapsed"/>
+                  <Style.Triggers><DataTrigger Binding="{Binding SelectedSource}" Value="Minuto de Saúde"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                </Style>
+              </Button.Style>
+            </Button>
           <Button
             Content="Buscar e baixar"
             Click="UpdateAndSynchronizeSelectedSource_Click"

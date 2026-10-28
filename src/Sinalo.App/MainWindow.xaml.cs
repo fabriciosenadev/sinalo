@@ -53,6 +53,8 @@ public partial class MainWindow : Window
     public HealthSynchronizationService? HealthSynchronizationService { get; init; }
     public ManualContentSynchronizationService? ManualSynchronizationService { get; init; }
     public ILinkedVideoService? LinkedVideoService { get; init; }
+    public IChannelVideoService? ChannelVideos { get; init; }
+    public IHealthYouTubeConfigurationService? HealthYouTubeConfiguration { get; init; }
     public PlaybackService? PlaybackService { get; init; }
     public IAsyncDisposable? PlaybackRuntime { get; init; }
     public ContentOperationGate? ContentOperations { get; init; }
@@ -93,7 +95,7 @@ public partial class MainWindow : Window
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigurationService is null) return;
-        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService, ContentCleanupConfigurationService) { Owner = this };
+        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService, ContentCleanupConfigurationService, HealthYouTubeConfiguration, ChannelVideos) { Owner = this };
         if (sender is System.Windows.Controls.MenuItem { Tag: "ProgramSearchRules" }) window.ShowProgramSettings();
         window.ShowDialog();
         if (window.Saved)
@@ -373,19 +375,12 @@ public partial class MainWindow : Window
         if (request.LinkedVideo is { } linked)
         {
             if (LinkedVideoService is null) throw new InvalidOperationException("O componente de download por link não está disponível.");
-            if(Categories is not null)
-            {
-                await Categories.ValidateDestinationAsync(linked.EffectiveCategoryId,cancellationToken);
-                if(await Categories.FindLinkedAsync(linked.Video.Id,linked.EffectiveCategoryId,cancellationToken) is { CanPlay:true })return new(0);
-            }
             if (linked.Destination != request.Configuration.Source) throw new InvalidOperationException("O programa do vídeo não corresponde ao pedido da fila.");
-            var existing = await ContentCatalog.FindByIdAsync(linked.ItemId, cancellationToken);
-            if (Categories is null && existing?.IsReadyOffline == true && existing.LocalPath is { } file && File.Exists(file)) return new SynchronizationQueueCompletion(0);
             var progress = new Progress<DownloadProgress>(update => queueProgress.Report(new SynchronizationQueueProgress(
                 $"{linked.Video.Title}: {update.Stage}", update.Percentage, GetSynchronizationStage(update.Stage))));
-            var downloaded = await LinkedVideoService.DownloadAsync(linked, progress, cancellationToken);
-            if((linked.IsCustomDestination || linked.LibraryStorage) && Categories is not null)await Categories.PublishLinkedAsync(linked,downloaded,cancellationToken);
-            else await ContentCatalog.UpsertAsync([downloaded], cancellationToken);
+            var downloaded = await new LinkedVideoExecutionService(LinkedVideoService, ContentCatalog, Categories, ChannelVideos, HealthYouTubeConfiguration)
+                .ExecuteAsync(linked, progress, cancellationToken);
+            if (downloaded is null) return new SynchronizationQueueCompletion(0);
             _ = Dispatcher.BeginInvoke(async () =>
             {
                 if(!linked.IsCustomDestination && !linked.LibraryStorage)(DataContext as HomeViewModel)?.MarkItemAsReady(downloaded);

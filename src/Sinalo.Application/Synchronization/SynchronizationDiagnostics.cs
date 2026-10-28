@@ -12,7 +12,8 @@ public enum SynchronizationFailureCategory
     SourceChanged,
     InsufficientStorage,
     InvalidFile,
-    LocalFailure
+    LocalFailure,
+    ApprovalRequired
 }
 
 public enum SynchronizationStage
@@ -59,6 +60,7 @@ public static class SynchronizationFailureClassifier
         var http = exception as HttpRequestException;
         var category = exception switch
         {
+            ChannelVideoApprovalRequiredException => SynchronizationFailureCategory.ApprovalRequired,
             InsufficientStorageSpaceException or StorageSpaceCriticalException => SynchronizationFailureCategory.InsufficientStorage,
             SiteStructureChangedException or UriFormatException => SynchronizationFailureCategory.SourceChanged,
             InvalidDataException => SynchronizationFailureCategory.InvalidFile,
@@ -72,6 +74,7 @@ public static class SynchronizationFailureClassifier
 
         var (message, action) = category switch
         {
+            SynchronizationFailureCategory.ApprovalRequired => (exception.Message, "Consulte os vídeos recentes e confirme uma nova seleção."),
             SynchronizationFailureCategory.NoConnection => ("Não foi possível conectar à internet.", "Verifique a conexão e tente novamente."),
             SynchronizationFailureCategory.ServiceUnavailable => ("O site do programa não respondeu agora.", "Tente novamente mais tarde."),
             SynchronizationFailureCategory.AccessDenied => ("O arquivo não pôde ser acessado no site oficial.", "Confira a configuração e informe o suporte se persistir."),

@@ -17,7 +17,8 @@ public sealed class SqliteLibraryRepository(ISinaloPathService paths) : ILibrary
         CASE WHEN m.content_item_id IS NULL THEN m.first_played_at_utc ELSE c.first_played_at_utc END,
         CASE WHEN m.content_item_id IS NULL THEN m.last_played_at_utc ELSE c.last_played_at_utc END,
         COALESCE((SELECT category_id FROM media_category_assignments WHERE media_id=COALESCE(m.content_item_id,m.id)),CASE c.source WHEN 0 THEN 'missions' WHEN 1 THEN 'provai-e-vede' WHEN 2 THEN 'health' ELSE 'uncategorized' END),
-        (SELECT name FROM media_categories WHERE id=COALESCE((SELECT category_id FROM media_category_assignments WHERE media_id=COALESCE(m.content_item_id,m.id)),CASE c.source WHEN 0 THEN 'missions' WHEN 1 THEN 'provai-e-vede' WHEN 2 THEN 'health' ELSE 'uncategorized' END))
+        (SELECT name FROM media_categories WHERE id=COALESCE((SELECT category_id FROM media_category_assignments WHERE media_id=COALESCE(m.content_item_id,m.id)),CASE c.source WHEN 0 THEN 'missions' WHEN 1 THEN 'provai-e-vede' WHEN 2 THEN 'health' ELSE 'uncategorized' END)),
+        m.published_date,m.provider_channel_id
         FROM library_media m LEFT JOIN content_items c ON c.id=m.content_item_id
         """;
     private const string Eligible = "(m.content_item_id IS NULL OR (c.id IS NOT NULL AND c.local_path IS NOT NULL))";
@@ -26,7 +27,7 @@ public sealed class SqliteLibraryRepository(ISinaloPathService paths) : ILibrary
         var search = DateOnly.TryParseExact(query.Search, "dd/MM/yyyy", out var date) ? date.ToString("yyyy-MM-dd") : query.Search;
         var order = query.Sort switch { LibrarySort.AddedAt => "m.added_at_utc DESC", LibrarySort.UsageDate => "usage IS NULL,usage", _ => "COALESCE(m.display_name,c.title,'') COLLATE NOCASE" };
         await using var connection = await OpenAsync(token);
-        var where = (query.IncludeDetached ? "1=1" : Eligible) + " AND (COALESCE(m.display_name,c.title,'') LIKE $search ESCAPE '\\' OR COALESCE(CASE WHEN m.content_item_id IS NULL THEN m.usage_date ELSE c.scheduled_date END,'') LIKE $search ESCAPE '\\') AND ($origin='Todos' OR ($origin='Importados' AND m.content_item_id IS NULL) OR CAST(c.source AS TEXT)=$origin)";
+        var where = (query.IncludeDetached ? "1=1" : Eligible) + " AND (COALESCE(m.display_name,c.title,'') LIKE $search ESCAPE '\\' OR COALESCE(CASE WHEN m.content_item_id IS NULL THEN m.usage_date ELSE c.scheduled_date END,'') LIKE $search ESCAPE '\\' OR COALESCE(m.published_date,'') LIKE $search ESCAPE '\\') AND ($origin='Todos' OR ($origin='Importados' AND m.content_item_id IS NULL) OR CAST(c.source AS TEXT)=$origin)";
         where += " AND ($category IS NULL OR " + CategoryExpression + "=$category)";
         var command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM library_media m LEFT JOIN content_items c ON c.id=m.content_item_id WHERE " + where;
@@ -73,7 +74,7 @@ public sealed class SqliteLibraryRepository(ISinaloPathService paths) : ILibrary
                 availability, DateTimeOffset.Parse(reader.GetString(9)), reader.IsDBNull(10) ? null : reader.GetInt64(10), Text(11),
                 reader.IsDBNull(12) ? 0 : reader.GetInt32(12), !reader.IsDBNull(13) && reader.GetInt32(13) == 1, (LibraryMediaType)reader.GetInt32(15),
                 Text(16) is { } first ? DateTimeOffset.Parse(first) : null, Text(17) is { } last ? DateTimeOffset.Parse(last) : null,
-                Text(18) ?? MediaCategory.Uncategorized, Text(19) ?? "Sem categoria"));
+                Text(18) ?? MediaCategory.Uncategorized, Text(19) ?? "Sem categoria", Text(20) is { } published ? DateOnly.Parse(published) : null, Text(21)));
         }
         return items;
     }

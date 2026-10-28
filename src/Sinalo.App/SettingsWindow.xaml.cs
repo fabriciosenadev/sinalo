@@ -21,7 +21,9 @@ public partial class SettingsWindow : Window
     private bool _loading;
 
     public bool Saved { get; private set; }
-    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null, IThemePreferenceService? themePreferenceService = null, SystemThemeService? themeService = null, IContentCleanupConfigurationService? cleanupConfigurationService = null)
+    public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null, IThemePreferenceService? themePreferenceService = null, SystemThemeService? themeService = null, IContentCleanupConfigurationService? cleanupConfigurationService = null,
+        Sinalo.Application.Synchronization.IHealthYouTubeConfigurationService? healthYouTubeConfiguration = null,
+        Sinalo.Application.Synchronization.IChannelVideoService? channelVideos = null)
     {
         _service = service;
         _contentPathConfigurationService = contentPathConfigurationService;
@@ -29,7 +31,11 @@ public partial class SettingsWindow : Window
         _themePreferenceService = themePreferenceService;
         _themeService = themeService;
         _cleanupConfigurationService = cleanupConfigurationService;
+        _healthYouTubeConfiguration = healthYouTubeConfiguration;
+        _channelVideos = channelVideos;
         InitializeComponent();
+        HealthYouTubeSettings.IsEnabled = _healthYouTubeConfiguration is not null && _channelVideos is not null;
+        Closed += (_, _) => _channelCancellation.Cancel();
         InitializeSettingsUi();
         ContentPathText.Text = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, _themeService?.IsDark ?? SystemThemeService.IsWindowsDarkTheme());
@@ -59,6 +65,15 @@ public partial class SettingsWindow : Window
             var health = items.Single(x => x.Source == ContentSource.Health);
             HealthUrl.Text = health.PageUrl;
             ApplySelection(health.ResolvedDownloadSelection, HealthPreviousSaturday, HealthCurrentSaturday, HealthNextSaturday, HealthQuarterly);
+            if (_healthYouTubeConfiguration is not null)
+            {
+                var youtube = await _healthYouTubeConfiguration.LoadAsync();
+                HealthChannelUrl.Text = youtube.ChannelUrl;
+                HealthChannelEnabled.IsChecked = youtube.Enabled;
+                HealthChannelHeight.SelectedIndex = youtube.MaximumHeight switch { 480 => 0, 1080 => 2, _ => 1 };
+                _verifiedHealthChannel = youtube.ChannelId is { } id && youtube.ChannelName is { } name ? new(id, name, new Uri(youtube.ChannelUrl)) : null;
+                HealthChannelFeedback.Text = _verifiedHealthChannel is { } identity ? $"Canal verificado: {identity.Name}" : "Verifique o canal antes de habilitar.";
+            }
         }
         finally
         {
@@ -113,7 +128,7 @@ public partial class SettingsWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (_saving || _loading) return;
+        if (_saving || _loading || _verifyingHealthChannel) return;
         SettingsFeedback.Text = "";
         if (!ValidateSettings()) return;
         var oldPath = (_contentPathConfigurationService ?? new LocalSinaloPathService()).GetContentPath();
@@ -134,6 +149,7 @@ public partial class SettingsWindow : Window
                 new(ContentSource.Missions, "Informativo das Missões", MissionsUrl.Text, PolicyFrom(missionsSelection), missionsSelection),
                 new(ContentSource.ProvaiEVede, "Provai e Vede", ProvaiUrl.Text, PolicyFrom(provaiSelection), provaiSelection),
                 new(ContentSource.Health, "Minuto de Saúde", HealthUrl.Text, PolicyFrom(healthSelection), healthSelection)]);
+            if (_healthYouTubeConfiguration is not null) await _healthYouTubeConfiguration.SaveAsync(ReadHealthChannelConfiguration());
             if (_cleanupConfigurationService is not null)
             {
                 var months = CleanupRetentionMonths.SelectedItem is System.Windows.Controls.ComboBoxItem { Tag: string tag } && int.TryParse(tag, out var selectedMonths) ? selectedMonths : 3;

@@ -154,6 +154,14 @@ public sealed class SynchronizationQueue(
                         job.Request.LinkedVideo?.Video.PageUri.AbsoluteUri ?? job.Request.Configuration.PageUrl,
                         job.Stage);
                     job.Message = job.Diagnostic.FriendlyMessage;
+                    if (job.Diagnostic.Category == SynchronizationFailureCategory.InsufficientStorage &&
+                        job.Request.LinkedVideo?.ChannelApproval?.BatchId is { } batch)
+                        foreach (var waiting in _jobs.Where(candidate => candidate.State == SynchronizationQueueState.Waiting &&
+                                     candidate.Request.LinkedVideo?.ChannelApproval?.BatchId == batch))
+                        {
+                            waiting.State = SynchronizationQueueState.Cancelled;
+                            waiting.Message = "Lote interrompido por falta de espaço. Libere espaço e aprove uma nova seleção.";
+                        }
                 }
                 if (job.Diagnostic is not null && diagnosticStore is not null) await diagnosticStore.RecordAsync(job.Diagnostic);
             }

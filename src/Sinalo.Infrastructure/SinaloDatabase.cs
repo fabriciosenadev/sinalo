@@ -38,6 +38,10 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
                 policy INTEGER NOT NULL DEFAULT 0
             );
 
+            CREATE TABLE IF NOT EXISTS health_youtube_configuration (
+                id INTEGER PRIMARY KEY CHECK(id=1), configuration TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS playback_configuration (
                 id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
                 fullscreen_screen_number INTEGER NULL
@@ -132,6 +136,8 @@ public sealed class SinaloDatabase(ISinaloPathService pathService)
             """;
         await library.ExecuteNonQueryAsync(cancellationToken);
         await AddColumnIfMissingAsync(connection,"library_media","is_pinned","INTEGER NOT NULL DEFAULT 0",cancellationToken);
+        await AddColumnIfMissingAsync(connection,"library_media","published_date","TEXT NULL",cancellationToken);
+        await AddColumnIfMissingAsync(connection,"library_media","provider_channel_id","TEXT NULL",cancellationToken);
         var categories = connection.CreateCommand();
         categories.CommandText = """
             CREATE TABLE IF NOT EXISTS media_categories(id TEXT PRIMARY KEY, name TEXT NOT NULL, name_key TEXT UNIQUE NOT NULL, position INTEGER NOT NULL, is_system INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0, deleting INTEGER NOT NULL DEFAULT 0);

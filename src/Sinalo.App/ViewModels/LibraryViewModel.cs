@@ -94,7 +94,7 @@ public sealed partial class LibraryViewModel(ILibraryRepository repository, ILib
     public bool IsImported => Selected?.IsImported == true;
     public bool CanDeleteCopy => IsImported && Selected?.StorageMode == MediaStorageMode.Managed;
     public bool CanEditDate => IsImported;
-    public string SelectedDetails => Selected is null ? "Selecione um vídeo" : $"Vídeo MP4 · {Selected.OriginLabel} · {Selected.StorageLabel}\n{Selected.LocalPath}\n{(Selected.CanPlay ? "Disponível offline" : "Arquivo ausente ou inválido: use Localizar arquivo")} · Reproduzido {Selected.PlayCount} vez(es)";
+    public string SelectedDetails => Selected is null ? "Selecione um vídeo" : $"Vídeo MP4 · {Selected.OriginLabel} · {Selected.StorageLabel}\n{Selected.LocalPath}\n{(Selected.CanPlay ? "Disponível offline" : "Arquivo ausente ou inválido: use Localizar arquivo")} · Reproduzido {Selected.PlayCount} vez(es)" + (Selected.PublishedDate is null ? "" : $"\n{Selected.PublicationLabel}");
     partial void OnSelectedChanged(LibraryMedia? oldValue, LibraryMedia? newValue)
     {
         var value = newValue;

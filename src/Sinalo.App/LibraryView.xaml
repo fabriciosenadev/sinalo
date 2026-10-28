@@ -652,6 +652,7 @@
               <TextBlock
                 Text="{Binding UsageDateLabel}"
                 Margin="0,3,0,12" />
+              <TextBlock Text="{Binding Selected.PublicationLabel}" TextWrapping="Wrap" Margin="0,0,0,12"/>
               <TextBlock
                 Text="Armazenamento"
                 Foreground="{DynamicResource Brush.TextSecondary}" />

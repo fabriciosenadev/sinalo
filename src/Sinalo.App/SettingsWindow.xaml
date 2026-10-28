@@ -466,6 +466,22 @@
                   IsChecked="True"
                   Unchecked="QuarterlySelection_Unchecked"
                   Margin="0,7,0,0" />
+                <Border x:Name="HealthYouTubeSettings" Margin="0,18,0,0" Padding="12" BorderThickness="1" BorderBrush="{DynamicResource Brush.Border}" CornerRadius="6">
+                  <StackPanel>
+                    <TextBlock Text="Fonte secundária — YouTube" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="Consulte até 4 vídeos recentes já publicados. Nenhum download ocorre sem selecionar e confirmar. Publicação não é data de uso no culto." TextWrapping="Wrap" Margin="0,6,0,10"/>
+                    <CheckBox x:Name="HealthChannelEnabled" Content="Habilitar consulta ao canal secundário"/>
+                    <TextBlock Text="Endereço da aba Vídeos do canal" Margin="0,10,0,6"/>
+                    <TextBox x:Name="HealthChannelUrl" Text="https://www.youtube.com/@VidaeSaudeUCB/videos" TextChanged="HealthChannelUrl_Changed" AutomationProperties.Name="Canal secundário do Minuto de Saúde"/>
+                    <Button x:Name="VerifyHealthChannelButton" Content="Verificar canal" Click="VerifyHealthChannel_Click" HorizontalAlignment="Left" Margin="0,8,0,6"/>
+                    <TextBlock x:Name="HealthChannelFeedback" Text="Verifique o canal antes de habilitar." TextWrapping="Wrap"/>
+                    <TextBlock Text="Qualidade máxima do download" Margin="0,10,0,6"/>
+                    <ComboBox x:Name="HealthChannelHeight" SelectedIndex="1" AutomationProperties.Name="Qualidade máxima do YouTube">
+                      <ComboBoxItem Content="480p"/><ComboBoxItem Content="720p"/><ComboBoxItem Content="1080p"/>
+                    </ComboBox>
+                    <TextBlock Text="O site mantém as regras de sábados. A fonte secundária exige aprovação e não substitui a busca do site automaticamente." TextWrapping="Wrap" Margin="0,10,0,0"/>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </Border>
           </StackPanel>

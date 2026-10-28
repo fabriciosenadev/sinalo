@@ -401,7 +401,7 @@ public sealed partial class HomeViewModel : ObservableObject
     {
         _allCatalogItems.Clear();
         foreach(var item in items.Where(x=>x.CanPlay && MediaCategory.SourceFor(x.CategoryId) is not null))
-            _allCatalogItems.Add(new(item.Id,item.Name,item.CategoryName,item.UsageDate?.ToString("dd/MM/yyyy")??"Sem data", "Pronto offline",item.LocalPath,"▶",item.PlayCount==0?"":$"Reproduzido {item.PlayCount}×",item.IsPinned));
+            _allCatalogItems.Add(new(item.Id,item.Name,item.CategoryName,item.UsageDate?.ToString("dd/MM/yyyy")??(item.PublishedDate is null ? "Sem data" : item.PublicationLabel), "Pronto offline",item.LocalPath,"▶",item.PlayCount==0?"":$"Reproduzido {item.PlayCount}×",item.IsPinned));
         ApplyFilters();
     }
 

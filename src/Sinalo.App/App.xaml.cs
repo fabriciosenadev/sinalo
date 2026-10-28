@@ -139,6 +139,8 @@ public partial class App : System.Windows.Application
             HealthSynchronizationService = new HealthSynchronizationService(contentCatalog, downloader, new SaturdayWindowService(), storageSpaceService: storageSpaceService),
             ManualSynchronizationService = new ManualContentSynchronizationService(contentCatalog, downloader, storageSpaceService),
             LinkedVideoService = new LinkedVideoService(pathService, playbackGate: playbackGate),
+            ChannelVideos = new ChannelVideoService(),
+            HealthYouTubeConfiguration = new HealthYouTubeConfigurationService(pathService),
             PlaybackService = playbackService,
             Playback = playbackViewModel,
             PlaybackRuntime = mpvPlaybackLauncher

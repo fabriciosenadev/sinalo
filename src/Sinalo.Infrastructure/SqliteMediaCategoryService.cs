@@ -178,10 +178,14 @@ public sealed class SqliteMediaCategoryService(ISinaloPathService paths, ILibrar
             if((File.Exists(part)||Directory.Exists(part)) && (File.GetAttributes(part)&FileAttributes.ReparsePoint)!=0) throw new IOException("Links de arquivos/pastas não podem ser seguidos na exclusão.");
     }
     public async Task<LibraryMedia?> FindLinkedAsync(string videoId,string categoryId,CancellationToken token=default)
+        => await FindLinkedCoreAsync(videoId, categoryId, token);
+    public async Task<LibraryMedia?> FindLinkedAnywhereAsync(string videoId,CancellationToken token=default)
+        => await FindLinkedCoreAsync(videoId, null, token);
+    private async Task<LibraryMedia?> FindLinkedCoreAsync(string videoId,string? categoryId,CancellationToken token)
     {
         await using var c=await Open(token);using var cmd=c.CreateCommand();
-        cmd.CommandText="SELECT m.id FROM library_media m LEFT JOIN content_items c ON c.id=m.content_item_id LEFT JOIN linked_library_media l ON l.media_id=m.id WHERE "+SqliteLibraryRepository.CategoryExpression+"=$category AND (l.video_id=$video OR m.content_item_id IN($missions,$provai,$health)) ORDER BY m.id";
-        cmd.Parameters.AddWithValue("$category",categoryId);cmd.Parameters.AddWithValue("$video",videoId);
+        cmd.CommandText="SELECT m.id FROM library_media m LEFT JOIN content_items c ON c.id=m.content_item_id LEFT JOIN linked_library_media l ON l.media_id=m.id WHERE ($category IS NULL OR "+SqliteLibraryRepository.CategoryExpression+"=$category) AND (l.video_id=$video OR m.content_item_id IN($missions,$provai,$health)) ORDER BY m.id";
+        cmd.Parameters.AddWithValue("$category",(object?)categoryId ?? DBNull.Value);cmd.Parameters.AddWithValue("$video",videoId);
         cmd.Parameters.AddWithValue("$missions","missions-youtube-"+videoId);cmd.Parameters.AddWithValue("$provai","provai-e-vede-youtube-"+videoId);cmd.Parameters.AddWithValue("$health","health-youtube-"+videoId);
         var ids=new List<string>();await using(var reader=await cmd.ExecuteReaderAsync(token))while(await reader.ReadAsync(token))ids.Add(reader.GetString(0));
         LibraryMedia? fallback=null;
@@ -201,6 +205,9 @@ public sealed class SqliteMediaCategoryService(ISinaloPathService paths, ILibrar
         await Execute(c,"UPDATE content_items SET local_path=$path,sync_state=3 WHERE id=(SELECT content_item_id FROM library_media WHERE id=$id); UPDATE content_assets SET expected_size_bytes=$size,sha256=$hash WHERE content_item_id=(SELECT content_item_id FROM library_media WHERE id=$id)",token,tx,("$path",downloaded.LocalPath),("$id",downloaded.Id),("$size",asset.ExpectedSizeBytes),("$hash",asset.Sha256));
         await Execute(c,"INSERT INTO library_media(id,display_name,usage_date,local_path,storage_mode,availability,added_at_utc,size_bytes,sha256,is_pinned) VALUES($id,$name,$date,$path,0,0,$time,$size,$hash,1) ON CONFLICT(id) DO UPDATE SET local_path=excluded.local_path,size_bytes=excluded.size_bytes,sha256=excluded.sha256,availability=0; INSERT INTO linked_library_media(media_id,video_id) VALUES($id,$video) ON CONFLICT(media_id) DO UPDATE SET video_id=excluded.video_id; INSERT INTO media_category_assignments(media_id,category_id) VALUES($id,$cat) ON CONFLICT(media_id) DO UPDATE SET category_id=excluded.category_id",token,tx,
             ("$id",downloaded.Id),("$name",downloaded.Title),("$date",request.CustomUsageDate?.ToString("yyyy-MM-dd")),("$path",downloaded.LocalPath),("$time",DateTimeOffset.UtcNow.ToString("O")),("$size",asset.ExpectedSizeBytes),("$hash",asset.Sha256),("$video",request.Video.Id),("$cat",request.EffectiveCategoryId));
+        if (request.ChannelApproval is { } approval)
+            await Execute(c,"UPDATE library_media SET published_date=COALESCE(published_date,$published),provider_channel_id=COALESCE(provider_channel_id,$channel) WHERE id=$id",token,tx,
+                ("$published",approval.Candidate.Video.PublishedDate.ToString("yyyy-MM-dd")),("$channel",approval.Candidate.ChannelId),("$id",downloaded.Id));
         await tx.CommitAsync(token);Changed?.Invoke();
     }
 }

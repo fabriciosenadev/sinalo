@@ -46,10 +46,27 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
         var targetDirectory = request.LibraryStorage ? Path.Combine(contentRoot,"categories",itemId) : request.IsCustomDestination ? Path.Combine(contentRoot, "categories", request.CategoryId!) :
             Path.Combine(contentRoot, Quarter.From(request.ScheduledDate).ToString(), LinkedVideoDownloadRequest.SourceDirectory(request.Destination));
         var target = Path.Combine(targetDirectory, $"youtube-{video.Id}.mp4");
+        if (request.ExistingManagedPath is { } existingPath)
+        {
+            var root = Path.GetFullPath(contentRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var full = Path.GetFullPath(existingPath);
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) throw new IOException("O arquivo não pertence à pasta gerenciada do Sinalo.");
+            if (File.Exists(full) && (File.GetAttributes(full) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("O destino não pode ser um link de arquivo.");
+            for (var parent = Path.GetDirectoryName(full); parent is not null && parent.Length >= root.TrimEnd(Path.DirectorySeparatorChar).Length; parent = Path.GetDirectoryName(parent))
+                if (Directory.Exists(parent) && (File.GetAttributes(parent) & FileAttributes.ReparsePoint) != 0) throw new IOException("O destino não pode ser um link de pasta.");
+            target = full;
+            targetDirectory = Path.GetDirectoryName(full)!;
+        }
         var partialDirectory = Path.Combine(contentRoot, ".incoming", itemId + "-" + request.Format.VideoFormatId);
         var free = _freeSpace(contentRoot);
         var required = Math.Max(512L * 1024 * 1024, (request.Format.EstimatedBytes ?? 0) * 3 + 128L * 1024 * 1024);
-        if (free < required) throw new IOException($"Espaço insuficiente para baixar e preparar este vídeo. Libere pelo menos {required / 1024 / 1024} MB.");
+        if (free < required)
+        {
+            if (request.ChannelApproval is not null)
+                throw new InsufficientStorageSpaceException(new(contentRoot, free, request.Format.EstimatedBytes ?? 0, required, request.Format.EstimatedBytes is null ? 1 : 0));
+            throw new IOException($"Espaço insuficiente para baixar e preparar este vídeo. Libere pelo menos {required / 1024 / 1024} MB.");
+        }
         Directory.CreateDirectory(partialDirectory);
         var pending = new ContentItem(itemId, request.Destination, video.Title, request.ScheduledDate, video.PageUri, [], SyncState.Downloading, true);
         var outputTemplate = Path.Combine(partialDirectory, "%(id)s.%(ext)s");
@@ -90,6 +107,9 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
             }
             finally { if (_playbackGate is not null) _playbackGate.Changed -= OnPlaybackChanged; }
             if (result.ExitCode == 0) { lastError = null; break; }
+            if (request.ChannelApproval is not null && (_freeSpace(contentRoot) < 128L * 1024 * 1024 ||
+                result.Error.Contains("No space left on device", StringComparison.OrdinalIgnoreCase) ||
+                result.Error.Contains("disk full", StringComparison.OrdinalIgnoreCase))) throw new StorageSpaceCriticalException();
             lastError = new IOException(FriendlyError(result.Error));
             if (attempt < 3)
             {
@@ -127,7 +147,7 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
         return uri;
     }
 
-    public static LinkedVideo ParseMetadata(string json, Uri page)
+    public static LinkedVideo ParseMetadata(string json, Uri page, bool compatibleOnly = false)
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
@@ -139,13 +159,19 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
         if (root.TryGetProperty("upload_date", out var upload) && DateOnly.TryParseExact(upload.GetString(), "yyyyMMdd", out var uploaded)) date = uploaded;
         var formats = root.GetProperty("formats").EnumerateArray().ToArray();
         var audio = formats.Where(format => String(format, "ext") == "m4a" && String(format, "acodec") != "none")
+            .Where(format => !compatibleOnly || (String(format, "acodec") ?? "").StartsWith("mp4a", StringComparison.OrdinalIgnoreCase))
+            .Where(format => !format.TryGetProperty("has_drm", out var drm) || drm.ValueKind != JsonValueKind.True)
             .OrderByDescending(format => Number(format, "abr")).FirstOrDefault();
         var audioId = audio.ValueKind == JsonValueKind.Undefined ? null : String(audio, "format_id");
         var options = formats
             .Where(format => String(format, "ext") == "mp4" && String(format, "vcodec") != "none" && Number(format, "height") > 0)
+            .Where(format => !compatibleOnly || ((String(format, "vcodec") ?? "").StartsWith("avc", StringComparison.OrdinalIgnoreCase)
+                && (String(format, "acodec") == "none" ? audioId is not null : (String(format, "acodec") ?? "").StartsWith("mp4a", StringComparison.OrdinalIgnoreCase))))
+            .Where(format => !format.TryGetProperty("has_drm", out var drm) || drm.ValueKind != JsonValueKind.True)
             .Select(format => new LinkedVideoFormat(
                 String(format, "format_id") ?? "", String(format, "acodec") == "none" ? audioId : null,
-                (int)Number(format, "height"), Long(format, "filesize") ?? Long(format, "filesize_approx")))
+                (int)Number(format, "height"), EstimatedSize(format, audio),
+                String(format, "vcodec") ?? "", String(format, "acodec") == "none" ? (audio.ValueKind == JsonValueKind.Undefined ? "" : String(audio, "acodec") ?? "") : String(format, "acodec") ?? ""))
             .Where(format => format.VideoFormatId.Length > 0 && (format.AudioFormatId is not null || formats.Any(f => String(f, "format_id") == format.VideoFormatId && String(f, "acodec") != "none")))
             .GroupBy(format => format.Height).Select(group => group.OrderByDescending(format => format.EstimatedBytes).First())
             .OrderBy(format => format.Height).ToArray();
@@ -155,7 +181,7 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
 
     // External executable boundary: business decisions are tested with an injected runner.
     [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-    private static async Task<VideoToolResult> RunProcessAsync(string toolDirectory, IReadOnlyList<string> args, Action<string>? onOutput, CancellationToken cancellationToken)
+    internal static async Task<VideoToolResult> RunProcessAsync(string toolDirectory, IReadOnlyList<string> args, Action<string>? onOutput, CancellationToken cancellationToken)
     {
         var executable = Path.Combine(toolDirectory, "yt-dlp.exe");
         if (!File.Exists(executable)) throw new FileNotFoundException("O componente de download não está instalado. Reinstale o Sinalo.", executable);
@@ -168,8 +194,13 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
         using var registration = cancellationToken.Register(() => { try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } });
         var output = new StringBuilder();
         var errors = new StringBuilder();
-        var outputTask = ReadLinesAsync(process.StandardOutput, line => { if (onOutput is null) output.AppendLine(line); else onOutput(line); });
-        var errorTask = ReadLinesAsync(process.StandardError, line => { if (errors.Length < 8192) errors.AppendLine(line); });
+        var outputTask = ReadLinesAsync(process.StandardOutput, line => {
+            if (onOutput is null) {
+                if (output.Length + line.Length > 16 * 1024 * 1024) { try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } throw new InvalidDataException("A consulta excedeu o limite de metadados."); }
+                output.AppendLine(line);
+            } else onOutput(line);
+        });
+        var errorTask = ReadLinesAsync(process.StandardError, line => { if (errors.Length < 8192) errors.AppendLine(line[..Math.Min(line.Length, 8192 - errors.Length)]); });
         await process.WaitForExitAsync();
         await Task.WhenAll(outputTask, errorTask);
         cancellationToken.ThrowIfCancellationRequested();
@@ -195,5 +226,13 @@ public sealed class LinkedVideoService(ISinaloPathService paths, string? toolDir
     private static string? String(JsonElement element, string property) => element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static double Number(JsonElement element, string property) => element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : 0;
     private static long? Long(JsonElement element, string property) => element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetInt64() : null;
+    private static long? EstimatedSize(JsonElement video, JsonElement audio)
+    {
+        var size = Long(video, "filesize") ?? Long(video, "filesize_approx");
+        if (String(video, "acodec") != "none") return size;
+        if (audio.ValueKind == JsonValueKind.Undefined) return null;
+        var audioSize = Long(audio, "filesize") ?? Long(audio, "filesize_approx");
+        return size is { } videoBytes && audioSize is { } audioBytes ? checked(videoBytes + audioBytes) : null;
+    }
     private static string FriendlyError(string error) => string.IsNullOrWhiteSpace(error) ? "Não foi possível obter o vídeo. Tente novamente quando a conexão melhorar." : error.Trim().Split('\n').Last().Trim();
 }
