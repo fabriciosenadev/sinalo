@@ -1,6 +1,6 @@
 # Roadmap do Sinalo
 
-**Versão em preparação:** 1.5.0 — feature compatível; última publicada: 1.4.0
+**Versão atual:** 1.5.0 — série estável, publicada
 **Revisado em:** 28/10/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
@@ -14,7 +14,8 @@ continua recebendo correções e novas funcionalidades compatíveis.
   publicação separada do uso no culto e preservação de acervo/categorias.
 - Interface e consulta aprovadas pelo usuário em 28/10/2026; teste físico de
   download/reprodução na máquina da igreja não exercitado nesta execução.
-- Publicação da 1.5.0 autorizada; instalador, CI, release e Pages em validação.
+- Publicada em 28/10/2026 com instalador e checksum conferidos; CI, release
+  e GitHub Pages aprovados. A versão latest usada pelo atualizador é v1.5.0.
   Ver [relatório de validação](validacao-minuto-saude-youtube.md).
 
 ## Entrega 1.4.0 — compatibilidade de Provai e Vede
@@ -132,11 +133,9 @@ Também estão concluídos:
 - Ciclo EK concluído para MP4 na 1.3.0, sem depender de coletâneas/fila,
   áudio/imagens, FFmpeg ou miniaturas. Preserva dados e configurações da 1.2.0.
 
-## Melhorias futuras
+## Minuto de Saúde: YouTube com aprovação — entregue na 1.5.0
 
-### Minuto de Saúde: YouTube com aprovação — prioridade alta, implementação média/grande
-
-- Implementado para a 1.5.0, publicação em andamento: fonte secundária pelo canal Vida e Saúde UCB,
+- Publicado na 1.5.0: fonte secundária pelo canal Vida e Saúde UCB,
   preservando o site, o endereço atual e suas regras de sábados/trimestre.
 - Consultar a aba Vídeos, excluir agendados/indisponíveis e listar os quatro
   recentes já publicados, confirmando metadados individuais e ordenando por
@@ -157,6 +156,8 @@ Também estão concluídos:
   em dados isolados; validação de download real e reprodução em HD ainda pendente
   de autorização/aceite. Ver `docs/validacao-minuto-saude-youtube.md`.
   Consulta/interface aprovadas e publicação autorizada em 28/10/2026.
+
+## Melhorias futuras
 
 ### Sugestões pelo site — prioridade proposta média, implementação média
 

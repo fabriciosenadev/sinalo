@@ -2,7 +2,7 @@
 
 Implementação de 28/10/2026, preparada como feature **1.5.0**.
 Consulta/interface aprovadas e publicação autorizada pelo usuário.
-Instalador e publicação em validação; última versão publicada antes deste ciclo: 1.4.0.
+Release **1.5.0 publicada** com instalador e checksum conferidos.
 Spec: `../Sinalo-specs/minuto-saude-fonte-secundaria-youtube.md`.
 
 ## Entrega
@@ -73,6 +73,21 @@ Disponibilidade é uma evidência desse momento, não garantia futura.
   `c845b27390afa0bd3de9a8a964a01cff026698867c41bce4b097beb1436048ea`.
 - O artefato do GitHub será reconstruído pela tag e terá seu próprio checksum;
   não é exigido hash idêntico ao build local.
+
+## Publicação confirmada
+
+- Feature: `5a6d615`; release/tag `v1.5.0`: `7c2e314`.
+- [Release 1.5.0](https://github.com/fabriciosenadev/sinalo/releases/tag/v1.5.0)
+  pública, não prerelease, confirmada como latest.
+- [CI](https://github.com/fabriciosenadev/sinalo/actions/runs/40757287609),
+  [publicação](https://github.com/fabriciosenadev/sinalo/actions/runs/40757323144)
+  e [Pages](https://github.com/fabriciosenadev/sinalo/actions/runs/40757287617)
+  concluídos com sucesso.
+- Instalador remoto: 205.215.759 bytes. SHA-256 do arquivo `.sha256` corresponde
+  ao digest informado pelo GitHub:
+  `84cfe4c410c4e5d8767574a225eb6b98801d8bb40884815e34c435018293ff51`.
+- Guia público conferido por HTTP: instruções da versão 1.5.0 e canal secundário
+  presentes em `https://fabriciosenadev.github.io/sinalo/configuracao.html`.
 
 ## Roteiro de validação física complementar
 
