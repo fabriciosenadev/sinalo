@@ -1,10 +1,32 @@
 # Roadmap do Sinalo
 
-**Versão atual:** 1.5.0 — série estável, publicada
-**Revisado em:** 28/10/2026
+**Versão em preparação:** 1.6.0 — integração opcional com Louvor JA Flute
+**Última publicada:** 1.5.0
+**Revisado em:** 02/11/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
 continua recebendo correções e novas funcionalidades compatíveis.
+
+## Entrega 1.6.0 — integração local com Louvor JA Flute
+
+- Exclusiva do projeto `louvorja/flute-app`, usado nos testes. Não inclui o
+  Louvor JA legado; menu, configuração e guias devem explicitar essa distinção.
+
+- Fluxo de abertura/conexão, detecção de fechamento e busca musical dinâmica
+  implementado na branch experimental e aprovado pelo operador até aqui.
+- Incremento implementado localmente em 02/11/2026: habilitação explícita nas
+  Configurações, padrão desligado, menu e monitoramento condicionados à escolha,
+  preservando caminho/porta e sem fechar Flute ou interromper músicas. A opção
+  identifica exclusivamente o Louvor JA Flute e exclui compatibilidade com o legado.
+- Planejamento: `Sinalo-specs/louvor-ja-habilitacao-configuracoes.md`, tasks
+  C1–C5, carga média. Pré-requisito direto: integração já implementada; não depende
+  das evoluções da Biblioteca. Implementação real promovida para Debug e Release;
+  580 testes aprovados em Debug e em Release, cobertura total 89,31% de linhas e 78,52% de
+  branches. Testes isolados de habilitar/desabilitar, persistência, falhas,
+  cancelamento de prontidão, navegação e temas aprovados. Guia/site/changelog
+  atualizados para 1.6.0. O operador aprovou os testes manuais deste incremento
+  em 02/11/2026 e autorizou retomar o release. Instalador local 1.6.0 gerado,
+  versão e checksum conferidos; publicação pelo workflow em verificação.
 
 ## Entrega 1.5.0 — Minuto de Saúde: YouTube com aprovação
 
@@ -15,7 +37,7 @@ continua recebendo correções e novas funcionalidades compatíveis.
 - Interface e consulta aprovadas pelo usuário em 28/10/2026; teste físico de
   download/reprodução na máquina da igreja não exercitado nesta execução.
 - Publicada em 28/10/2026 com instalador e checksum conferidos; CI, release
-  e GitHub Pages aprovados. A versão latest usada pelo atualizador é v1.5.0.
+  e GitHub Pages aprovados. Foi a versão latest na publicação dessa entrega.
   Ver [relatório de validação](validacao-minuto-saude-youtube.md).
 
 ## Entrega 1.4.0 — compatibilidade de Provai e Vede

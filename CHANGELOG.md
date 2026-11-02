@@ -4,6 +4,25 @@ Este documento descreve mudanças percebidas por quem usa o Sinalo. Alterações
 internas de bibliotecas, testes e automação só aparecem quando tiverem impacto
 direto na instalação ou no uso do aplicativo.
 
+## 1.6.0 - 02/11/2026
+
+### Integração opcional com Louvor JA Flute
+
+- Controle local exclusivo para o Louvor JA Flute, não compatível com o legado.
+- Habilitação em Configurações > Integrações, desativada por padrão. Menu,
+  conexão e monitoramento só ficam ativos após habilitar e salvar.
+- Abertura/conexão com verificação de prontidão, detecção de fechamento e busca
+  de músicas automática ao digitar. Controles de reprodução, slides e volume.
+- Desativar preserva caminho e porta, não fecha o Flute nem interrompe músicas.
+- Ao habilitar, a conexão é verificada se o Flute já estiver aberto; o botão de
+  abertura aguarda até 30 segundos pelo servidor. Nenhuma música inicia sozinha.
+- A busca automática aguarda uma pequena pausa na digitação, informa o andamento
+  e ignora respostas antigas. Enter ou Pesquisar consultam imediatamente.
+- O caminho padrão do executável usa o perfil do Windows e pode ser alterado.
+  Para o servidor voltar ao reabrir o Flute, habilite nele Iniciar com o Louvor JA.
+- O Flute precisa estar instalado e com o servidor de transmissão habilitado;
+  Sinalo não instala o aplicativo nem baixa o acervo musical dele.
+
 ## 1.5.0 - 28/10/2026
 
 ### Minuto de Saúde: vídeos recentes do YouTube
