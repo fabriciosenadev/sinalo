@@ -23,7 +23,8 @@ public partial class SettingsWindow : Window
     public bool Saved { get; private set; }
     public SettingsWindow(ISinaloConfigurationService service, IContentPathConfigurationService? contentPathConfigurationService = null, IContentPathMigrationService? contentPathMigrationService = null, IThemePreferenceService? themePreferenceService = null, SystemThemeService? themeService = null, IContentCleanupConfigurationService? cleanupConfigurationService = null,
         Sinalo.Application.Synchronization.IHealthYouTubeConfigurationService? healthYouTubeConfiguration = null,
-        Sinalo.Application.Synchronization.IChannelVideoService? channelVideos = null)
+        Sinalo.Application.Synchronization.IChannelVideoService? channelVideos = null,
+        Sinalo.Application.LouvorJa.ILouvorJaConfigurationStore? louvorJaConfiguration = null)
     {
         _service = service;
         _contentPathConfigurationService = contentPathConfigurationService;
@@ -33,6 +34,7 @@ public partial class SettingsWindow : Window
         _cleanupConfigurationService = cleanupConfigurationService;
         _healthYouTubeConfiguration = healthYouTubeConfiguration;
         _channelVideos = channelVideos;
+        _louvorJaConfiguration = louvorJaConfiguration;
         InitializeComponent();
         HealthYouTubeSettings.IsEnabled = _healthYouTubeConfiguration is not null && _channelVideos is not null;
         Closed += (_, _) => _channelCancellation.Cancel();
@@ -74,6 +76,7 @@ public partial class SettingsWindow : Window
                 _verifiedHealthChannel = youtube.ChannelId is { } id && youtube.ChannelName is { } name ? new(id, name, new Uri(youtube.ChannelUrl)) : null;
                 HealthChannelFeedback.Text = _verifiedHealthChannel is { } identity ? $"Canal verificado: {identity.Name}" : "Verifique o canal antes de habilitar.";
             }
+            await LoadLouvorJaPreferenceAsync();
         }
         finally
         {
@@ -160,6 +163,8 @@ public partial class SettingsWindow : Window
                 var preference = (ThemePreference)Math.Clamp(ThemePreferenceCombo.SelectedIndex, 0, 2);
                 await _themePreferenceService.SaveAsync(preference); _themeService?.SetPreference(preference);
             }
+            if (_louvorJaLoaded && _louvorJaConfiguration is not null && (LouvorJaFluteEnabled.IsChecked == true) != _initialLouvorJaEnabled)
+                await _louvorJaConfiguration.SetEnabledAsync(LouvorJaFluteEnabled.IsChecked == true);
             Saved = true; _saving = false; DialogResult = true;
         }
         catch (Exception exception)

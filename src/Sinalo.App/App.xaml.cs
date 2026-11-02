@@ -108,6 +108,7 @@ public partial class App : System.Windows.Application
             }, presentationOpen: () => presentationOutputService.IsOpen,categories:categories);
         mainWindow = new MainWindow
         {
+            LouvorJaConfigurationStore = new Sinalo.Infrastructure.LouvorJa.LouvorJaConfigurationStore(pathService),
             DataContext = new HomeViewModel(new SaturdayWindowService(), pathService, configurations, playbackScreens: playbackScreens, selectedPlaybackScreenNumber: selectedOutput?.ScreenNumber, timer: timerViewModel, raffle: raffleViewModel, worshipTimer: worshipTimerViewModel),
             ConfigurationService = configurationService,
             ContentPathConfigurationService = pathService,

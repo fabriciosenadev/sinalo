@@ -29,7 +29,7 @@
         Style="{DynamicResource Text.Heading}" />
       <TextBlock
         x:Name="SettingsDescription"
-        Text="Aparência, armazenamento e busca dos programas."
+        Text="Aparência, armazenamento, programas e integrações."
         Margin="0,0,0,16" />
     </StackPanel>
     <TabControl
@@ -485,6 +485,24 @@
               </StackPanel>
             </Border>
           </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem x:Name="IntegrationsTab" Header="Integrações">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,16,28,16">
+          <Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" CornerRadius="7" Padding="12">
+            <StackPanel>
+              <TextBlock Text="Louvor JA Flute" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Integração exclusiva com o Louvor JA Flute (projeto flute-app), instalado neste computador. Não é compatível com o Louvor JA legado." TextWrapping="Wrap" Margin="0,8,0,12"/>
+              <CheckBox x:Name="LouvorJaFluteEnabled" Content="Habilitar integração com Louvor JA Flute" IsChecked="False" IsEnabled="False" AutomationProperties.Name="Habilitar integração com Louvor JA Flute"/>
+              <TextBlock Text="Ao salvar, mostra a opção na navegação e verifica se o Flute está aberto. Caminho e porta são ajustados na tela da integração. Habilitar não instala o Flute, não ativa o servidor dele e não inicia músicas." TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,10,0,0"/>
+              <TextBlock Text="No Flute, ative o servidor em Configurações → Transmissão (OBS / vMix). Habilite ‘Iniciar com o Louvor JA’ para que o servidor volte a funcionar ao reabrir o aplicativo." TextWrapping="Wrap" Margin="0,10,0,0"/>
+              <Border BorderBrush="{DynamicResource Brush.Accent}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,12,0,0">
+                <TextBlock Text="Importante: desativar desconecta o controle, mas não fecha o Louvor JA Flute nem interrompe uma música em execução." TextWrapping="Wrap" FontWeight="SemiBold"/>
+              </Border>
+              <TextBlock x:Name="LouvorJaSettingsFeedback" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,10,0,0"/>
+              <Button x:Name="ReloadLouvorJaSettingsButton" Content="Tentar carregar novamente" Click="ReloadLouvorJaSettings_Click" HorizontalAlignment="Left" Visibility="Collapsed" Margin="0,8,0,0"/>
+            </StackPanel>
+          </Border>
         </ScrollViewer>
       </TabItem>
     </TabControl>

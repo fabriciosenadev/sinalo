@@ -336,6 +336,22 @@ O Sinalo so marca um item como offline depois de validar um arquivo local comple
 
 ## Experiência integrada
 
+### Integração opcional com Louvor JA Flute — candidato em validação
+
+Exclusiva do projeto `louvorja/flute-app`, não do Louvor JA legado. A preferência
+`Enabled` em `louvor-ja-integration.json` é false por padrão, inclusive no JSON
+legado. O store compartilhado serializa leitura/modificação/escrita de habilitação
+e conexão, preservando os demais campos e substituindo o arquivo atomicamente.
+Não há migração SQLite. Habilitar não exige instalação/servidor disponível.
+
+`MainWindow.LouvorJa` só cria View/sessão quando habilitada; desativada não há
+monitoramento de processo ou HTTP. Transições invalidam gerações e descartam
+recursos sem manter o gate preso durante a espera de prontidão. Desativação
+cancela buscas/conexão, oculta o menu e sai do workspace se aberto, preservando
+o processo externo e sua música. Nenhum código do projeto externo foi copiado.
+O runtime real está em Debug e Release; o simulador não é oferecido no menu.
+Ver guia e relatório em `docs/experimento-louvor-ja.md` antes da publicação.
+
 ### Fonte secundária do Minuto de Saúde — entrega 1.5.0
 
 `HealthYouTubeConfigurationService` persiste uma configuração independente,

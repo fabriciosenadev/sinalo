@@ -76,6 +76,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeWorkspaceUi();
+        InitializeLouvorJaIntegration();
         SourceInitialized += (_, _) => SystemThemeService.ApplyTitleBar(this, SystemThemeService.IsWindowsDarkTheme());
         _timerRefresh.Tick += TimerRefresh_Tick;
         _updateCheckTimer.Tick += PeriodicUpdateCheck_Tick;
@@ -95,11 +96,12 @@ public partial class MainWindow : Window
     private async void ConfigureSources_Click(object sender, RoutedEventArgs e)
     {
         if (ConfigurationService is null) return;
-        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService, ContentCleanupConfigurationService, HealthYouTubeConfiguration, ChannelVideos) { Owner = this };
+        var window = new SettingsWindow(ConfigurationService, ContentPathConfigurationService, ContentPathMigrationService, ThemePreferenceService, ThemeService, ContentCleanupConfigurationService, HealthYouTubeConfiguration, ChannelVideos, LouvorJaConfigurationStore) { Owner = this };
         if (sender is System.Windows.Controls.MenuItem { Tag: "ProgramSearchRules" }) window.ShowProgramSettings();
         window.ShowDialog();
         if (window.Saved)
         {
+            await RefreshLouvorJaIntegrationAsync();
             var previous = DataContext as HomeViewModel;
             var viewModel = new ViewModels.HomeViewModel(
                 new Infrastructure.SaturdayWindowService(),

@@ -299,13 +299,19 @@
               </Style>
             </Button.Style>
           </Button>
+          <StackPanel x:Name="IntegrationNavigation" Visibility="Collapsed">
+            <TextBlock Text="INTEGRAÇÕES" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,24,0,8" TextWrapping="Wrap"/>
+            <Button x:Name="LouvorJaNavigationButton" Content="Louvor JA Flute">
+              <Button.Style><Style TargetType="Button" BasedOn="{StaticResource Button.Navigation}"><Style.Triggers>
+                <DataTrigger Binding="{Binding IsLouvorJaWorkspace}" Value="True"><Setter Property="Background" Value="{DynamicResource Brush.Selection}"/><Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/></DataTrigger>
+              </Style.Triggers></Style></Button.Style>
+            </Button>
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
     </Border>
-    <Grid
-      Grid.Row="2"
-      Grid.Column="1"
-      x:Name="WorkspaceRegion">
+    <Grid Grid.Row="2" Grid.Column="1" x:Name="WorkspaceRegion">
+      <Grid.Style><Style TargetType="Grid"><Style.Triggers><DataTrigger Binding="{Binding IsLouvorJaWorkspace}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Grid.Style>
       <Grid.RowDefinitions>
         <RowDefinition
           Height="Auto" />
@@ -723,6 +729,7 @@
         </Style.Triggers></Style></TextBlock.Style>
       </TextBlock>
     </Grid>
+    <ContentControl x:Name="LouvorJaWorkspaceHost" Grid.Row="2" Grid.Column="1" Visibility="{Binding IsLouvorJaWorkspace, Converter={StaticResource BooleanToVisibilityConverter}}"/>
     <Border Grid.Row="3" Grid.ColumnSpan="2" Margin="0,8,0,0" Padding="8"
             Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="1" CornerRadius="8">

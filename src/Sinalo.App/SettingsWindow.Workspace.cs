@@ -9,8 +9,9 @@ public partial class SettingsWindow
     public void ShowProgramSettings()
     {
         SettingsCategories.SelectedIndex = 2;
-        ((TabItem)SettingsCategories.Items[0]).Visibility = Visibility.Collapsed;
-        ((TabItem)SettingsCategories.Items[1]).Visibility = Visibility.Collapsed;
+        var programs = SettingsCategories.SelectedItem;
+        foreach (var tab in SettingsCategories.Items.OfType<TabItem>())
+            tab.Visibility = ReferenceEquals(tab, programs) ? Visibility.Visible : Visibility.Collapsed;
         Title = "Regras de busca dos programas";
         SettingsHeading.Text = Title;
         SettingsDescription.Text = "Escolha quais vídeos procurar nos programas. Apenas vídeos encontrados poderão ser baixados.";
@@ -32,7 +33,7 @@ public partial class SettingsWindow
             }
         };
     }
-    private string CaptureSettings() => string.Join("|", ThemePreferenceCombo.SelectedIndex, ContentPathText.Text, CleanupEnabled.IsChecked, CleanupRetentionMonths.SelectedIndex, CleanupGracePeriodDays.Text, MissionsUrl.Text, ProvaiUrl.Text, HealthUrl.Text, MissionsPreviousSaturday.IsChecked, MissionsCurrentSaturday.IsChecked, MissionsNextSaturday.IsChecked, ProvaiPreviousSaturday.IsChecked, ProvaiCurrentSaturday.IsChecked, ProvaiNextSaturday.IsChecked, HealthPreviousSaturday.IsChecked, HealthCurrentSaturday.IsChecked, HealthNextSaturday.IsChecked, HealthChannelEnabled.IsChecked, HealthChannelUrl.Text, HealthChannelHeight.SelectedIndex);
+    private string CaptureSettings() => string.Join("|", ThemePreferenceCombo.SelectedIndex, ContentPathText.Text, CleanupEnabled.IsChecked, CleanupRetentionMonths.SelectedIndex, CleanupGracePeriodDays.Text, MissionsUrl.Text, ProvaiUrl.Text, HealthUrl.Text, MissionsPreviousSaturday.IsChecked, MissionsCurrentSaturday.IsChecked, MissionsNextSaturday.IsChecked, ProvaiPreviousSaturday.IsChecked, ProvaiCurrentSaturday.IsChecked, ProvaiNextSaturday.IsChecked, HealthPreviousSaturday.IsChecked, HealthCurrentSaturday.IsChecked, HealthNextSaturday.IsChecked, HealthChannelEnabled.IsChecked, HealthChannelUrl.Text, HealthChannelHeight.SelectedIndex, LouvorJaFluteEnabled.IsChecked);
     private bool ValidateSettings()
     {
         if (_healthYouTubeConfiguration is not null)

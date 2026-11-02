@@ -27,6 +27,7 @@ public sealed partial class HomeViewModel
     public void RestoreWorkspaceState(HomeViewModel previous)
     {
         IsGeneralLibraryWorkspace = previous.IsGeneralLibraryWorkspace;
+        IsLouvorJaWorkspace = previous.IsLouvorJaWorkspace;
         IsTimerWorkspace = previous.IsTimerWorkspace;
         IsRaffleWorkspace = previous.IsRaffleWorkspace;
         IsWorshipTimerWorkspace = previous.IsWorshipTimerWorkspace;
@@ -77,6 +78,7 @@ public sealed partial class HomeViewModel
     }
     public void SelectProgram(string name)
     {
+        IsLouvorJaWorkspace = false;
         IsGeneralLibraryWorkspace = false;
         IsTimerWorkspace = IsWorshipTimerWorkspace = IsRaffleWorkspace = IsLinkedVideoWorkspace = false;
         SelectedSource = name;
