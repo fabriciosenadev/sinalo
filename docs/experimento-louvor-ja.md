@@ -3,7 +3,7 @@
 Origem: branch `experiment/louvor-ja-mock` (nome original do experimento). A implementação
 real está em Debug e Release, **desativada por padrão nas Configurações**.
 Escopo exclusivo: Louvor JA Flute (`louvorja/flute-app`), não Louvor JA legado.
-Entrega preparada para a **1.6.0**, após aceite manual em 02/11/2026. O simulador anterior
+Entrega publicada na **1.6.0**, após aceite manual em 02/11/2026. O simulador anterior
 continua disponível apenas como dependência explícita dos testes automatizados.
 
 ## Como testar com a instalação real
@@ -193,3 +193,15 @@ changelog e executável publicados na mesma versão. SHA-256 do instalador local
 `D04FF8910044517E0553DE39A25CBDD8360D17621FBF60738ECBFAC66EFEB23D`.
 O artefato distribuído é reconstruído pelo workflow GitHub e terá seu próprio
 checksum, verificado na publicação; não se exige hash idêntico entre os builds.
+
+### Publicação confirmada — 02/11/2026
+
+- Implementação: commit `7db0c61`; preparo de release/tag: `ac278e8` / `v1.6.0`.
+- CI `41509936189`, Pages `41509936129` e Release `41510506734` aprovados.
+- Release pública e latest: https://github.com/fabriciosenadev/sinalo/releases/tag/v1.6.0
+- Instalador distribuído: `Sinalo-Setup-win-x64.exe`, 205.238.559 bytes.
+- SHA-256 publicado, conferido com o digest do asset GitHub:
+  `06cfbfcd5b2f81413aaa130bd5a478b9fb29a6cb6cbfd53b42b1a91f51d67480`.
+- Guia acessível em https://fabriciosenadev.github.io/sinalo/louvor-ja.html.
+  Sem instalação do pacote na máquina do operador pelo agente; os testes manuais
+  da funcionalidade foram aprovados pelo usuário antes da publicação.

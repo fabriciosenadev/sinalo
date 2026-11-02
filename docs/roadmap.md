@@ -1,7 +1,6 @@
 # Roadmap do Sinalo
 
-**Versão em preparação:** 1.6.0 — integração opcional com Louvor JA Flute
-**Última publicada:** 1.5.0
+**Versão atual:** 1.6.0 — série estável, publicada
 **Revisado em:** 02/11/2026
 
 Este roadmap separa o que já foi entregue das melhorias futuras. A série 1.x
@@ -25,8 +24,9 @@ continua recebendo correções e novas funcionalidades compatíveis.
   branches. Testes isolados de habilitar/desabilitar, persistência, falhas,
   cancelamento de prontidão, navegação e temas aprovados. Guia/site/changelog
   atualizados para 1.6.0. O operador aprovou os testes manuais deste incremento
-  em 02/11/2026 e autorizou retomar o release. Instalador local 1.6.0 gerado,
-  versão e checksum conferidos; publicação pelo workflow em verificação.
+  em 02/11/2026 e autorizou retomar o release. Publicada em 02/11/2026: CI,
+  GitHub Pages e workflow Release aprovados. Instalador e checksum disponíveis
+  e conferidos; latest usada pelo atualizador é v1.6.0. Guia do Flute publicado.
 
 ## Entrega 1.5.0 — Minuto de Saúde: YouTube com aprovação
 
